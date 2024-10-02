@@ -1,0 +1,18 @@
+logging:
+  config: classpath:logback-spring.xml
+  file: # handler
+    path: ./logs
+  pattern: # formatter
+    dateformat: yyyy-MM-dd HH:mm:ss.SSS
+    console: "%clr(%d{dateformat}){blue} [%thread] %clr([%level]){magenta} %logger{50} - %msg%n"
+    file: "%d{dateformat} [%thread] %-5level %logger{50} - %msg%n"
+  level: # logger-level
+    root: info
+    org.springframework.transaction: debug
+    org.springframework.jdbc.datasource.DataSourceTransactionManager: debug
+    com.morningstar.practice:
+      service: debug
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 30
