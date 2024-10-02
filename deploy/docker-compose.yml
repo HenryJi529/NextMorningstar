@@ -1,0 +1,206 @@
+volumes:
+  morningstar_redis_data: null
+  morningstar_mysql_data: null
+  morningstar_mongodb_db: null
+  morningstar_mongodb_configdb: null
+  morningstar_rabbitmq_data: null
+  morningstar_certbot_etc: null
+  morningstar_certbot_lib: null
+  morningstar_certbot_webroot: null
+  morningstar_es_data: null
+  morningstar_es_logs: null
+  morningstar_jellyfin_cache: null
+  morningstar_jellyfin_config: null
+  morningstar_jellyfin_media: null
+  morningstar_ftpd_data: null
+  morningstar_ftpd_logs: null
+  morningstar_springboot_log: null
+  morningstar_neo4j_data: null
+  morningstar_neo4j_logs: null
+  morningstar_neo4j_import: null
+  morningstar_neo4j_plugins: null
+
+services:
+  redis:
+    image: redis:7
+    container_name: morningstar_redis
+    restart: unless-stopped
+    volumes:
+      - morningstar_redis_data:/data
+    ports:
+      - 6379:6379
+    command: redis-server --requirepass ${REDIS_PASSWORD} --loglevel warning
+  nginx:
+    image: nginx:1.27.3
+    container_name: morningstar_nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/www:/etc/nginx/www
+      - morningstar_certbot_etc:/etc/letsencrypt
+      - morningstar_certbot_webroot:/var/www/html
+    network_mode: host
+  certbot:
+    image: certbot/certbot
+    container_name: morningstar_certbot
+    restart: unless-stopped
+    volumes:
+      - morningstar_certbot_webroot:/var/www/html
+      - morningstar_certbot_etc:/etc/letsencrypt
+      - morningstar_certbot_lib:/var/lib/letsencrypt
+    tty: true
+    entrypoint: ["/bin/sh", "-c", "tail -f /dev/null"]
+    network_mode: host
+  mysql:
+    image: mysql:9
+    container_name: morningstar_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - morningstar_mysql_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+  mongodb:
+    image: mongo:8
+    restart: unless-stopped
+    container_name: morningstar_mongodb
+    ports:
+      - 27017:27017
+    volumes:
+      - morningstar_mongodb_db:/data/db
+      - morningstar_mongodb_configdb:/data/configdb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+  rabbitmq:
+    container_name: morningstar_rabbitmq
+    build:
+      context: .
+      dockerfile: rabbitmq/Dockerfile
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - morningstar_rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - 15672:15672 # 管理监控端口
+      # - 15671:15671 # 管理监控端口(HTTPS)
+      - 5672:5672 # 程序与mq交互的访问端口
+      - 61613:61613 # STOMP
+  es:
+    container_name: morningstar_es
+    hostname: morningstar_es
+    build:
+      context: .
+      dockerfile: elasticsearch/Dockerfile
+    privileged: true
+    restart: unless-stopped
+    ulimits:
+      memlock: # 允许进程锁定物理内存
+        soft: -1
+        hard: -1
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # 固定JVM堆内存
+      - bootstrap.memory_lock=true # 禁用Swap
+      # - "network.host=0.0.0.0" # 全局网络
+      # - "http.host=0.0.0.0" # ​​HTTP REST API​​
+      # - "transport.host=0.0.0.0" # 节点间通信
+      - "discovery.type=single-node" # 单节点模式
+      - action.destructive_requires_name=true # 防止误删索引
+      - action.auto_create_index=false # 防止自动创建索引
+    volumes:
+      - morningstar_es_data:/usr/share/elasticsearch/data
+      - morningstar_es_logs:/usr/share/elasticsearch/logs
+    ports:
+      - "127.0.0.1:9200:9200"
+      - 9300:9300  # 心跳检查端口
+  sshwifty:
+    image: niruix/sshwifty:0.3.25-beta-release
+    container_name: morningstar_sshwifty
+    restart: unless-stopped
+    ports:
+      - 8182:8182
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: morningstar_jellyfin
+    volumes:
+      - morningstar_jellyfin_cache:/cache
+      - morningstar_jellyfin_config:/config
+      - morningstar_jellyfin_media:/media
+    restart: unless-stopped
+    ports:
+      - 8096:8096
+    environment:
+      - JELLYFIN_PublishedServerUrl=https://jellyfin.morningstar369.com
+  springboot:
+    container_name: morningstar_springboot
+    build:
+      context: .
+      dockerfile: springboot/Dockerfile
+    # command: bash -c "while true; do sleep 3600; done"
+    tty: true
+    ports:
+      - 8091:8091
+    volumes:
+      - morningstar_springboot_log:/app/log
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+    depends_on:
+      - es
+      - mysql
+      - redis
+      - mongodb
+      - rabbitmq
+      - neo4j
+  frps:
+    image: snowdreamtech/frps
+    container_name: morningstar_frps
+    working_dir: /root
+    restart: unless-stopped
+    volumes:
+      - ./frp/config:/etc/frp
+    network_mode: "host"
+  ftpd: # 只用于公开一些文件
+    image: fauria/vsftpd
+    container_name: morningstar_ftpd
+    restart: unless-stopped
+    volumes:
+      - morningstar_ftpd_data:/home/vsftpd
+      - morningstar_ftpd_logs:/var/log/vsftpd
+    environment:
+      - FTP_USER=ftp
+      - FTP_PASS=1234asdw
+      # - PASV_ADDRESS=server.morningstar369.com # cyberduck 客户端支持使用域名
+      - PASV_ADDRESS=${CLOUD_IP_ADDRESS} # python ftplib 只支持ip
+      - PASV_MIN_PORT=21100
+      - PASV_MAX_PORT=21110
+    ports:
+      - 20:20
+      - 21:21
+      - 21100-21110:21100-21110
+  neo4j:
+    image: neo4j:latest
+    container_name: morningstar_neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    volumes:
+      - morningstar_neo4j_data:/data
+      - morningstar_neo4j_logs:/logs
+      - morningstar_neo4j_import:/var/lib/neo4j/import
+      - morningstar_neo4j_plugins:/plugins
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_connector_bolt_advertised__address=localhost:7687
+      - NEO4J_dbms_connector_http_advertised__address=:7474
+      - NEO4J_dbms_security_auth__minimum__password__length=8
+      - NEO4J_dbms_security_auth__enabled=true
+    restart: unless-stopped
