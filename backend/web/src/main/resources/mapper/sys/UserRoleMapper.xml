@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.common.dao.mapper.UserRoleMapper">
+    <insert id="insert">
+        insert into sys_user_role (user_id, role_id)
+            (select u.id, r.id
+             from sys_user u
+                      join sys_role r
+                           on u.username = #{pair.username} and r.tag = #{pair.roleTag});
+    </insert>
+    <delete id="truncate">
+        truncate table sys_user_role
+    </delete>
+    <select id="exist" resultType="java.lang.Boolean">
+        select count(0)
+        from sys_user_role
+                 left join sys_user on sys_user_role.user_id = sys_user.id
+                 left join sys_role on sys_user_role.role_id = sys_role.id
+        where sys_user.username = #{pair.username}
+          and sys_role.tag = #{pair.roleTag}
+    </select>
+</mapper>
