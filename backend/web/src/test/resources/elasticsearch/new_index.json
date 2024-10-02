@@ -1,0 +1,7 @@
+{
+  "mappings": {
+    "properties": {
+      "field1": { "type": "text" }
+    }
+  }
+}

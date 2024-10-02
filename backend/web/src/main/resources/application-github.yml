@@ -1,0 +1,5 @@
+morningstar:
+  github:
+    token: ${GITHUB_PAT}
+    username: HenryJi529
+    repository: ImageHosting
