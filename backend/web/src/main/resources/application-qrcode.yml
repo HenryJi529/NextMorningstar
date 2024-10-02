@@ -1,0 +1,8 @@
+morningstar:
+  qrcode:
+    size: 300
+    margin: 3
+    fore-color: "green"
+    back-color: "white"
+    error-correction-level: "H"
+    logo-ratio: 4

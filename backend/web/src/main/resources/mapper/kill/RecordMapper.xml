@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.kill.dao.mapper.RecordMapper">
+    <insert id="insertIntoRecordAndUserRecord">
+        insert into kill_record (id, content, create_time, update_time)
+        value (#{record.id}, #{record.content}, #{record.createTime}, #{record.updateTime});
+
+        insert into kill_user_record (user_id, record_id, has_won)
+        values
+        <foreach collection="record.content.members" item="member" separator=",">
+            (
+            #{member.user.id},
+            #{record.id},
+            if(#{member.user.id} in
+            <foreach collection="record.content.winners" item="winner" open="(" close=")" separator=",">
+                #{winner.user.id}
+            </foreach>, true, false)
+            )
+        </foreach>
+        ;
+    </insert>
+    <select id="selectDailyModeStats" resultType="com.morningstar.kill.pojo.bo.UserDailyModeStats">
+        select date(updateTime)                   `date`,
+               mode,
+               concat(sum(hasWon), '/', count(*)) `ratio`
+        from (select ur.user_id                                      `userId`,
+                     ur.record_id                                    `recordId`,
+                     json_unquote(json_extract(r.content, '$.mode')) `mode`, # 或 r.content->>'$.mode'
+                     ur.has_won                                      `hasWon`,
+                     r.update_time                                   `updateTime`
+              from kill_user_record ur
+                       left join kill_record r on r.id = ur.record_id
+              where (date(r.update_time) between #{startDate} and #{endDate})
+                and ur.user_id = #{userId}) t1
+        group by date(updateTime), mode
+        order by `date` desc, mode
+    </select>
+</mapper>
