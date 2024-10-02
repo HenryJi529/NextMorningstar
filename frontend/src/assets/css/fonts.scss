@@ -1,0 +1,45 @@
+@font-face {
+  font-family: "Lora";
+  src: url("../font/Lora-MediumItalic.ttf");
+}
+
+@font-face {
+  font-family: "Chewy";
+  src: url("../font/Chewy-Regular.ttf");
+}
+
+.font-family-code {
+  font-family: monospace, sans-serif;
+}
+
+.font-family-lora {
+  font-family: Lora, serif;
+}
+
+.font-family-song {
+  font-family: 'Songti SC', 'SimSun', serif;
+}
+
+.font-family-kai {
+  font-family: 'Kaiti SC', 'SimKai', serif;
+}
+
+.font-family-chewy {
+  font-family: 'Chewy', sans-serif;
+}
+
+@font-face {
+  font-family: 'PressFont';
+  src: local("Times New Roman");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'PressFont';
+  src: local("Songti SC"), local("SimSun");
+  unicode-range: U+4E00-9FFF, U+3400-4DBF, U+20000-2A6DF, U+2A700-2B73F, U+2B740-2B81F, U+2B820-2CEAF, U+F900-FAFF, U+2F800-2FA1F;
+}
+
+.font-family-press {
+  font-family: 'PressFont', serif;
+}
