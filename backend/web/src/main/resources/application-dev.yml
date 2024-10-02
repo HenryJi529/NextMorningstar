@@ -1,0 +1,35 @@
+morningstar:
+  mysql:
+    host: localhost
+    password: 1234asdw
+  redis:
+    host: 127.0.0.1
+    password: 1234asdw
+  mongodb:
+    host: localhost
+    password: 1234asdw
+  es:
+    hostname: "localhost"
+    port: 9200
+  rabbitmq:
+    host: localhost
+    password: 1234asdw
+  security:
+    cors:
+      origins: "http://127.0.0.1:8090,http://localhost:8090"
+  account:
+    user:
+      - username: "henry"
+        password: "1234asdw"
+        nickname: 河海小爬虫
+        sex: "男"
+      - username: "sherry"
+        password: "123456"
+        sex: "女"
+    user-role:
+      - username: "henry"
+        role-tag: "super_admin"
+      - username: "henry"
+        role-tag: "blog_admin"
+      - username: "henry"
+        role-tag: "proxy_admin"
