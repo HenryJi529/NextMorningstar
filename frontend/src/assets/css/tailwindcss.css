@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.rocket-list-style {
+    list-style-image: url(../img/rocket.svg);
+}

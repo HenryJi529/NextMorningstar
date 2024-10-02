@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.kill.dao.mapper.UserMapper">
+    <sql id="commonFields">
+        id, username, password, is_locked, is_admin, is_online, phone, email, nickname, sex, avatar, create_time, update_time
+    </sql>
+    <sql id="editableFields">
+        username, password, phone, email, nickname, avatar
+    </sql>
+    <update id="updatePasswordByUsername">
+        update user
+        set password = #{password}
+        where username = #{username} and is_deleted = false
+    </update>
+    <update id="updateNicknameByUsername">
+        update user
+        set nickname = #{nickname}
+        where username = #{username} and is_deleted = false
+    </update>
+    <update id="updateAvatarByUsername">
+        update user
+        set avatar = #{avatar}
+        where username = #{username} and is_deleted = false
+    </update>
+    <select id="selectByUsername" resultType="User">
+        select <include refid="commonFields" />
+        from user where username = #{username} and is_deleted = false
+    </select>
+    <select id="selectAll" resultType="User">
+        select <include refid="commonFields"/>
+        from user where is_deleted = false
+    </select>
+    <select id="selectAllByPage" resultType="User">
+        select <include refid="commonFields" />
+        from user where is_deleted = false
+    </select>
+    <select id="selectCount" resultType="Long">
+        select count(*) from user where is_deleted = false
+    </select>
+    <select id="selectRandomN" resultType="User">
+        SELECT <include refid="commonFields" />
+        FROM user where is_deleted = false
+        ORDER BY RAND()
+        LIMIT #{n}
+    </select>
+    <select id="selectRecentDailyStatsByUserId" resultType="UserDailyStats">
+        select
+            -- NOTE: 这一层只用来设置默认值
+            date,
+            if(identityModeRatio != '', identityModeRatio, '0/0') as `identityModeRatio`,
+            if(revertModeRatio != '', revertModeRatio, '0/0') as `revertModeRatio`,
+            if(nationModeRatio != '', nationModeRatio, '0/0') as `nationModeRatio`,
+            if(soloModeRatio != '', soloModeRatio, '0/0') as `soloModeRatio`,
+            if(doublesModeRatio != '', doublesModeRatio, '0/0') as `doublesModeRatio`,
+            if(triplesModeRatio != '', triplesModeRatio, '0/0') as `triplesModeRatio`
+        from (
+            select
+                date,
+                group_concat(if(mode = 'IDENTITY', ratio, '') separator '') `identityModeRatio`,
+                group_concat(if(mode = 'REVERT', ratio, '') separator '') `revertModeRatio`,
+                group_concat(if(mode = 'NATION', ratio, '') separator '') `nationModeRatio`,
+                group_concat(if(mode = 'SOLO', ratio, '') separator '') `soloModeRatio`,
+                group_concat(if(mode = 'DOUBLES', ratio, '') separator '') `doublesModeRatio`,
+                group_concat(if(mode = 'TRIPLES', ratio, '') separator '') `triplesModeRatio`
+            from (
+                select
+                    date(updateTime) `date`,
+                    mode,
+                    concat(sum(hasWon), '/', count(*)) `ratio`
+                from (
+                    select
+                        ur.user_id                        `userId`,
+                        ur.record_id                      `recordId`,
+                        json_extract(r.content, '$.mode') `mode`,
+                        ur.has_won                        `hasWon`,
+                        r.update_time                     `updateTime`
+                    from user_record ur
+                    left join record r on r.id = ur.record_id
+                    where (r.update_time between date_sub(current_date, interval #{n} day) and current_date)
+                    and ur.user_id = #{userId}
+                ) t1
+                group by date(updateTime), mode
+            ) t2
+            group by date
+            order by date desc
+        ) t3
+    </select>
+    <select id="selectEditableInfoByUsername" resultType="UserEditableInfo">
+        select <include refid="editableFields" />
+        from user where username = #{username} and is_deleted = false
+    </select>
+</mapper>
