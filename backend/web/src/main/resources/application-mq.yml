@@ -1,0 +1,7 @@
+spring:
+  rabbitmq:
+    host: ${morningstar.rabbitmq.host}
+    port: 5672
+    username: root
+    password: ${morningstar.rabbitmq.password}
+    virtual-host: /
