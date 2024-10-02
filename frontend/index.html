@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>晨星小站</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+        const hour = new Date().getHours();
+        // const theme = "dark";
+        // const theme = "cupcake";
+        const theme = hour >= 18 || hour < 6 ? "dark": "cupcake";
+        document.querySelector("html").dataset.theme = theme;
+    </script>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.kill.dao.mapper.RoleMapper">
+    <sql id="commonFields">
+        <if test="true">
+            id, `name`, tag, `status`, remark
+        </if>
+    </sql>
+
+    <delete id="truncate">
+        truncate table role
+    </delete>
+    <select id="selectByTag" resultType="com.morningstar.kill.pojo.po.Role">
+        select <include refid="commonFields" />
+        from role where tag = #{tag}
+    </select>
+    <select id="selectCount" resultType="Long">
+        select count(*) from role
+    </select>
+</mapper>

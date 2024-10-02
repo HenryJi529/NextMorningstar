@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.kill.dao.mapper.RecordMapper">
+    <insert id="insertRecordAndUserRecord">
+        insert into record (id, content, create_time, update_time)
+        value (#{record.id}, #{record.content}, #{record.createTime}, #{record.updateTime});
+
+        insert into user_record (user_id, record_id, has_won)
+        values
+        <foreach collection="record.content.members" item="member" separator=",">
+            (
+                #{member.id},
+                #{record.id},
+                if(#{member.id} in
+                   <foreach collection="record.content.winners" item="winner" open="(" close=")" separator=",">
+                        #{winner.id}
+                    </foreach>, true, false)
+            )
+        </foreach>
+    </insert>
+    <select id="selectAll" resultType="Record">
+        select id, content, create_time, update_time
+        from record;
+    </select>
+    <select id="selectCount" resultType="Long">
+        select count(*) from record
+    </select>
+</mapper>

@@ -1,0 +1,21 @@
+kill:
+  init:
+    role:
+      - tag: supervisor
+        status: true
+        name: 管理员
+      - tag: sponsor
+        status: true
+        name: 赞助者
+    permission:
+      - tag: admin
+        status: true
+        name: admin权限
+      - tag: thank
+        status: true
+        name: thank权限
+    role-permission:
+      supervisor:
+        - admin
+      sponsor:
+        - thank

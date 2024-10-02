@@ -1,0 +1,13 @@
+server:
+  port: 8091
+spring:
+  application:
+    name: 晨星杀
+  config:
+    import: "optional:classpath:.env[.properties]"
+  main:
+    banner-mode: off
+  profiles:
+    active: log, cache, doc, db, security, mq, qiniu, init, github, dev
+#  mvc:
+#    static-path-pattern: /static/**

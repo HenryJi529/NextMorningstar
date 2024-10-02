@@ -1,0 +1,6 @@
+kill:
+  qiniu:
+    access-key: ${QINIU_ACCESS_KEY}
+    secret-key: ${QINIU_SECRET_KEY}
+    bucket: morningstar-369
+    domain: https://cdn.morningstar369.com

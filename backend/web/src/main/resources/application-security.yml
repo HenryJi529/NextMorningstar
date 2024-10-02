@@ -1,0 +1,9 @@
+security:
+  cors:
+    origins: "*"
+
+kill:
+  jwt:
+    # 获取方式 RandomStringUtils.randomAlphanumeric(algorithm.getMinKeyLength());
+    secret-key: ${JWT_SECRET_KEY}
+    ttl: 604800000 # 1000L * 60 * 60 * 24 * 7
