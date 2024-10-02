@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.blog.dao.mapper.CommentMapper">
+    <resultMap id="commentDetailResultMap" type="com.morningstar.blog.pojo.bo.CommentDetail">
+        <id property="id" column="id"/>
+        <collection property="thumbsUpUserIds" column="id" select="selectThumbsUpUserIds"/>
+        <collection property="thumbsDownUserIds" column="id" select="selectThumbsDownUserIds"/>
+    </resultMap>
+
+    <select id="selectRandomN" resultType="com.morningstar.blog.pojo.po.Comment">
+        select *
+        from blog_comment
+        order by rand()
+        limit #{N}
+    </select>
+    <select id="selectCommentDetailByArticleId" resultMap="commentDetailResultMap">
+        select C.*, U.username, U.nickname, U.avatar
+        from blog_comment as C
+                 left join user as U on C.user_id = U.id
+        where C.article_id = #{articleId}
+        order by C.update_time
+        limit #{limit} offset #{offset};
+    </select>
+    <select id="selectThumbsUpUserIds" resultType="java.util.UUID">
+        select user_id
+        from blog_comment_user
+        where comment_id = #{id}
+          and is_approved = true
+    </select>
+    <select id="selectThumbsDownUserIds" resultType="java.util.UUID">
+        select user_id
+        from blog_comment_user
+        where comment_id = #{id}
+          and is_approved = false
+    </select>
+    <select id="selectRandomNByArticleId" resultType="com.morningstar.blog.pojo.po.Comment">
+        select *
+        from blog_comment
+        where article_id = #{articleId}
+        order by rand()
+        limit #{N}
+    </select>
+</mapper>

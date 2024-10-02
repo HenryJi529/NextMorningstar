@@ -1,0 +1,10 @@
+{
+  "mappings": {
+    "properties": {
+      "field1": {
+        "type": "text",
+        "analyzer": "ik_smart"
+      }
+    }
+  }
+}

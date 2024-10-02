@@ -1,0 +1,15 @@
+spring:
+  output:
+    ansi:
+      enabled: always
+logging:
+  file: # handler
+    name: log/app.log
+  pattern: # formatter
+    dateformat: yyyy-MM-dd HH:mm:ss.SSS
+    console: "%clr(%d{dateformat}){blue} [%thread] %clr([%level]){magenta} %logger{50} - %msg%n"
+    file: "%d{dateformat} [%thread] %-5level %logger{50} - %msg%n"
+  level: # logger-level
+    root: info
+    com.morningstar.practice:
+      service: debug

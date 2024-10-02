@@ -1,0 +1,39 @@
+name: Website Monitor
+on:
+  schedule: # 工作日8:30-11:30,14:00-17:30每十分钟触发一次(北京时间)
+    - cron: '0,10,20 1,2,3,6,7,8,9 * * Mon-Fri'
+    - cron: '30,40,50 0,1,2,6,7,8 * * Mon-Fri'
+  # 允许手动触发测试
+  workflow_dispatch:
+env:
+  WEBSITE_URL: "https://morningstar369.com/"
+jobs:
+  status-monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check website status
+        id: check-website
+        run: |
+          echo "DATE=$(date '+%Y-%m-%d %T')" >> $GITHUB_OUTPUT
+          if curl -sSfI --max-time 5 "$WEBSITE_URL" > /dev/null; then
+            echo "STATUS=online" >> $GITHUB_OUTPUT
+          else
+            echo "STATUS=offline" >> $GITHUB_OUTPUT
+            echo "::error::Website is down!"
+          fi
+      - name: Send email alert if offline
+        if: steps.check-website.outputs.STATUS == 'offline'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.qq.com
+          server_port: 465
+          username: ${{ secrets.MAIL_SERVER_ACCOUNT }}
+          password: ${{ secrets.MAIL_SERVER_TOKEN }}
+          subject: "⚠️ 网站挂了！"
+          to: ${{ secrets.MAIL_ADMIN_ACCOUNT }}
+          from: "GitHub Actions Bot"
+          secure: true
+          html_body: |
+            <p>检测时间: <strong>${{ steps.check-website.outputs.DATE }}</strong></p>
+            <p><a href="${{ env.WEBSITE_URL }}">网站</a>无法访问！</p>
+            <p>请立即检查：<a href="https://github.com/${{ github.repository }}/actions">查看工作流日志</a></p>

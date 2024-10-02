@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.blog.dao.mapper.CategoryMapper">
+    <select id="selectRandomN" resultType="com.morningstar.blog.pojo.po.Category">
+        select *
+        from blog_category
+        order by rand()
+        limit #{N}
+    </select>
+    <select id="selectAllCategoryDetail" resultType="com.morningstar.blog.pojo.bo.CategoryDetail">
+        select C.id, C.name, count(*) as `count`
+        from blog_category as C
+                 right join blog_article as A on C.id = A.category_id
+        group by C.id
+        order by count desc
+    </select>
+</mapper>

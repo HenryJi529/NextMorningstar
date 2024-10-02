@@ -1,0 +1,69 @@
+spring:
+  # 配置mysql数据源
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${morningstar.mysql.host}:3306/morningstar?useUnicode=true&characterEncoding=UTF-8&allowMultiQueries=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: ${morningstar.mysql.password}
+    druid:
+      # 初始化时建立物理连接的个数。初始化发生在显示调用 init 方法，或者第一次 getConnection 时
+      initial-size: 6
+      # 最小连接池数量
+      min-idle: 2
+      # 最大连接池数量
+      max-active: 20
+      # 获取连接时最大等待时间，单位毫秒。配置了 maxWait 之后，缺省启用公平锁，
+      # 并发效率会有所下降，如果需要可以通过配置 useUnfairLock 属性为 true 使用非公平锁。
+      max-wait: 60000
+  data:
+  # 配置mongodb数据源
+    mongodb:
+      host: ${morningstar.mongodb.host}
+      port: 27017
+      username: root
+      password: ${morningstar.mongodb.password}
+      database: morningstar
+      authentication-database: admin
+  # 配置redis数据源
+    redis:
+      host: ${morningstar.redis.host}
+      port: 6379
+      password: ${morningstar.redis.password}
+      database: 0 #Redis数据库索引【默认为0】
+      lettuce:
+        pool:
+          max-active: 8 # 连接池最大连接数【使用负值表示没有限制】
+          max-wait: -1ms # 连接池最大阻塞等待时间【使用负值表示没有限制】
+          max-idle: 8 # 连接池中的最大空闲连接
+          min-idle: 1  # 连接池中的最小空闲连接
+      timeout: PT10S # 连接超时时间
+  # 配置neo4j数据源
+    neo4j:
+      database: neo4j
+  neo4j:
+    authentication:
+      username: neo4j
+      password: ${morningstar.neo4j.password}
+    uri: neo4j://${morningstar.neo4j.host}:7687
+
+# 配置mybatis
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.morningstar.*.pojo
+  configuration:
+    map-underscore-to-camel-case: true # 开启驼峰映射
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+    cache-enabled: false # 二级缓存
+    local-cache-scope: session # 一级缓存(通过@Transactional保证有效性)
+  #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 通过mybatis执行的sql以日志方式输出到终端
+  #  type-handlers-package: com.morningstar.*.dao.type # 目前直接使用注解注册
+  global-config:
+    db-config:
+      logic-delete-field: isDeleted # 约定全局删除字段
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# pagehelper配置
+pagehelper:
+  helper-dialect: mysql # 指定分页数据库类型(方言)【某些数据库可能不支持limit】
+  reasonable: true # 合理查询: e.g. 超过最大页，则查询最后一页

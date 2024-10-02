@@ -1,0 +1,4 @@
+morningstar:
+  schedule:
+    pool-size: 5
+    thread-name-prefix: "Schedule-"

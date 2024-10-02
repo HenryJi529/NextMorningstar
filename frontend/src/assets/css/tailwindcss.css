@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* NOTE: 解决tailwindcss覆盖daisyUI collapse引发的错误 */
+.collapse {
+    visibility: inherit !important;
+}
+

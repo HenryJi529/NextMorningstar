@@ -1,0 +1,45 @@
+morningstar:
+  perm:
+    role:
+      - tag: "super_admin"
+        status: true
+        name: "超级管理员"
+      - tag: "blog_admin"
+        status: true
+        name: "博客管理员"
+      - tag: "proxy_admin"
+        status: true
+        name: "代理管理员"
+    permission:
+      - tag: "sys:user:manage"
+        status: true
+        name: "系统用户管理权限"
+      - tag: "blog:category:manage"
+        status: true
+        name: "博客分类管理权限"
+      - tag: "blog:tag:manage"
+        status: true
+        name: "博客标签管理权限"
+      - tag: "blog:article:manage"
+        status: true
+        name: "博客文章管理权限"
+      - tag: "proxy:token:manage"
+        status: true
+        name: "代理令牌管理权限"
+      - tag: "proxy:sub:manage"
+        status: true
+        name: "代理订阅管理权限"
+      - tag: "proxy:node:manage"
+        status: true
+        name: "代理节点管理权限"
+    role-permission:
+      super_admin:
+        - "sys:user:manage"
+      blog_admin:
+        - "blog:category:manage"
+        - "blog:tag:manage"
+        - "blog:article:manage"
+      proxy_admin:
+        - "proxy:token:manage"
+        - "proxy:sub:manage"
+        - "proxy:node:manage"

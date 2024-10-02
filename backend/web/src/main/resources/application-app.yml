@@ -1,0 +1,12 @@
+morningstar:
+  app:
+    site:
+      domain: morningstar369.com
+      admin-email: ${MAIL_ADMIN_ACCOUNT}
+    blog:
+      description: "Dev & Life"
+      root-path: "/blog"
+      rss-title: "Morningstar Blog RSS Feed"
+      atom-title: "Morningstar Blog Atom Feed"
+      excerpt-sentences: 4
+      excerpt-words: 200

@@ -1,0 +1,134 @@
+.rocket-list-style {
+  list-style-image: url(../img/rocket.svg);
+}
+
+.h-page {
+  @apply overflow-hidden fixed h-dvh;
+}
+
+blog-search-term {
+  @apply text-red-500 dark:text-red-400 ;
+}
+
+@mixin markdown() {
+  overflow-x: hidden;
+
+  :deep(kbd) {
+    @apply bg-slate-100 dark:bg-gray-800 rounded-md p-1 text-lime-700 dark:text-lime-500;
+    overflow-wrap: break-word;
+  }
+  :deep(p) {
+    @apply break-words;
+  }
+  :deep(strong) {
+    @apply font-bold;
+  }
+  :deep(em) {
+    @apply italic;
+  }
+  :deep(p) {
+    @apply mb-4;
+  }
+  :deep(li) {
+    p {
+      @apply mb-[0.25rem];
+    }
+  }
+  :deep(ul), :deep(ol) {
+    @apply pl-8;
+  }
+  :deep(ol ol), :deep(ul ol), :deep(ol ul), :deep(ul ul) {
+    @apply pl-6;
+  }
+  :deep(ol) {
+    li {
+      @apply mb-[0.2rem];
+    }
+  }
+  :deep(ul) {
+    li {
+      @apply mb-[0.2rem];
+    }
+  }
+  :deep(ol) {
+    li {
+      @apply list-decimal;
+      li {
+        list-style-type: lower-roman;
+
+        li {
+          list-style-type: lower-alpha;
+
+          li {
+            list-style-type: lower-greek;
+          }
+        }
+      }
+    }
+  }
+  :deep(ul) {
+    li {
+      @apply list-disc;
+      li {
+        list-style-type: circle;
+
+        li {
+          list-style-type: square;
+
+          li {
+            list-style-type: "👉 ";
+          }
+        }
+      }
+    }
+  }
+  :deep(img) {
+    @apply block w-10/12 mx-auto my-2;
+  }
+  :deep(code:not(pre code)) {
+    @apply mx-[0.2rem];
+  }
+  :deep(code) {
+    @apply text-red-600 dark:text-lime-600 bg-slate-200 dark:bg-gray-800 rounded-[4px] p-[4px] text-sm;
+    font-family: monospace;
+    overflow-wrap: break-word;
+  }
+  :deep(pre) {
+    @apply mb-2 border-4 border-solid rounded-2xl relative dark:border-gray-500;
+    .hljs-copy-button {
+      @apply block absolute top-2 right-4;
+    }
+
+    code {
+      @apply overflow-scroll max-w-full block bg-transparent p-2 rounded-2xl;
+    }
+  }
+  :deep(table) {
+    @apply max-w-full mx-auto;
+
+    thead th {
+      @apply font-bold;
+    }
+
+    thead th, tbody td {
+      @apply border-2 border-solid border-fuchsia-50 dark:border-slate-500;
+    }
+
+    tbody {
+      tr:nth-child(odd) {
+        @apply bg-gray-200 dark:bg-slate-700;
+      }
+
+      tr:hover {
+        @apply bg-zinc-200 dark:bg-gray-600;
+      }
+    }
+  }
+  :deep(a) {
+    @apply font-bold mx-[0.2rem] decoration-2 underline text-cyan-600 hover:text-cyan-300;
+  }
+}
+
+.admin-manage-input {
+  @apply bg-transparent border-[1px] border-gray-400 dark:border-gray-700 focus:border-blue-400 flex-1 p-2 rounded-lg;
+}

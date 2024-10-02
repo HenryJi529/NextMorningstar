@@ -1,0 +1,23 @@
+server:
+  port: 8091
+spring:
+  application:
+    name: 晨星小站
+  config:
+    import: "optional:classpath:.env[.properties]"
+  jackson:
+    date-format: "yyyy-MM-dd HH:mm:ss" # 只影响Date类
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: 135MB # 100MB / 3 * 4【Base64】
+      max-request-size: 140MB
+  main:
+    banner-mode: console
+    allow-circular-references: false # 禁止循环依赖
+    allow-bean-definition-overriding: false # 禁止定义同名Bean
+  profiles:
+    active: @profiles.active@, log, doc, db, jwt, mq, email, qrcode, perm, async, schedule, others, app
+#  mvc:
+#    static-path-pattern: /static/** # NOTE: 已整合入`WebMvcConfig`

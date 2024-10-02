@@ -1,0 +1,41 @@
+.hljs {
+  .hljs-meta {
+    @apply text-amber-800 dark:text-emerald-500;
+  }
+
+  .hljs-type {
+    @apply text-amber-700;
+  }
+
+  .hljs-comment {
+    @apply text-gray-400;
+  }
+
+  .hljs-built_in {
+    @apply text-yellow-800;
+  }
+
+  .hljs-keyword {
+    @apply text-violet-600;
+  }
+
+  .hljs-title.class_ {
+    @apply text-yellow-600;
+  }
+
+  .hljs-title.function_ {
+    @apply text-yellow-500;
+  }
+
+  .hljs-variable {
+    @apply text-blue-600;
+  }
+
+  .hljs-name {
+    @apply text-blue-500;
+  }
+
+  .hljs-attr {
+    @apply text-pink-500;
+  }
+}
