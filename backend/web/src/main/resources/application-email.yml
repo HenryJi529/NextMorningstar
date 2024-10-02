@@ -1,0 +1,13 @@
+spring:
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: ${MAIL_SERVER_ACCOUNT}
+    password: ${MAIL_SERVER_TOKEN} # 客户端授权码
+    default-encoding: utf-8
+    properties:
+      mail:
+        debug: false # NOTE: 这里已经用`PrintUtil.suppressSystemOut`隐藏了debug
+        smtp:
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory # SSL连接配置

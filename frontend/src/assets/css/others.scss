@@ -1,0 +1,103 @@
+.rocket-list-style {
+  list-style-image: url(../img/rocket.svg);
+}
+
+.h-page {
+  @apply overflow-hidden fixed h-screen;
+  height: -webkit-fill-available;
+}
+
+.min-h-page-iphone {
+  min-height: -webkit-fill-available;
+}
+
+blog-search-term {
+  @apply text-red-500 dark:text-red-400 ;
+}
+
+@mixin markdown() {
+  overflow-x: hidden;
+
+  ::v-deep(kbd){
+    @apply bg-slate-100 dark:bg-gray-800 rounded-md p-1 text-lime-700 dark:text-lime-500;
+    overflow-wrap: break-word;
+  }
+  ::v-deep(p){
+    @apply break-words;
+  }
+  ::v-deep(strong){
+      @apply font-bold;
+  }
+  ::v-deep(em){
+      @apply italic;
+  }
+  ::v-deep(ol) {
+    li {
+      @apply list-decimal;
+      li {
+        list-style-type: lower-roman;
+        li {
+          list-style-type: lower-alpha;
+          li {
+            list-style-type: lower-greek;
+          }
+        }
+      }
+    }
+  }
+  ::v-deep(ul) {
+    li {
+      @apply list-disc;
+      li {
+        list-style-type: circle;
+        li {
+          list-style-type: square;
+          li {
+            list-style-type: "👉 ";
+          }
+        }
+      }
+    }
+  }
+  ::v-deep(code) {
+    @apply text-red-600 dark:text-lime-600 bg-slate-200 dark:bg-gray-800 rounded-[4px] p-[4px] text-sm;
+    font-family: monospace;
+    overflow-wrap: break-word;
+  }
+  ::v-deep(pre){
+    @apply mb-2 border-4 border-solid rounded-2xl relative dark:border-gray-500;
+    .hljs-copy-button {
+      @apply block absolute top-2 right-4;
+    }
+    code {
+      @apply overflow-scroll max-w-full block bg-transparent p-2 rounded-2xl;
+    }
+  }
+  ::v-deep(table) {
+    @apply max-w-full mx-auto;
+
+    thead th {
+      @apply font-bold;
+    }
+
+    thead th, tbody td {
+      @apply border-2 border-solid border-fuchsia-50 dark:border-slate-500;
+    }
+
+    tbody {
+      tr:nth-child(odd) {
+        @apply bg-gray-200 dark:bg-slate-700;
+      }
+      tr:hover {
+        @apply bg-zinc-200 dark:bg-gray-600;
+      }
+    }
+  }
+  ::v-deep(a) {
+    @apply font-bold mx-[0.2rem] decoration-2 underline text-cyan-600 hover:text-cyan-300;
+  }
+}
+
+.admin-manage-input {
+  @apply bg-transparent border-[1px] border-gray-400 dark:border-gray-700 focus:border-blue-400 flex-1 p-2 rounded-lg;
+}
