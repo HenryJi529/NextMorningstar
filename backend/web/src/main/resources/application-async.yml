@@ -1,0 +1,7 @@
+morningstar:
+  async:
+    core-pool-size: 5
+    max-pool-size: 10
+    thread-name-prefix: "Async-"
+    queue-capacity: 25
+    keep-alive-seconds: 300

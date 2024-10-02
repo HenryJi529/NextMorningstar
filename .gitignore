@@ -1,0 +1,17 @@
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+.VSCodeCounter/
+.claude/
+.codex/
+.cursor/
+.qoder/
+.trae/
+.mcp.json
+.zread/
+openspec/
+
+.env
+/deploy/backup/*
+/TEMP

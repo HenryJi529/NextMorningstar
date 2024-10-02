@@ -1,0 +1,18 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+      show-components: always # 3.x 新增：显示各健康检查组件详情
+    shutdown:
+      enabled: true # 显式启用 shutdown 端点（POST /actuator/shutdown）
+  info:
+    env:
+      enabled: true  # 3.x 默认关闭，显式开启环境信息
+    java:
+      enabled: true  # 显示 JVM 信息
+    os:
+      enabled: true  # 显示操作系统信息
