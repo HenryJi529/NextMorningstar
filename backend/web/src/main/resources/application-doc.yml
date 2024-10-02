@@ -1,0 +1,10 @@
+springdoc:
+  api-docs:
+    path: /api/docs/json
+  swagger-ui:
+    path: /api/docs/ui
+  packagesToScan:
+    - com.morningstar.common.web.controller
+    - com.morningstar.kill.web.controller
+    - com.morningstar.love.web.controller
+    - com.morningstar.blog.web.controller

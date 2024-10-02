@@ -1,0 +1,7 @@
+morningstar:
+  blog:
+    excerpt-length: 4
+    description: "Dev & Life"
+    root-path: "/blog"
+    rss-title: "Morningstar Blog RSS Feed"
+    atom-title: "Morningstar Blog Atom Feed"

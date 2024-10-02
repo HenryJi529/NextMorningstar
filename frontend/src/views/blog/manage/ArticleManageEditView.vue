@@ -1,0 +1,40 @@
+<script setup lang="ts">
+import {useRoute} from "vue-router";
+import {ref} from "vue";
+import type {ArticleDetail, UpdateArticleRequestVo} from "@/types/blog";
+import {API_BLOG_ARTICLE_DETAIL} from "@/constants/ApiConstant";
+import CommonManageEdit from "@/components/blog/CommonManageEdit.vue";
+import ArticleFields from "@/components/blog/ArticleFields.vue";
+
+const route = useRoute();
+
+const resolver = (articleDetail: ArticleDetail) => {
+    return {
+        title: articleDetail.article.title,
+        content: articleDetail.article.content,
+        categoryId: articleDetail.category.id,
+        tagIds: articleDetail.tags.map(tag => tag.id),
+    }
+}
+
+const data = ref<UpdateArticleRequestVo>({
+    id:  route.params.id as string,
+    title: "",
+    content: "",
+    categoryId: 0,
+    tagIds: []
+});
+
+</script>
+
+<template>
+    <common-manage-edit name="文章" slug="article" :api="API_BLOG_ARTICLE_DETAIL" :data="data" :resolver="resolver">
+        <template #fields>
+            <article-fields :data="data"/>
+        </template>
+    </common-manage-edit>
+</template>
+
+<style scoped lang="scss">
+
+</style>
