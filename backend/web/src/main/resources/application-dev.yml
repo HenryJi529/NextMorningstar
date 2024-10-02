@@ -1,0 +1,43 @@
+morningstar:
+  simulation:
+    interval: 60
+  oauth2:
+    github-client-id: Ov23ct1bjDaoSfh9hQLj
+    github-client-secret: ${GITHUB_OAUTH_CLIENT_SECRET_DEV}
+  mysql:
+    host: localhost
+    password: 1234asdw
+  redis:
+    host: 127.0.0.1
+    password: 1234asdw
+  mongodb:
+    host: localhost
+    password: 1234asdw
+  es:
+    hostname: "localhost"
+    port: 9200
+  rabbitmq:
+    host: localhost
+    password: 1234asdw
+  neo4j:
+    host: localhost
+    password: 1234asdw
+  security:
+    cors:
+      origins: "http://127.0.0.1:8090,http://localhost:8090"
+  account:
+    user:
+      - username: "henry"
+        password: "1234asdw"
+        nickname: 河海小爬虫
+      - username: "sherry"
+        password: "123456"
+    user-role:
+      - username: "henry"
+        role-tag: "super_admin"
+      - username: "henry"
+        role-tag: "blog_admin"
+      - username: "henry"
+        role-tag: "proxy_admin"
+server:
+  address: 0.0.0.0
