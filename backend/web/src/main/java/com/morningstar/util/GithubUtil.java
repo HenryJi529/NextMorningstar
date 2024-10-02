@@ -1,0 +1,155 @@
+package com.morningstar.util;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+@Component
+@Slf4j
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+public class GithubUtil {
+    private final RestTemplate restTemplate;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @PostConstruct
+    public void init() {
+//        log.info("加载GithubUtil...");
+    }
+
+    private HttpHeaders getHeaders(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        headers.setAccept(Collections.singletonList(MediaType.valueOf("application/vnd.github+json")));
+        headers.set("X-GitHub-Api-Version", "2022-11-28");
+        return headers;
+    }
+
+    private HttpHeaders getHeaders(String token) {
+        HttpHeaders headers = getHeaders();
+        headers.set("Authorization", "token " + token);
+        return headers;
+    }
+
+    private JsonNode parseJson(String body){
+        if(body == null){
+            return null;
+        }
+        try {
+            return objectMapper.readTree(body);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String formatJson(Object params){
+        try {
+            return objectMapper.writeValueAsString(params);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public JsonNode getPublicRepo(String username, String repoName) {
+        HttpEntity<String> entity = new HttpEntity<>(getHeaders());
+        String url = String.format("https://api.github.com/repos/%s/%s", username, repoName);
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+
+        return parseJson(response.getBody());
+    }
+
+    public JsonNode listPublicRepos(String username) {
+        HttpEntity<String> entity = new HttpEntity<>(getHeaders());
+        String url = String.format("https://api.github.com/users/%s/repos", username);
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+
+        return parseJson(response.getBody());
+    }
+
+    public JsonNode createPublicRepo(String token, String repoName) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("name", repoName);
+        params.put("private", false);
+        HttpEntity<String> entity = new HttpEntity<>(formatJson(params), getHeaders(token));
+        ResponseEntity<String> response = restTemplate.exchange("https://api.github.com/user/repos", HttpMethod.POST, entity, String.class);
+
+        return parseJson(response.getBody());
+    }
+
+    public JsonNode deleteRepo(String token, String repoName) {
+        String username = getUser(token).get("login").asText();
+
+        HttpEntity<String> entity = new HttpEntity<>(getHeaders(token));
+        String url = String.format("https://api.github.com/repos/%s/%s", username, repoName);
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class);
+
+        return parseJson(response.getBody());
+    }
+
+    public JsonNode getUser(String token){
+        HttpEntity<String> entity = new HttpEntity<>(getHeaders(token));
+        ResponseEntity<String> response = restTemplate.exchange("https://api.github.com/user", HttpMethod.GET, entity, String.class);
+
+        return parseJson(response.getBody());
+    }
+
+    public JsonNode createFile(String token, String repoName, String path, byte[] content){
+        String owner = getUser(token).get("login").asText();
+        String email = getUser(token).get("email").asText();
+        String url = String.format("https://api.github.com/repos/%s/%s/contents/%s", owner, repoName, path);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("message", "create file");
+        Map<String, String> committer = new HashMap<>();
+        committer.put("name", owner);
+        committer.put("email", email);
+        params.put("committer", committer);
+        params.put("content",  Base64.getEncoder().encodeToString(content));
+
+        HttpEntity<String> entity = new HttpEntity<>(formatJson(params), getHeaders(token));
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, entity, String.class);
+
+        return parseJson(response.getBody());
+    }
+
+    public JsonNode getFile(String token, String repoName, String path){
+        String owner = getUser(token).get("login").asText();
+        String url = String.format("https://api.github.com/repos/%s/%s/contents/%s", owner, repoName, path);
+
+        HttpEntity<String> entity = new HttpEntity<>(getHeaders(token));
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+
+        return parseJson(response.getBody());
+    }
+
+    public JsonNode deleteFile(String token, String repoName, String path){
+        String owner = getUser(token).get("login").asText();
+        String email = getUser(token).get("email").asText();
+        String sha = getFile(token, repoName, path).get("sha").asText();
+        String url = String.format("https://api.github.com/repos/%s/%s/contents/%s", owner, repoName, path);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("message", "delete file");
+        Map<String, String> committer = new HashMap<>();
+        committer.put("name", owner);
+        committer.put("email", email);
+        params.put("committer", committer);
+        params.put("sha", sha);
+
+        HttpEntity<String> entity = new HttpEntity<>(formatJson(params), getHeaders(token));
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.DELETE, entity, String.class);
+        return parseJson(response.getBody());
+    }
+}
