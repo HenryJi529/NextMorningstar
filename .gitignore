@@ -1,0 +1,5 @@
+.DS_Store
+Thumbs.db
+.VSCodeCounter/
+.env
+/deploy/backup/*
