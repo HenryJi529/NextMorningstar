@@ -1,0 +1,17 @@
+.ant-message-notice-custom {
+  .ant-message-notice-content {
+    @apply dark:bg-gray-700 dark:text-gray-100;
+  }
+}
+
+.ant-modal-root .ant-modal .ant-modal-content {
+  .ant-modal-title {
+    @apply dark:bg-gray-700 dark:text-gray-100;
+  }
+
+  @apply dark:bg-gray-700 dark:text-gray-100;
+}
+
+.ant-tabs {
+  @apply dark:text-inherit text-inherit;
+}
