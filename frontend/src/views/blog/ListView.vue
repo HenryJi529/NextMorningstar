@@ -1,0 +1,164 @@
+<script setup lang="ts">
+
+import {useRoute, useRouter} from "vue-router";
+import {onMounted, reactive, ref, watch} from "vue";
+import axios from "axios";
+import {API_BLOG_ARTICLE_ALL, API_BLOG_ARTICLE_CATEGORY, API_BLOG_ARTICLE_SEARCH, API_BLOG_ARTICLE_TAG} from "@/constants/ApiConstant";
+import type {R} from "@/types/common";
+import type {PageResult} from "@/types/common";
+import type {ArticleDetail} from "@/types/blog";
+import ArticleInfoBar from "@/components/blog/ArticleInfoBar.vue";
+import MainBody from "@/components/blog/MainBody.vue";
+
+const route = useRoute();
+const router = useRouter();
+
+const DEFAULT_PAGE_SIZE = 7;
+const DEFAULT_PAGE_NUM = 1;
+
+const queryParams = reactive<{
+    term: string | undefined,
+    pageNum: number
+    categoryId: number | undefined,
+    tagId: number | undefined,
+}>({
+    term: undefined,
+    pageNum: DEFAULT_PAGE_NUM,
+    categoryId: undefined,
+    tagId: undefined,
+})
+
+const parseQueryParams = () => {
+    if("term" in route.query){
+        queryParams.term = getSingleParam(route.query.term as string[]| string);
+    }
+    if("pageNum" in route.query){
+        queryParams.pageNum = parseInt(getSingleParam(route.query.pageNum as string[]| string));
+    }
+    if("categoryId" in route.query){
+        queryParams.categoryId = parseInt(getSingleParam(route.query.categoryId as string[]| string));
+    }
+    if("tagId" in route.query){
+        queryParams.tagId = parseInt(getSingleParam(route.query.tagId as string[]| string));
+    }
+}
+
+const clearQueryParams = () => {
+    queryParams.term = undefined;
+    queryParams.pageNum = DEFAULT_PAGE_NUM;
+    queryParams.categoryId = undefined
+    queryParams.tagId = undefined
+}
+
+const pageResult = ref<PageResult<ArticleDetail>>();
+
+const getSingleParam = (param: string[]| string) => {
+    if (Array.isArray(param)) {
+        return param[0];
+    } else {
+        return param;
+    }
+}
+
+const getArticleDetailList = async () => {
+    let url;
+    if(queryParams.term){
+        url = `${API_BLOG_ARTICLE_SEARCH}?term=${queryParams.term}&pageSize=${DEFAULT_PAGE_SIZE}&pageNum=${queryParams.pageNum}`;
+    }else if(queryParams.categoryId){
+        url = `${API_BLOG_ARTICLE_CATEGORY.replace('{id}', queryParams.categoryId.toString())}?pageSize=${DEFAULT_PAGE_SIZE}&pageNum=${queryParams.pageNum}`;
+    }else if(queryParams.tagId){
+        url = `${API_BLOG_ARTICLE_TAG.replace('{id}', queryParams.tagId.toString())}?pageSize=${DEFAULT_PAGE_SIZE}&pageNum=${queryParams.pageNum}`;
+    }else{
+        url = `${API_BLOG_ARTICLE_ALL}?pageSize=${DEFAULT_PAGE_SIZE}&pageNum=${queryParams.pageNum}`;
+    }
+    const response: R<PageResult<ArticleDetail>> = (await axios.get(url)).data
+    pageResult.value = response.data;
+}
+
+const handleQuery = async () => {
+    parseQueryParams();
+    if(isNaN(queryParams.pageNum) || queryParams.pageNum < 0){
+        // 矫正分页参数参数
+        queryParams.pageNum = DEFAULT_PAGE_NUM;
+        await router.push({name: 'blog-list', query: queryParams})
+    }else {
+        await getArticleDetailList();
+    }
+}
+
+const viewPrePage = async () => {
+    queryParams.pageNum--;
+    await router.push({name: 'blog-list', query: queryParams})
+}
+
+const viewNextPage = async () => {
+    queryParams.pageNum++;
+    await router.push({name: 'blog-list', query: queryParams})
+}
+
+
+watch(()=> route.fullPath, async ()=> {
+    clearQueryParams();
+    await handleQuery();
+});
+
+onMounted(async ()=>{
+    await handleQuery();
+})
+
+
+</script>
+
+<template>
+    <main-body>
+        <template #custom-main-part>
+            <div v-if="pageResult">
+                <div v-if="pageResult.currentPageSize > 0" class="px-4">
+                    <!-- 文章列表 -->
+                    <div class="py-4 flex flex-col space-y-4">
+                        <template v-for="articleDetail in pageResult.records">
+                            <div class="overflow-hidden w-full">
+                                <div class="cursor-pointer" @click="router.push({name: 'blog-detail', params: {id: articleDetail.article.id}})">
+                                    <div class="text-center text-2xl hover:text-primary">
+                                        {{articleDetail.article.title}}
+                                    </div>
+                                </div>
+                                <article-info-bar :article-detail="articleDetail" class="text-sm"/>
+                                <div class="indent-8 break-words">
+                                    {{articleDetail.article.content}}
+                                </div>
+                                <div class="text-center flex justify-center items-center space-x-2 cursor-pointer" @click="router.push({name: 'blog-detail', params: {id: articleDetail.article.id}})">
+                                    <span class="italic hover:animate-pulse">继续阅读</span>
+                                    <font-awesome-icon :icon="['fas', 'arrow-right']" />
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <!-- 分页 -->
+                    <div class="flex justify-between text-xl p-2 px-4" v-if="pageResult">
+                        <div class="cursor-pointer flex items-center space-x-1" @click="viewPrePage" :class="{'invisible': pageResult.pageNum == 1}">
+                            <font-awesome-icon :icon="['fas', 'angles-left']" />
+                            <span class="font-bold">上一页</span>
+                        </div>
+                        <div class="font-bold cursor-pointer">
+                            {{pageResult.pageNum}} / {{pageResult.totalPageNum}}
+                        </div>
+                        <div class="cursor-pointer flex items-center space-x-1" @click="viewNextPage" :class="{'invisible': pageResult.pageNum == pageResult.totalPageNum}">
+                            <span class="font-bold">下一页</span>
+                            <font-awesome-icon :icon="['fas', 'angles-right']" />
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="h-32 flex justify-center items-center">
+                    <div class="text-center font-bold text-6xl">
+                        <div>数据不存在</div>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </main-body>
+</template>
+
+<style scoped lang="scss">
+
+</style>

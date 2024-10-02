@@ -1,0 +1,17 @@
+server:
+  port: 8091
+spring:
+  application:
+    name: 晨星小站
+  config:
+    import: "optional:classpath:.env[.properties]"
+  jackson:
+    date-format: "yyyy-MM-dd HH:mm:ss"
+    time-zone: GMT+8
+    default-property-inclusion: non_null
+  main:
+    banner-mode: off
+  profiles:
+    active: log, cache, doc, db, security, mq, qiniu, init, github, love, blog, dev
+#  mvc:
+#    static-path-pattern: /static/**

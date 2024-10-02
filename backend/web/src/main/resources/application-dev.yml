@@ -1,0 +1,33 @@
+morningstar:
+  mysql:
+    host: localhost
+    port: 3307
+    username: root
+    password: 1234asdw
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: 1234asdw
+  mongodb:
+    host: localhost
+    port: 27017
+    username: root
+    password: 1234asdw
+    database: morningstar
+  init:
+    account:
+      user:
+        - username: "henry"
+          password: "1234asdw"
+          is-admin: true
+          nickname: 河海小爬虫
+          sex: "男"
+        - username: "sherry"
+          password: "123456"
+          is-admin: false
+          sex: "女"
+      user-role:
+        - username: "henry"
+          role-tag: "super_admin"
+        - username: "henry"
+          role-tag: "blog_admin"

@@ -1,0 +1,8 @@
+logging:
+  level:
+    com:
+      morningstar:
+        kill:
+          dao: debug
+          service: info
+          web: info
