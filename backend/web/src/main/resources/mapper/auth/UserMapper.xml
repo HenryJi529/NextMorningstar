@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.common.dao.mapper.UserMapper">
+    <select id="selectByUsername" resultType="com.morningstar.common.pojo.po.User">
+        select *
+        from user
+        where username = #{username}
+          and is_deleted = false
+    </select>
+    <select id="selectByEmail" resultType="com.morningstar.common.pojo.po.User">
+        select *
+        from user
+        where email = #{email}
+          and is_deleted = false
+    </select>
+    <select id="selectByFuzzyValue" resultType="com.morningstar.common.pojo.po.User">
+        select *
+        from user
+        <where>
+            <if test="fuzzyValue != null and fuzzyValue != ''">
+                and (username like concat('%',#{fuzzyValue},'%')) or (nickname like concat('%',#{fuzzyValue},'%')) or
+                (email like concat('%',#{fuzzyValue},'%'))
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+    <select id="selectAllByPage" resultType="com.morningstar.common.pojo.po.User">
+        select *
+        from user
+        where is_deleted = false
+    </select>
+    <select id="selectRandomN" resultType="com.morningstar.common.pojo.po.User">
+        SELECT *
+        FROM user
+        where is_deleted = false
+        ORDER BY RAND()
+        LIMIT #{n}
+    </select>
+</mapper>
