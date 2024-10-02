@@ -1,0 +1,38 @@
+{
+  "settings": {
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "analyzer": "ik_smart",
+        "copy_to": "all"
+      },
+      "content": {
+        "type": "text",
+        "analyzer": "ik_smart",
+        "copy_to": "all"
+      },
+      "createTime": {
+        "type": "date"
+      },
+      "updateTime": {
+        "type": "date"
+      },
+      "views": {
+        "type": "integer"
+      },
+      "category": {
+        "type": "keyword"
+      },
+      "tags": {
+        "type": "keyword"
+      },
+      "all": {
+        "type": "text",
+        "analyzer": "ik_max_word"
+      }
+    }
+  }
+}

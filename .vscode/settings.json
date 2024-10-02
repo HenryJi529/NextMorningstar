@@ -1,0 +1,6 @@
+{
+    "java.autobuild.enabled": false,
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python.terminal.useEnvFile": true,
+    "java.compile.nullAnalysis.mode": "automatic"
+}

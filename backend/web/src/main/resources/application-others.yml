@@ -1,0 +1,8 @@
+morningstar:
+  qiniu:
+    access-key: ${QINIU_ACCESS_KEY}
+    secret-key: ${QINIU_SECRET_KEY}
+    bucket: morningstar-369
+    domain: https://qiniu.morningstar369.com
+  github:
+    token: ${GITHUB_PAT}

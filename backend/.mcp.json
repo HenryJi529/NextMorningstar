@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "mysql": {
+      "command": "mcp-mysql",
+      "args": [
+        "mysql://root:1234asdw@localhost:3306/morningstar"
+      ],
+      "type": "stdio"
+    },
+    "redis": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-redis",
+        "redis://:@localhost:6379"
+      ]
+    }
+  }
+}

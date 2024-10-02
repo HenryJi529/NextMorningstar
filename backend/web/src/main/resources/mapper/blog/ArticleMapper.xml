@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.blog.dao.mapper.ArticleMapper">
+    <resultMap id="articleDetailResultMap" type="com.morningstar.blog.pojo.bo.ArticleDetail">
+        <id column="article_id"/>
+        <association property="article" javaType="com.morningstar.blog.pojo.po.Article">
+            <id property="id" column="article_id" javaType="Long"/>
+            <result property="title" column="article_title"/>
+            <result property="content" column="article_content"/>
+            <result property="categoryId" column="article_category_id"/>
+            <result property="views" column="article_views"/>
+            <result property="createTime" column="article_create_time"/>
+            <result property="updateTime" column="article_update_time"/>
+        </association>
+        <association property="category" javaType="com.morningstar.blog.pojo.po.Category">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+        </association>
+        <collection property="tags" ofType="com.morningstar.blog.pojo.po.Tag">
+            <id property="id" column="tag_id"/>
+            <result property="name" column="tag_name"/>
+        </collection>
+    </resultMap>
+
+    <sql id="articleDetailColumns">
+        <if test="true">
+            A.id as `article_id`,
+            A.title as `article_title`, A.content as `article_content`,
+            A.category_id as `article_category_id`,
+            A.views as `article_views`,
+            A.create_time as `article_create_time`, A.update_time as `article_update_time`,
+
+            C.id as `category_id`, C.name as `category_name`,
+
+            T.id as `tag_id`, T.name as `tag_name`
+        </if>
+    </sql>
+
+    <select id="selectRandomN" resultType="com.morningstar.blog.pojo.po.Article">
+        select *
+        from blog_article
+        order by rand()
+        limit #{N}
+    </select>
+    <select id="selectArticleDetailByArticleId" resultMap="articleDetailResultMap">
+        select
+        <include refid="articleDetailColumns"/>
+        from blog_article as A
+        left join blog_article_tag as AT on A.id = AT.article_id
+        left join blog_tag as T on T.id = AT.tag_id
+        left join blog_category as C on C.id = A.category_id
+        where A.id = #{articleId}
+    </select>
+    <select id="selectAllArticleDetail" resultMap="articleDetailResultMap">
+        select
+        <include refid="articleDetailColumns"/>
+        from (
+        select *
+        from blog_article
+        order by update_time desc
+        limit #{limit} offset #{offset}
+        ) A
+        left join blog_category as C on C.id = A.category_id
+        left join blog_article_tag as AT on AT.article_id = A.id
+        left join blog_tag as T on AT.tag_id = T.id
+        order by A.update_time desc
+        ;
+    </select>
+    <select id="selectArticleDetailByCategoryId" resultMap="articleDetailResultMap">
+        select
+        <include refid="articleDetailColumns"/>
+        from (
+        select *
+        from blog_article
+        where category_id = #{categoryId}
+        order by update_time desc
+        limit #{limit} offset #{offset}
+        ) A
+        left join blog_category as C on C.id = A.category_id
+        left join blog_article_tag as AT on AT.article_id = A.id
+        left join blog_tag as T on T.id = AT.tag_id
+        order by A.update_time desc
+        ;
+    </select>
+    <select id="selectArticleDetailByTagId" resultMap="articleDetailResultMap">
+        select
+        <include refid="articleDetailColumns"/>
+        from (
+        select *
+        from blog_article
+        where id in ( select article_id from blog_article_tag where tag_id = #{tagId})
+        limit #{limit} offset #{offset}
+        ) A
+        left join blog_category as C on C.id = A.category_id
+        left join blog_article_tag as AT on AT.article_id = A.id
+        left join blog_tag as T on T.id = AT.tag_id
+        order by A.update_time desc
+        ;
+    </select>
+</mapper>
