@@ -1,0 +1,13 @@
+{
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        ".env": ".env.development, .env.sit, .env.production",
+        "tsconfig.json": "tsconfig.*.json, env.d.ts",
+        "package.json": "package-lock.json, yarn.lock"
+    },
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+}

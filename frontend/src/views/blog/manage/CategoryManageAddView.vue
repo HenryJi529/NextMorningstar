@@ -1,0 +1,25 @@
+<script lang="ts" setup>
+import { ref } from 'vue';
+import { API_BLOG_CATEGORY_ALL } from '@/constants/api';
+import type { CreateCategoryRequestVo } from '@/types/blog';
+import CommonManageAddForm from '@/components/manage/CommonManageAddForm.vue';
+import OnlyNameField from '@/components/manage/OnlyNameField.vue';
+
+const data = ref<CreateCategoryRequestVo>({
+    name: '',
+});
+</script>
+
+<template>
+    <common-manage-add-form
+        :api="API_BLOG_CATEGORY_ALL"
+        :data="data"
+        app="blog"
+        resource="category">
+        <template #fields>
+            <only-name-field :name="data.name" @update-name="name => (data.name = name)" />
+        </template>
+    </common-manage-add-form>
+</template>
+
+<style lang="scss" scoped></style>
