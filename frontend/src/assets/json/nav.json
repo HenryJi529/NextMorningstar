@@ -1,0 +1,1149 @@
+[
+  {
+    "name": "站长作品",
+    "slug": "work",
+    "icon": "['fas', 'rocket']",
+    "items": [
+      {
+        "name": "神兔笑话",
+        "url": "/joke",
+        "image": "/media/nav/img/Work/joke.jpeg",
+        "desc": "每日更新令人蚌埠住的笑话"
+      },
+      {
+        "name": "爱の相册",
+        "url": "/love",
+        "image": "/love.png",
+        "desc": "随机展示爱の照片"
+      },
+      {
+        "name": "晨星导航",
+        "url": "/nav",
+        "image": "/nav.png",
+        "desc": "这是个为开发者准备的导航页"
+      },
+      {
+        "name": "链接分享",
+        "url": "/share",
+        "image": "/media/nav/img/Work/share.png",
+        "desc": "只用来保链接证分享者的隐私"
+      },
+      {
+        "name": "图像识别",
+        "url": "/recognizer",
+        "image": "/media/nav/img/Work/recognizer.png",
+        "desc": "只用来保链接证分享者的隐私"
+      },
+      {
+        "name": "晨星博客",
+        "url": "/blog",
+        "image": "/blog.jpg",
+        "desc": "Web开发小学生的个人博客"
+      },
+      {
+        "name": "聚合阅读",
+        "url": "/rss",
+        "image": "/media/nav/img/Work/rss.png",
+        "desc": "仿照Feed43生成RSS源"
+      }
+    ]
+  },
+  {
+    "name": "项目管理",
+    "slug": "admin",
+    "icon": "['fas', 'hammer']",
+    "requireAdmin": true,
+    "items": [
+      {
+        "name": "计算引擎",
+        "url": "https://console.cloud.tencent.com/cvm/instance/",
+        "image": "/media/nav/img/Admin/计算引擎.png",
+        "desc": "腾讯云虚拟机实例管理"
+      },
+      {
+        "name": "资金管理",
+        "url": "https://beancount.morningstar369.com/",
+        "image": "/media/nav/img/Admin/资金管理.jpeg",
+        "desc": "通过Beancount管理账本"
+      },
+      {
+        "name": "域名配置",
+        "url": "https://ap.www.namecheap.com/Domains/DomainControlPanel/morningstar369.com/advancedns",
+        "image": "/media/nav/img/Admin/域名配置.png",
+        "desc": "NameCheap子域名配置"
+      },
+      {
+        "name": "站点分析",
+        "url": "https://matomo.morningstar369.com",
+        "image": "/media/nav/img/Admin/站点分析.png",
+        "desc": "通过Matomo分析流量"
+      },
+      {
+        "name": "代码编辑",
+        "url": "https://code.morningstar369.com/",
+        "image": "/media/nav/img/Admin/代码编辑.png",
+        "desc": "通过code-server管理网站代码"
+      },
+      {
+        "name": "容器管理",
+        "url": "https://portainer.morningstar369.com/#/home",
+        "image": "/media/nav/img/Admin/容器管理.png",
+        "desc": "通过portainer管理容器"
+      },
+      {
+        "name": "反向代理",
+        "url": "https://frps.morningstar369.com",
+        "image": "/media/nav/img/Admin/反向代理.png",
+        "desc": "通过FRP反向代理"
+      },
+      {
+        "name": "文件备份",
+        "url": "ftp://ftp.morningstar369.com",
+        "image": "/media/nav/img/Admin/文件备份.png",
+        "desc": "通过FTP实现备份"
+      },
+      {
+        "name": "微信公众号",
+        "url": "https://mp.weixin.qq.com/cgi-bin/home",
+        "image": "/media/nav/img/Admin/微信公众号.png",
+        "desc": "嘉鱼居的微信公众号后台"
+      }
+    ]
+  },
+  {
+    "name": "社区搜索",
+    "slug": "community",
+    "icon": "['fas', 'magnifying-glass']",
+    "items": [
+      {
+        "name": "博客园",
+        "url": "https://www.cnblogs.com/",
+        "image": "/media/nav/img/Community/博客园.png",
+        "desc": "博客模式的技术分享社区"
+      },
+      {
+        "name": "思否",
+        "url": "https://segmentfault.com/",
+        "image": "/media/nav/img/Community/思否.png",
+        "desc": "中国版的StackOverFlow"
+      },
+      {
+        "name": "掘金",
+        "url": "https://juejin.cn/",
+        "image": "/media/nav/img/Community/掘金.png",
+        "desc": "页面比较清爽的优质平台"
+      },
+      {
+        "name": "V2EX",
+        "url": "https://www.v2ex.com/",
+        "image": "/media/nav/img/Community/V2EX.png",
+        "desc": "一个关于分享和探索的地方"
+      },
+      {
+        "name": "知乎",
+        "url": "https://www.zhihu.com/",
+        "image": "/media/nav/img/Community/知乎.png",
+        "desc": "很多程序猿喜欢泡在这儿"
+      },
+      {
+        "name": "DEV社区",
+        "url": "https://dev.to/",
+        "image": "/media/nav/img/Community/DEV.png",
+        "desc": "优秀的国际开发者社区"
+      },
+      {
+        "name": "StackOverflow",
+        "url": "https://stackoverflow.com/",
+        "image": "/media/nav/img/Community/StackOverflow.png",
+        "desc": "国外编程相关的IT技术问答网站"
+      },
+      {
+        "name": "LaTeX工作室",
+        "url": "https://ask.latexstudio.net/ask/",
+        "image": "/media/nav/img/Community/LaTex问答社区.png",
+        "desc": "新新Latex问答社区"
+      },
+      {
+        "name": "Github",
+        "url": "https://github.com/",
+        "image": "/media/nav/img/Community/Github.png",
+        "desc": "用于获取灵感的技术平台"
+      },
+      {
+        "name": "Kaggle",
+        "url": "https://www.kaggle.com/",
+        "image": "/media/nav/img/Community/Kaggle.svg",
+        "desc": "机器学习与数据分析学习交流平台"
+      },
+      {
+        "name": "FCC论坛",
+        "url": "https://forum.freecodecamp.org/",
+        "image": "/media/nav/img/Community/FCCForum.png",
+        "desc": "正在养成的开发者聚集地"
+      },
+      {
+        "name": "Discord",
+        "url": "https://discord.com/guild-discovery",
+        "image": "/media/nav/img/Community/Discord.png",
+        "desc": "新型游戏、教育社区"
+      }
+    ]
+  },
+  {
+    "name": "操作手册",
+    "slug": "doc",
+    "icon": "['fas', 'book-open']",
+    "items": [
+      {
+        "name": "Git",
+        "url": "https://rogerdudler.github.io/git-guide/index.zh.html",
+        "image": "/media/nav/img/Manual/Git.svg"
+      },
+      {
+        "name": "Bash",
+        "url": "https://wangchujiang.com/reference/docs/bash.html",
+        "image": "/media/nav/img/Manual/Bash.png"
+      },
+      {
+        "name": "C",
+        "url": "https://wangdoc.com/clang/index.html",
+        "image": "/media/nav/img/Manual/C.svg"
+      },
+      {
+        "name": "Makefile",
+        "url": "https://seisman.github.io/how-to-write-makefile/index.html",
+        "image": "/media/nav/img/Manual/Makefile.png"
+      },
+      {
+        "name": "GithubActions",
+        "url": "https://wangchujiang.com/reference/docs/github-actions.html",
+        "image": "/media/nav/img/Manual/GithubActions.svg"
+      },
+      {
+        "name": "Markdown",
+        "url": "https://wangchujiang.com/reference/docs/markdown.html",
+        "image": "/media/nav/img/Manual/Markdown.svg"
+      },
+      {
+        "name": "LaTex",
+        "url": "https://wangchujiang.com/reference/docs/latex.html",
+        "image": "/media/nav/img/Manual/LaTex.svg"
+      },
+      {
+        "name": "Regex",
+        "url": "https://regexlearn.com/zh-cn/cheatsheet",
+        "image": "/media/nav/img/Manual/Regex.png"
+      },
+      {
+        "name": "Docker",
+        "url": "https://yeasy.gitbook.io/docker_practice/",
+        "image": "/media/nav/img/Manual/Docker.svg"
+      },
+      {
+        "name": "Nginx",
+        "url": "https://wangchujiang.com/reference/docs/nginx.html",
+        "image": "/media/nav/img/Manual/Nginx.svg"
+      },
+      {
+        "name": "MySQL",
+        "url": "https://wangchujiang.com/reference/docs/mysql.html",
+        "image": "/media/nav/img/Manual/MySQL.svg"
+      },
+      {
+        "name": "Redis",
+        "url": "https://www.redis.net.cn/",
+        "image": "/media/nav/img/Manual/Redis.svg"
+      },
+      {
+        "name": "HTML",
+        "url": "https://man.ilovefishc.com/html5/",
+        "image": "/media/nav/img/Manual/HTML.svg"
+      },
+      {
+        "name": "CSS",
+        "url": "https://man.ilovefishc.com/css3/",
+        "image": "/media/nav/img/Manual/CSS.svg"
+      },
+      {
+        "name": "Sass",
+        "url": "https://www.sass.hk/docs/",
+        "image": "/media/nav/img/Manual/Sass.svg"
+      },
+      {
+        "name": "TailwindCSS",
+        "url": "https://tailwindcss.com/",
+        "image": "/media/nav/img/Manual/TailwindCSS.svg"
+      },
+      {
+        "name": "DaisyUI",
+        "url": "https://daisyui.com/",
+        "image": "/media/nav/img/Manual/DaisyUI.png"
+      },
+      {
+        "name": "AnimateCSS",
+        "url": "https://animate.style/",
+        "image": "/media/nav/img/Manual/AnimateCSS.png"
+      },
+      {
+        "name": "ECharts",
+        "url": "https://echarts.apache.org/en/index.html",
+        "image": "/media/nav/img/Manual/ECharts.png"
+      },
+      {
+        "name": "JavaScript",
+        "url": "https://zh.javascript.info/",
+        "image": "/media/nav/img/Manual/JavaScript.png"
+      },
+      {
+        "name": "Web API",
+        "url": "https://wangdoc.com/webapi/",
+        "image": "/media/nav/img/Manual/WebAPI.png"
+      },
+      {
+        "name": "TypeScript",
+        "url": "https://ts.xcatliu.com/",
+        "image": "/media/nav/img/Manual/TypeScript.svg"
+      },
+      {
+        "name": "Vue",
+        "url": "https://vue3.chengpeiquan.com/",
+        "image": "/media/nav/img/Manual/Vue.svg"
+      },
+      {
+        "name": "Chrome插件",
+        "url": "https://developer.chrome.com/docs/extensions/mv3/getstarted/",
+        "image": "/media/nav/img/Manual/ChromeExt.svg"
+      },
+      {
+        "name": "W3school",
+        "url": "https://www.w3school.com.cn/jsref/index.asp",
+        "image": "/media/nav/img/Manual/W3school.png"
+      },
+      {
+        "name": "MDN",
+        "url": "https://developer.mozilla.org/en-US/",
+        "image": "/media/nav/img/Manual/MDN.png"
+      },
+      {
+        "name": "Java",
+        "url": "https://wangchujiang.com/reference/docs/java.html",
+        "image": "/media/nav/img/Manual/Java.svg"
+      },
+      {
+        "name": "Spring",
+        "url": "https://spring.io/projects/spring-boot",
+        "image": "/media/nav/img/Manual/Spring.svg"
+      },
+      {
+        "name": "Python",
+        "url": "https://python3-cookbook.readthedocs.io/zh_CN/latest/index.html",
+        "image": "/media/nav/img/Manual/Python.svg"
+      },
+      {
+        "name": "Django",
+        "url": "https://docs.djangoproject.com/en/5.0/ref/",
+        "image": "/media/nav/img/Manual/Django.svg"
+      },
+      {
+        "name": "NumPy",
+        "url": "https://www.cheat-sheet.cn/post/numpy-cheat-sheet/",
+        "image": "/media/nav/img/Manual/NumPy.svg"
+      },
+      {
+        "name": "Pandas",
+        "url": "https://pandas.pydata.org/Pandas_Cheat_Sheet.pdf",
+        "image": "/media/nav/img/Manual/Pandas.svg"
+      },
+      {
+        "name": "PyTorch",
+        "url": "https://pytorch.org/docs/stable/index.html",
+        "image": "/media/nav/img/Manual/PyTorch.svg"
+      },
+      {
+        "name": "Matplotlib",
+        "url": "https://matplotlib.org/stable/tutorials/index.html",
+        "image": "/media/nav/img/Manual/Matplotlib.png"
+      },
+      {
+        "name": "Networkx",
+        "url": "https://networkx.org/documentation/stable/tutorial.html",
+        "image": "/media/nav/img/Manual/Networkx.svg"
+      }
+    ]
+  },
+  {
+    "name": "技术博客",
+    "slug": "blog",
+    "icon": "['fab', 'blogger-b']",
+    "items": [
+      {
+        "name": "廖雪峰的官网",
+        "url": "https://www.liaoxuefeng.com/",
+        "image": "/media/nav/img/TechBlog/廖雪峰官网.png"
+      },
+      {
+        "name": "追梦人物的博客",
+        "url": "https://www.zmrenwu.com/",
+        "image": "/media/nav/img/TechBlog/Blog.png"
+      },
+      {
+        "name": "WesBos Course",
+        "url": "https://wesbos.com/courses",
+        "image": "/media/nav/img/TechBlog/WesBos.png"
+      },
+      {
+        "name": "杜赛说编程",
+        "url": "https://www.dusaiphoto.com/",
+        "image": "/media/nav/img/TechBlog/杜赛说编程.png"
+      },
+      {
+        "name": "大江狗的博客",
+        "url": "https://pythondjango.cn/",
+        "image": "/media/nav/img/TechBlog/大江狗的博客.ico"
+      },
+      {
+        "name": "Evan's blog",
+        "url": "https://xugaoyi.com/",
+        "image": "/media/nav/img/TechBlog/EvanBlog.png"
+      },
+      {
+        "name": "咕咕鸽的博客",
+        "url": "https://blog.laoda.de/",
+        "image": "/media/nav/img/TechBlog/咕咕鸽.webp"
+      }
+    ]
+  },
+  {
+    "name": "资源搜索",
+    "slug": "resource",
+    "icon": "['far', 'compass']",
+    "items": [
+      {
+        "name": "免费图片",
+        "slug": "free-picture",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "unsplash",
+            "link": "https://unsplash.com/"
+          },
+          {
+            "name": "pixabay",
+            "link": "https://pixabay.com/"
+          },
+          {
+            "name": "wallhaven",
+            "link": "https://wallhaven.cc/"
+          },
+          {
+            "name": "freepik",
+            "link": "https://www.freepik.com/"
+          },
+          {
+            "name": "Pexels",
+            "link": "https://www.pexels.com/"
+          }
+        ]
+      },
+      {
+        "name": "免费字体",
+        "slug": "free-font",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "Google Font",
+            "link": "https://fonts.google.com/"
+          },
+          {
+            "name": "Just Font",
+            "link": "https://justfont.com/"
+          }
+        ]
+      },
+      {
+        "name": "正版软件",
+        "slug": "genuine-software",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "AlternativeTo(检索替代品)",
+            "link": "https://alternativeto.net/"
+          },
+          {
+            "name": "正版中国",
+            "link": "https://getitfree.cn/"
+          },
+          {
+            "name": "荔枝数码",
+            "link": "https://store.lizhi.io/"
+          },
+          {
+            "name": "异次元软件",
+            "link": "https://www.iplaysoft.com/"
+          },
+          {
+            "name": "APSGO软购",
+            "link": "https://apsgo.com/"
+          },
+          {
+            "name": "少数派软件商城",
+            "link": "https://sspai.com/mall"
+          },
+          {
+            "name": "麦软",
+            "link": "https://www.mairuan.com/"
+          }
+        ]
+      },
+      {
+        "name": "电子书库",
+        "slug": "free-ebook",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "xxx2epub",
+            "link": "https://mobi2epub.com/",
+            "isSpecial": true
+          },
+          {
+            "name": "鸠摩搜书",
+            "link": "https://www.jiumodiary.com/"
+          },
+          {
+            "name": "SoBook",
+            "link": "https://sobooks.cc/"
+          }
+        ]
+      },
+      {
+        "name": "免费图标",
+        "slug": "free-icon",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "OpenMoji",
+            "link": "https://www.openmoji.org/"
+          },
+          {
+            "name": "icofont",
+            "link": "https://icofont.com/icons"
+          },
+          {
+            "name": "fontawesome",
+            "link": "https://fontawesome.com/v6.0/icons/"
+          },
+          {
+            "name": "xicons",
+            "link": "https://www.xicons.org/#/"
+          },
+          {
+            "name": "Simple Icons(品牌图标)",
+            "link": "https://simpleicons.org/"
+          },
+          {
+            "name": "Google Font",
+            "link": "https://fonts.google.com/icons/"
+          },
+          {
+            "name": "Tabler Icons(粗细可调)",
+            "link": "https://tablericons.com/"
+          },
+          {
+            "name": "icons8",
+            "link": "https://icons8.com/icons"
+          },
+          {
+            "name": "LogoSearch",
+            "link": "https://logosear.ch/"
+          },
+          {
+            "name": "Vector Logo Zone",
+            "link": "https://www.vectorlogo.zone/index.html"
+          },
+          {
+            "name": "Devicon(开发工具相关)",
+            "link": "https://devicon.dev/"
+          },
+          {
+            "name": "MacOS Icons(适配新系统)",
+            "link": "https://macosicons.com/"
+          }
+        ]
+      },
+      {
+        "name": "网站模版",
+        "slug": "website-template",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "Themeforest",
+            "link": "https://themeforest.net/"
+          },
+          {
+            "name": "Tailwind Awesome",
+            "link": "https://www.tailwindawesome.com/?type=template"
+          },
+          {
+            "name": "Themesberg",
+            "link": "https://themesberg.com/templates/free"
+          }
+        ]
+      },
+      {
+        "name": "界面设计",
+        "slug": "interface-design",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "Logo设计",
+            "link": "https://www.designevo.com/logo-maker/"
+          },
+          {
+            "name": "渐变背景生成",
+            "link": "https://cssgradient.io/"
+          },
+          {
+            "name": "背景图生成",
+            "link": "https://duotone.shapefactory.co/"
+          },
+          {
+            "name": "新拟态效果生成",
+            "link": "https://neumorphism.io/"
+          },
+          {
+            "name": "CSS效果: You-need-to-know-css",
+            "link": "https://lhammer.cn/You-need-to-know-css/#/zh-cn/"
+          },
+          {
+            "name": "CSS效果: CSS Tricks",
+            "link": "https://qishaoxuan.github.io/css_tricks/"
+          },
+          {
+            "name": "CSS效果: CSS Inspiration",
+            "link": "https://csscoco.com/inspiration/"
+          }
+        ]
+      },
+      {
+        "name": "求职资源",
+        "slug": "job-hunting",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "图灵星球 - 刷题列表",
+            "link": "https://turingplanet.org/2020/09/18/leetcode_planning_list/"
+          },
+          {
+            "name": "力扣加加",
+            "link": "https://leetcode-solution-leetcode-pp.gitbook.io/leetcode-solution"
+          },
+          {
+            "name": "OI WIki",
+            "link": "https://oi-wiki.org/"
+          },
+          {
+            "name": "代表随想录",
+            "link": "https://programmercarl.com/"
+          },
+          {
+            "name": "Hello算法",
+            "link": "https://www.hello-algo.com/"
+          },
+          {
+            "name": "前端进阶之旅",
+            "link": "https://interview.poetries.top/"
+          },
+          {
+            "name": "齐丶先丶森的前端面试秘籍",
+            "link": "https://github.com/yisainan/web-interview"
+          },
+          {
+            "name": "二哥的Java进阶之路",
+            "link": "https://javabetter.cn/"
+          },
+          {
+            "name": "JavaGuide",
+            "link": "https://javaguide.cn/"
+          },
+          {
+            "name": "CS-Notes",
+            "link": "https://www.cyc2018.xyz/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "肥宅娱乐",
+    "slug": "recreation",
+    "icon": "['fas', 'umbrella-beach']",
+    "items": [
+      {
+        "name": "AcFun",
+        "url": "https://www.acfun.cn/",
+        "image": "/media/nav/img/Recreation/AcFun.png"
+      },
+      {
+        "name": "爱壹帆",
+        "url": "https://www.yfsp.tv/",
+        "image": "/media/nav/img/Recreation/爱壹帆.png"
+      },
+      {
+        "name": "GetComic",
+        "url": "https://getcomics.info/cat/dc/",
+        "image": "/media/nav/img/Recreation/GetComic.png"
+      },
+      {
+        "name": "Instagram",
+        "url": "https://www.instagram.com/explore/",
+        "image": "/media/nav/img/Recreation/Instagram.jpeg"
+      },
+      {
+        "name": "三国杀",
+        "url": "https://web.sanguosha.com/",
+        "image": "/media/nav/img/Recreation/三国杀.png"
+      },
+      {
+        "name": "泰拉瑞亚",
+        "slug": "terraria",
+        "image": "/media/nav/img/Recreation/Terraria.jpeg",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "官方Wiki",
+            "link": "https://terraria.wiki.gg/zh/wiki/Terraria_Wiki"
+          },
+          {
+            "name": "灾厄Wiki",
+            "link": "https://terraria-calamity-mod.fandom.com/zh/wiki/Terraria_Calamity_Mod_中文_Wiki"
+          }
+        ]
+      },
+      {
+        "name": "CSSBattle",
+        "url": "https://cssbattle.dev/",
+        "image": "/media/nav/img/Recreation/CSSBattle.png"
+      },
+      {
+        "name": "全历史",
+        "url": "https://www.allhistory.com/",
+        "image": "/media/nav/img/Recreation/全历史.png"
+      },
+      {
+        "name": "百度贴吧",
+        "url": "https://tieba.baidu.com/",
+        "image": "/media/nav/img/Recreation/百度贴吧.png"
+      },
+      {
+        "name": "喜马拉雅",
+        "url": "https://www.ximalaya.com/",
+        "image": "/media/nav/img/Recreation/喜马拉雅.png"
+      },
+      {
+        "name": "Pixiv",
+        "url": "https://www.pixiv.net/discovery",
+        "image": "/media/nav/img/Recreation/Pixiv.png"
+      }
+    ]
+  },
+  {
+    "name": "实用工具",
+    "slug": "utility",
+    "icon": "['fas', 'screwdriver-wrench']",
+    "items": [
+      {
+        "name": "设计工具",
+        "url": "https://www.figma.com/files"
+      },
+      {
+        "name": "几何绘图",
+        "url": "https://www.geogebra.org/calculator"
+      },
+      {
+        "name": "知识助理",
+        "slug": "knowledge-assistant",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "Poe",
+            "link": "https://poe.com/ChatGPT"
+          },
+          {
+            "name": "Kimi.ai",
+            "link": "https://kimi.moonshot.cn/"
+          },
+          {
+            "name": "ChatGPT",
+            "link": "https://chat.openai.com/"
+          },
+          {
+            "name": "NiceGPT",
+            "link": "https://chat.hvvyxs.com/"
+          }
+        ]
+      },
+      {
+        "name": "烹饪教程",
+        "slug": "cook",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "程沛权的菜谱",
+            "link": "https://chengpeiquan.com/cookbook"
+          },
+          {
+            "name": "程序员做饭指南",
+            "link": "https://cook.aiurs.co/"
+          }
+        ]
+      },
+      {
+        "name": "快捷写作",
+        "url": "https://stackedit.io/app#"
+      },
+      {
+        "name": "语法检测",
+        "url": "https://app.grammarly.com/"
+      },
+      {
+        "name": "知识整理",
+        "url": "https://www.notion.so/"
+      },
+      {
+        "name": "思维导图",
+        "url": "https://whimsical.com/"
+      },
+      {
+        "name": "流程设计",
+        "url": "https://app.diagrams.net/"
+      },
+      {
+        "name": "网页收藏",
+        "url": "https://withpinbox.com/items/"
+      },
+      {
+        "name": "PDF处理",
+        "url": "https://www.ilovepdf.com/zh-cn"
+      },
+      {
+        "name": "阅读工具",
+        "slug": "reading",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "电子书阅读",
+            "link": "https://www.neat-reader.cn/"
+          },
+          {
+            "name": "RSS阅读器",
+            "link": "https://feeder.co/reader"
+          },
+          {
+            "name": "RSS生成器(RSSHub)",
+            "link": "https://docs.rsshub.app/"
+          },
+          {
+            "name": "冷门RSS源定制工具",
+            "link": "https://feed43.com/"
+          }
+        ]
+      },
+      {
+        "name": "图片处理",
+        "slug": "image-processing",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "在线修图",
+            "link": "https://www.photopea.com/"
+          },
+          {
+            "name": "图片水印",
+            "link": "https://www.iloveimg.com/zh-cn/watermark-image"
+          },
+          {
+            "name": "图片裁剪",
+            "link": "https://www.iloveimg.com/zh-cn/crop-image"
+          },
+          {
+            "name": "图像放大",
+            "link": "https://bigjpg.com/"
+          },
+          {
+            "name": "图像压缩",
+            "link": "https://www.compress2go.com/zh/compress-image"
+          },
+          {
+            "name": "ICO生成",
+            "link": "https://favicon.io/favicon-converter/"
+          },
+          {
+            "name": "图片去底",
+            "link": "https://www.aigei.com/bgremover"
+          },
+          {
+            "name": "字幕拼图",
+            "link": "https://tool.lu/stitch/"
+          }
+        ]
+      },
+      {
+        "name": "格式转换",
+        "url": "https://cloudconvert.com/"
+      },
+      {
+        "name": "调查问卷",
+        "url": "https://zh.surveymonkey.com/"
+      },
+      {
+        "name": "文件分发",
+        "url": "https://pc.woozooo.com/"
+      },
+      {
+        "name": "资源快传",
+        "url": "https://send.vis.ee/"
+      },
+      {
+        "name": "二维码",
+        "url": "https://cli.im/deqr"
+      }
+    ]
+  },
+  {
+    "name": "开发工具",
+    "slug": "dev",
+    "icon": "['fas', 'code']",
+    "items": [
+      {
+        "name": "开发规范",
+        "slug": "development-specification",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "简易前端代码规范",
+            "link": "https://codeguide.bootcss.com/"
+          },
+          {
+            "name": "京东前端代码规范",
+            "link": "https://guide.aotu.io/index.html"
+          },
+          {
+            "name": "Airbnb JS代码规范",
+            "link": "https://github.com/airbnb/javascript#destructuring"
+          },
+          {
+            "name": "Google JS代码规范",
+            "link": "https://google.github.io/styleguide/jsguide.html"
+          },
+          {
+            "name": "idiomatic.js代码规范",
+            "link": "https://github.com/rwaldron/idiomatic.js/tree/master/translations/zh_CN"
+          }
+        ]
+      },
+      {
+        "name": "随机生成",
+        "slug": "random-generation",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "随机文章",
+            "link": "https://loremipsum.io/"
+          },
+          {
+            "name": "随机图片",
+            "link": "https://picsum.photos/"
+          },
+          {
+            "name": "随机密码",
+            "link": "https://www.rapidtables.com/tools/password-generator.html"
+          }
+        ]
+      },
+      {
+        "name": "站点测试",
+        "slug": "test-tool",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "页面性能测试",
+            "link": "https://pagespeed.web.dev/"
+          },
+          {
+            "name": "全球性能测试",
+            "link": "https://www.36ce.net/"
+          },
+          {
+            "name": "技术栈检测",
+            "link": "https://www.wappalyzer.com/"
+          },
+          {
+            "name": "DNS污染检测",
+            "link": "https://www.boce.com/pollute/"
+          }
+        ]
+      },
+      {
+        "name": "中国镜像",
+        "slug": "mirror",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "Github: FastGit",
+            "link": "https://fastgit.org/"
+          },
+          {
+            "name": "CDN: jsDelivr",
+            "link": "https://www.jsdelivr.com/"
+          },
+          {
+            "name": "NPM: 淘宝",
+            "link": "https://npmmirror.com/"
+          },
+          {
+            "name": "软件: 清华",
+            "link": "https://mirrors.tuna.tsinghua.edu.cn/"
+          }
+        ]
+      },
+      {
+        "name": "常见接口",
+        "slug": "common-api",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "短信发送",
+            "link": "https://console.cloud.tencent.com/smsv2"
+          },
+          {
+            "name": "人机验证",
+            "link": "https://www.google.com/recaptcha/about/"
+          },
+          {
+            "name": "对象存储",
+            "link": "https://portal.qiniu.com/kodo/bucket/overview?bucketName=morningstar-369"
+          },
+          {
+            "name": "地图工具",
+            "link": "https://account.mapbox.com/"
+          }
+        ]
+      },
+      {
+        "name": "编码转化",
+        "slug": "encoding-conversion",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "Unicode表情",
+            "link": "https://unicode.org/emoji/charts/full-emoji-list.html"
+          },
+          {
+            "name": "Base64",
+            "link": "https://www.rapidtables.com/web/tools/base64-decode.html"
+          },
+          {
+            "name": "URL编解码",
+            "link": "https://www.bejson.com/enc/urlencode/"
+          },
+          {
+            "name": "KeyCode",
+            "link": "https://keycode.info/"
+          }
+        ]
+      },
+      {
+        "name": "廉价算力",
+        "slug": "cheap-computing",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "矩池云",
+            "link": "https://www.matpool.com/user"
+          },
+          {
+            "name": "Google Colab",
+            "link": "https://colab.research.google.com/"
+          },
+          {
+            "name": "Code Ocean",
+            "link": "https://codeocean.com/dashboard"
+          }
+        ]
+      },
+      {
+        "name": "配置生成",
+        "slug": "config-generation",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "Crontab",
+            "link": "https://crontab.guru/"
+          },
+          {
+            "name": "Nginx",
+            "link": "https://www.digitalocean.com/community/tools/nginx"
+          },
+          {
+            "name": "Readme Badge",
+            "link": "https://shields.io/#your-badge"
+          },
+          {
+            "name": "Gitignore",
+            "link": "https://www.toptal.com/developers/gitignore/"
+          }
+        ]
+      },
+      {
+        "name": "代码分享",
+        "slug": "code-sharing",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "前端页面分享",
+            "link": "https://codepen.io/your-work"
+          },
+          {
+            "name": "代码转图",
+            "link": "https://carbon.now.sh/"
+          }
+        ]
+      },
+      {
+        "name": "网站托管",
+        "slug": "website-hosting",
+        "isModal": true,
+        "entries": [
+          {
+            "name": "前端托管(Vercel)",
+            "link": "https://vercel.com/dashboard"
+          },
+          {
+            "name": "后端托管(Supabase)",
+            "link": "https://supabase.com/"
+          }
+        ]
+      },
+      {
+        "name": "正则测试",
+        "url": "https://regex101.com/"
+      },
+      {
+        "name": "远程连接",
+        "url": "https://sshwifty.morningstar369.com"
+      },
+      {
+        "name": "接口管理",
+        "url": "https://www.apifox.cn/"
+      },
+      {
+        "name": "项目保护",
+        "url": "https://dashboard.gitguardian.com/"
+      },
+      {
+        "name": "编码计时",
+        "url": "https://wakatime.com/"
+      }
+    ]
+  }
+]

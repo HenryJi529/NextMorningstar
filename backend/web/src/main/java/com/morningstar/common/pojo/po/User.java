@@ -1,0 +1,108 @@
+package com.morningstar.common.pojo.po;
+
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.UUID;
+
+import com.baomidou.mybatisplus.annotation.*;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@TableName("user")
+@Schema(description = "用户对象")
+public class User implements Serializable {
+    /**
+     * 主键
+     */
+    @Schema(description = "用户id")
+    @TableId("id")
+    private UUID id;
+
+    /**
+     * 用户名
+     */
+    @Schema(description = "用户名")
+    private String username;
+
+    /**
+     * 密码
+     */
+    @Schema(description = "密码")
+    private String password;
+
+    /**
+     * 是否锁定
+     */
+    @Schema(description = "是否锁定")
+    private Boolean isLocked;
+
+    /**
+     * 是否为管理员
+     */
+    @Schema(description = "是否为管理员")
+    private Boolean isAdmin;
+
+    /**
+     * 是否删除
+     */
+    @Schema(description = "是否删除")
+    @TableLogic
+    private Boolean isDeleted;
+
+    /**
+     * 是否在线
+     */
+    @Schema(description = "是否在线")
+    private Boolean isOnline;
+
+    /**
+     * 手机号
+     */
+    @Schema(description = "手机号")
+    private String phone;
+
+    /**
+     * 邮箱
+     */
+    @Schema(description = "邮箱")
+    private String email;
+
+    /**
+     * 昵称
+     */
+    @Schema(description = "昵称")
+    private String nickname;
+
+    /**
+     * 性别
+     */
+    @Schema(description = "性别")
+    private String sex;
+
+    /**
+     * 头像
+     */
+    @Schema(description = "头像")
+    private String avatar;
+
+    /**
+     * 创建时间
+     */
+    @Schema(description = "创建时间")
+    @TableField(fill = FieldFill.INSERT)
+    private Timestamp createTime;
+
+    /**
+     * 更新时间
+     */
+    @Schema(description = "更新时间")
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private Timestamp updateTime;
+}

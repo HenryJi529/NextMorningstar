@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.kill.dao.mapper.RecordMapper">
+    <insert id="insertIntoRecordAndUserRecord">
+        insert into kill_record (id, content, create_time, update_time)
+        value (#{record.id}, #{record.content}, #{record.createTime}, #{record.updateTime});
+
+        insert into kill_user_record (user_id, record_id, has_won)
+        values
+        <foreach collection="record.content.members" item="member" separator=",">
+            (
+                #{member.user.id},
+                #{record.id},
+                if(#{member.user.id} in
+                   <foreach collection="record.content.winners" item="winner" open="(" close=")" separator=",">
+                        #{winner.user.id}
+                    </foreach>, true, false)
+            )
+        </foreach>;
+    </insert>
+    <select id="selectRecentDailyStatsByUserId" resultType="com.morningstar.kill.pojo.bo.UserDailyStats">
+        select
+            -- NOTE: 这一层只用来设置默认值
+            date,
+            if(identityModeRatio != '', identityModeRatio, '0/0') as `identityModeRatio`,
+            if(revertModeRatio != '', revertModeRatio, '0/0') as `revertModeRatio`,
+            if(nationModeRatio != '', nationModeRatio, '0/0') as `nationModeRatio`,
+            if(soloModeRatio != '', soloModeRatio, '0/0') as `soloModeRatio`,
+            if(doublesModeRatio != '', doublesModeRatio, '0/0') as `doublesModeRatio`,
+            if(triplesModeRatio != '', triplesModeRatio, '0/0') as `triplesModeRatio`
+        from (
+                 select
+                     date,
+                     group_concat(if(mode = 'IDENTITY', ratio, '') separator '') `identityModeRatio`,
+                     group_concat(if(mode = 'REVERT', ratio, '') separator '') `revertModeRatio`,
+                     group_concat(if(mode = 'NATION', ratio, '') separator '') `nationModeRatio`,
+                     group_concat(if(mode = 'SOLO', ratio, '') separator '') `soloModeRatio`,
+                     group_concat(if(mode = 'DOUBLES', ratio, '') separator '') `doublesModeRatio`,
+                     group_concat(if(mode = 'TRIPLES', ratio, '') separator '') `triplesModeRatio`
+                 from (
+                          select
+                              date(updateTime) `date`,
+                              mode,
+                              concat(sum(hasWon), '/', count(*)) `ratio`
+                          from (
+                                   select
+                                       ur.user_id                        `userId`,
+                                       ur.record_id                      `recordId`,
+                                       json_extract(r.content, '$.mode') `mode`,
+                                       ur.has_won                        `hasWon`,
+                                       r.update_time                     `updateTime`
+                                   from kill_user_record ur
+                                            left join kill_record r on r.id = ur.record_id
+                                   where (r.update_time between date_sub(current_date, interval #{n} day) and current_date)
+                                     and ur.user_id = #{userId}
+                               ) t1
+                          group by date(updateTime), mode
+                      ) t2
+                 group by date
+                 order by date desc
+             ) t3
+    </select>
+</mapper>
