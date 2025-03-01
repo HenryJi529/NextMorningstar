@@ -152,7 +152,8 @@ services:
     environment:
       - FTP_USER=ftp
       - FTP_PASS=1234asdw
-      - PASV_ADDRESS=server.morningstar369.com
+      # - PASV_ADDRESS=server.morningstar369.com # cyberduck 客户端支持使用域名
+      - PASV_ADDRESS=${CLOUD_IP_ADDRESS} # python ftplib 只支持ip
       - PASV_MIN_PORT=21100
       - PASV_MAX_PORT=21110
     ports:
