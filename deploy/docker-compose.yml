@@ -9,6 +9,7 @@ volumes:
   morningstar_jellyfin_cache: null
   morningstar_jellyfin_config: null
   morningstar_jellyfin_media: null
+  morningstar_ftpd_data: null
 
 services:
   redis:
@@ -142,3 +143,19 @@ services:
     volumes:
       - ./frp/config:/etc/frp
     network_mode: "host"
+  ftpd: # 只用开公开一些文件
+    image: fauria/vsftpd
+    container_name: morningstar_ftpd
+    restart: unless-stopped
+    volumes:
+      - morningstar_ftpd_data:/home/vsftpd
+    environment:
+      - FTP_USER=ftp
+      - FTP_PASS=1234asdw
+      - PASV_ADDRESS=server.morningstar369.com
+      - PASV_MIN_PORT=21100
+      - PASV_MAX_PORT=21110
+    ports:
+      - 20:20
+      - 21:21
+      - 21100-21110:21100-21110
