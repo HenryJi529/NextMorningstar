@@ -65,6 +65,7 @@ const getArticleDetailList = async () => {
         url = `${API_BLOG_ARTICLE_ALL}?pageSize=${DEFAULT_PAGE_SIZE}&pageNum=${queryParams.pageNum}`;
     }
     const response: R<PageResult<ArticleDetail>> = (await axios.get(url)).data
+    console.log(response);
     pageResult.value = response.data;
 }
 
