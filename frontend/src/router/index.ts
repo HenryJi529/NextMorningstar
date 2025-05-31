@@ -91,6 +91,13 @@ const router = createRouter({
       }
     },
     {
+      path: '/send',
+      component: () => import('@/views/send/BaseView.vue'),
+      meta: {
+        isMaintaining: true,
+      }
+    },
+    {
       path: '/practice',
       children: practiceRoutes,
       component: ()=> import('@/views/practice/BaseView.vue')

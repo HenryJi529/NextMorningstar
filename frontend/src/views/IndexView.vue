@@ -28,6 +28,9 @@ import {getPermissions, hasAnyPermission} from "@/utils/handlePermission";
                     <router-link to="/rss">RSS工厂</router-link>
                 </div>
                 <div class="app-item">
+                    <router-link :to="'/send'">无迹闪传</router-link>
+                </div>
+                <div class="app-item">
                     <router-link to="/pic">开放图床</router-link>
                 </div>
                 <div class="app-item">
