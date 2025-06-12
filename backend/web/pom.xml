@@ -74,10 +74,15 @@
             <artifactId>jjwt-jackson</artifactId>
         </dependency>
 
-        <!-- WebSocket -->
+        <!-- WebSocket + STOMP -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <!-- Following additional dependency is required for Full Featured STOMP Broker Relay -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-reactor-netty</artifactId>
         </dependency>
 
         <!-- Spring AMQP -->
@@ -243,25 +248,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
-        <!-- spring cloud -->
+
+        <!-- Spring Cloud -->
 <!--        <dependency>-->
 <!--            <groupId>org.springframework.cloud</groupId>-->
 <!--            <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>-->
 <!--        </dependency>-->
-
-        <!-- Netty -->
-        <!-- Following additional dependency is required for Full Featured STOMP Broker Relay -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-reactor-netty</artifactId>
-        </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.netty</groupId>-->
-<!--            <artifactId>netty-resolver-dns-native-macos</artifactId>-->
-<!--            <version>4.1.114.Final</version>-->
-<!--            <classifier>osx-aarch_64</classifier>-->
-<!--        </dependency>-->
-
     </dependencies>
 
     <build>
