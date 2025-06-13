@@ -1,33 +1,21 @@
 import type {RouteRecordRaw} from "vue-router";
-import DetailView from "@/views/blog/DetailView.vue";
-import ListView from "@/views/blog/ListView.vue";
-import ContactView from "@/views/blog/ContactView.vue";
-import ManageView from "@/views/blog/ManageView.vue";
 import {BLOG_ARTICLE_MANAGE, BLOG_CATEGORY_MANAGE, BLOG_TAG_MANAGE} from "@/constants/PermissionConstant";
-import ArticleManageListView from "@/views/blog/manage/ArticleManageListView.vue";
-import CategoryManageListView from "@/views/blog/manage/CategoryManageListView.vue";
-import TagManageListView from "@/views/blog/manage/TagManageListView.vue";
-import ArticleManageEditView from "@/views/blog/manage/ArticleManageEditView.vue";
-import CategoryManageEditView from "@/views/blog/manage/CategoryManageEditView.vue";
-import TagManageEditView from "@/views/blog/manage/TagManageEditView.vue";
-import ArticleManageAddView from "@/views/blog/manage/ArticleManageAddView.vue";
-import CategoryManageAddView from "@/views/blog/manage/CategoryManageAddView.vue";
-import TagManageAddView from "@/views/blog/manage/TagManageAddView.vue";
+
 
 export default [
     {
         path: '',
-        component: ListView,
+        component: () => import("@/views/blog/ListView.vue"),
         name: 'blog-list',
     },
     {
         path: 'contact',
-        component: ContactView,
+        component: () => import("@/views/blog/ContactView.vue"),
         name: 'blog-contact'
     },
     {
         path: 'manage',
-        component: ManageView,
+        component: () => import("@/views/blog/ManageView.vue"),
         name: 'blog-manage',
         meta: {
             permissions: [
@@ -48,17 +36,17 @@ export default [
                     {
                         path: 'add',
                         name: 'blog-manage-article-add',
-                        component: ArticleManageAddView
+                        component: () => import("@/views/blog/manage/ArticleManageAddView.vue")
                     },
                     {
                         path: 'list',
                         name: 'blog-manage-article-list',
-                        component: ArticleManageListView
+                        component: () => import("@/views/blog/manage/ArticleManageListView.vue")
                     },
                     {
                         path: 'edit/:id',
                         name: 'blog-manage-article-edit',
-                        component: ArticleManageEditView
+                        component: () => import("@/views/blog/manage/ArticleManageEditView.vue")
                     }
                 ]
             },
@@ -73,17 +61,17 @@ export default [
                     {
                         path: 'add',
                         name: 'blog-manage-category-add',
-                        component: CategoryManageAddView
+                        component: () => import("@/views/blog/manage/CategoryManageAddView.vue")
                     },
                     {
                         path: 'list',
                         name: 'blog-manage-category-list',
-                        component: CategoryManageListView
+                        component: () => import("@/views/blog/manage/CategoryManageListView.vue")
                     },
                     {
                         path: 'edit/:id',
                         name: 'blog-manage-category-edit',
-                        component: CategoryManageEditView
+                        component: () => import("@/views/blog/manage/CategoryManageEditView.vue")
                     }
                 ]
             },
@@ -98,17 +86,17 @@ export default [
                     {
                         path: 'add',
                         name: 'blog-manage-tag-add',
-                        component: TagManageAddView
+                        component: () => import("@/views/blog/manage/TagManageAddView.vue")
                     },
                     {
                         path: 'list',
                         name: 'blog-manage-tag-list',
-                        component: TagManageListView
+                        component: () => import("@/views/blog/manage/TagManageListView.vue")
                     },
                     {
                         path: 'edit/:id',
                         name: 'blog-manage-tag-edit',
-                        component: TagManageEditView
+                        component: () => import("@/views/blog/manage/TagManageEditView.vue")
                     }
                 ]
             },
@@ -116,7 +104,7 @@ export default [
     },
     {
         path: ':id',
-        component: DetailView,
+        component: () => import("@/views/blog/DetailView.vue"),
         name: 'blog-detail',
     }
 ] as RouteRecordRaw[];

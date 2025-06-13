@@ -1,13 +1,5 @@
 import type {RouteRecordRaw} from "vue-router";
-import NodeManageAddView from "@/views/proxy/NodeManageAddView.vue";
-import SubManageAddView from "@/views/proxy/SubManageAddView.vue";
-import SubManageEditView from "@/views/proxy/SubManageEditView.vue";
-import SubManageListView from "@/views/proxy/SubManageListView.vue";
-import NodeManageListView from "@/views/proxy/NodeManageListView.vue";
-import NodeManageEditView from "@/views/proxy/NodeManageEditView.vue";
-import TokenManageEditView from "@/views/proxy/TokenManageEditView.vue";
-import TokenManageListView from "@/views/proxy/TokenManageListView.vue";
-import TokenManageAddView from "@/views/proxy/TokenManageAddView.vue";
+
 
 export default [
     {
@@ -16,17 +8,17 @@ export default [
             {
                 path: 'add',
                 name: 'proxy-manage-node-add',
-                component: NodeManageAddView
+                component: () => import("@/views/proxy/NodeManageAddView.vue")
             },
             {
                 path: 'list',
                 name: 'proxy-manage-node-list',
-                component: NodeManageListView
+                component: () => import("@/views/proxy/NodeManageListView.vue")
             },
             {
                 path: 'edit/:id',
                 name: 'proxy-manage-node-edit',
-                component: NodeManageEditView
+                component: () => import("@/views/proxy/NodeManageEditView.vue")
             }
         ]
     },
@@ -36,17 +28,17 @@ export default [
             {
                 path: 'add',
                 name: 'proxy-manage-sub-add',
-                component: SubManageAddView
+                component: () => import("@/views/proxy/SubManageAddView.vue")
             },
             {
                 path: 'list',
                 name: 'proxy-manage-sub-list',
-                component: SubManageListView
+                component: () => import("@/views/proxy/SubManageListView.vue")
             },
             {
                 path: 'edit/:id',
                 name: 'proxy-manage-sub-edit',
-                component: SubManageEditView
+                component: () => import("@/views/proxy/SubManageEditView.vue")
             }
         ]
     },
@@ -56,17 +48,17 @@ export default [
             {
                 path: 'add',
                 name: 'proxy-manage-token-add',
-                component: TokenManageAddView
+                component: () => import("@/views/proxy/TokenManageAddView.vue")
             },
             {
                 path: 'list',
                 name: 'proxy-manage-token-list',
-                component: TokenManageListView
+                component: () => import("@/views/proxy/TokenManageListView.vue")
             },
             {
                 path: 'edit/:id',
                 name: 'proxy-manage-token-edit',
-                component: TokenManageEditView
+                component: () => import("@/views/proxy/TokenManageEditView.vue")
             }
         ]
     }

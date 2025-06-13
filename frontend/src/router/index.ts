@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
-import IndexView from "@/views/IndexView.vue";
 import authRoutes from "@/router/auth";
 import killRoutes from "@/router/kill";
 import blogRoutes from "@/router/blog";
@@ -12,6 +11,7 @@ import {useUserStore} from "@/stores/users";
 import {hasAnyPermission} from "@/utils/handlePermission";
 import {ROLE_PROXY_ADMIN, ROLE_SUPER_ADMIN} from "@/constants/RoleConstant";
 import {isDesktop} from "@/utils/handleClient";
+import {isProdMode} from "@/utils/handleMode";
 
 
 const router = createRouter({
@@ -20,7 +20,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'index',
-      component: IndexView
+      component: () => import("@/views/IndexView.vue")
     },
     {
       path: '/admin',
@@ -49,7 +49,7 @@ const router = createRouter({
       children:  killRoutes,
       meta: {
         requiresAuth: true,
-        isMaintaining: true,
+        isMaintaining: isProdMode(),
         requireDesktop: true
       }
     },
@@ -65,7 +65,7 @@ const router = createRouter({
       path: '/pic',
       component: () => import('@/views/pic/BaseView.vue'),
       meta: {
-        isMaintaining: true,
+        isMaintaining: isProdMode(),
       }
     },
     {
@@ -87,14 +87,14 @@ const router = createRouter({
       path: '/rss',
       component: () => import('@/views/rss/BaseView.vue'),
       meta: {
-        isMaintaining: true,
+        isMaintaining: isProdMode(),
       }
     },
     {
       path: '/send',
       component: () => import('@/views/send/BaseView.vue'),
       meta: {
-        isMaintaining: true,
+        isMaintaining: isProdMode(),
       }
     },
     {
@@ -122,7 +122,7 @@ const router = createRouter({
       path: '/:pathMatch(.*)*',
       component: () => import('@/views/NotFoundView.vue')
     },
-  ]
+  ],
 });
 router.beforeEach(async (to, from, next) => {
 
