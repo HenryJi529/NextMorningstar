@@ -11,6 +11,7 @@ volumes:
   morningstar_jellyfin_media: null
   morningstar_ftpd_data: null
   morningstar_ftpd_logs: null
+  morningstar_springboot_log: null
 
 services:
   redis:
@@ -83,7 +84,6 @@ services:
         soft: -1
         hard: -1
     environment:
-      # - cluster.name=es-docker-cluster
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # 固定JVM堆内存
       - bootstrap.memory_lock=true # 禁用Swap
       # - "network.host=0.0.0.0" # 全局网络
@@ -96,16 +96,8 @@ services:
       - morningstar_es_data:/usr/share/elasticsearch/data
       - morningstar_es_logs:/usr/share/elasticsearch/logs
     ports:
-      - 9200:9200
+      - "127.0.0.1:9200:9200"
       - 9300:9300  # 心跳检查端口
-  # kibana:
-  #   container_name: morningstar_kibana
-  #   image: docker.elastic.co/kibana/kibana:7.17.5
-  #   restart: unless-stopped
-  #   environment:
-  #     - ELASTICSEARCH_HOSTS=http://es:9200
-  #   ports:
-  #     - 5601:5601
   sshwifty:
     image: niruix/sshwifty:latest
     container_name: morningstar_sshwifty
@@ -133,6 +125,8 @@ services:
     tty: true
     ports:
       - 8091:8091
+    volumes:
+      - morningstar_springboot_log:/app/log
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
