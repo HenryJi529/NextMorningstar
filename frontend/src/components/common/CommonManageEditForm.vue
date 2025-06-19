@@ -62,7 +62,7 @@ const cancelEdit = () => {
 }
 
 onMounted(async ()=>{
-    const response: R<object> = (await axios.get(
+    const response: R<Record<string, any>> = (await axios.get(
             endpoint,
             {
                 headers: {
@@ -77,7 +77,11 @@ onMounted(async ()=>{
         if(props.resolver){
             Object.assign(props.data, props.resolver(response.data));
         }else{
-            Object.assign(props.data, response.data);
+            Object.keys(props.data).forEach(key => {
+                if (key in response.data) {
+                    props.data[key] = response.data[key];
+                }
+            });
         }
     }
 })
