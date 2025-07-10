@@ -5,7 +5,10 @@ import {useFavicon} from "@vueuse/core";
 import GithubCorner from "@/components/GithubCorner.vue";
 import MorningstarFooter from "@/components/Footer.vue";
 import ImageBoard from "@/components/love/ImageBoard.vue";
+import {getDefaultTheme, setTheme} from "@/utils/handleTheme";
 
+
+setTheme(getDefaultTheme());
 useFavicon().value = '/love.ico'
 useHead({
     title: 'Love - 爱の相册',

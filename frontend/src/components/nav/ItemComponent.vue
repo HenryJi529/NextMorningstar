@@ -3,10 +3,10 @@
 import type {Item} from "@/types/nav";
 import { ref } from 'vue';
 
-const showModal = ref(false);
+const modalOpen = ref(false);
 
 const toggleModal = (): void => {
-    showModal.value = !showModal.value;
+    modalOpen.value = !modalOpen.value;
 }
 
 const openUrl = (url: string): void => {
@@ -28,7 +28,7 @@ defineProps<{item: Item}>();
             </div>
             <div v-if="item.desc" class="indent-4 mt-2">{{item.desc}}</div>
         </div>
-        <div v-if="item.isModal" class="modal" :class="{ 'modal-open': showModal }">
+        <div v-if="item.isModal" class="modal" :class="{ 'modal-open': modalOpen }">
             <div class="modal-box">
                 <h1 class="text-3xl font-bold">{{ item.name }}</h1>
                 <ul class="pl-8 py-4">

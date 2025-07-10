@@ -3,7 +3,6 @@
 import {useFavicon} from "@vueuse/core";
 import {useHead} from "@vueuse/head";
 import {h, onMounted, ref} from 'vue';
-import {SettingOutlined, GithubOutlined} from "@ant-design/icons-vue";
 import axios from "axios";
 import {API_PIC_CONFIG_ACCOUNT, API_PIC_CONFIG_PAT} from "@/constants/ApiConstant";
 import {TOKEN} from "@/constants/LocalStorageConstant";
@@ -15,11 +14,11 @@ import {
     RelayImageLinkGenerator
 } from "@/utils/lib.pic";
 import useClipboard from "vue-clipboard3";
+import {getDefaultTheme, setTheme} from "@/utils/handleTheme";
 import {message} from "ant-design-vue";
-import {useUserStore} from "@/stores/users";
-import {useRouter} from "vue-router";
+import {convertToBase64} from "@/utils/handleImage";
 
-
+setTheme(getDefaultTheme());
 useFavicon().value = '/pic.ico';
 useHead({
     title: 'Pic - 开放图床',
@@ -31,10 +30,8 @@ useHead({
     ],
 })
 
-const router = useRouter();
-const userStore = useUserStore();
 const { toClipboard } = useClipboard();
-const titleElement = h('div', { "class": 'text-5xl' }, '开 放 图 床');
+const titleElement = h('div', { "class": 'text-5xl font-bold' }, '开 放 图 床');
 const pat = ref<string>();
 const configMenuOpen = ref(false);
 const ownerName = ref<string>();
@@ -64,11 +61,6 @@ onMounted(async ()=>{
     }
 })
 
-const githubImageLinkGenerator = new GithubImageLinkGenerator();
-const jsDelivrImageLinkGenerator = new JsDelivrImageLinkGenerator();
-const jSDMirrorImageLinkGenerator = new JSDMirrorImageLinkGenerator();
-const relayImageLinkGenerator = new RelayImageLinkGenerator();
-const bestImageLinkGenerator = new BestImageLinkGenerator();
 
 const filePaths = [
     "20250707/162008750-iShot_2025-07-07_16.18.57.png",
@@ -80,9 +72,15 @@ const filePaths = [
     "20250707/105123873-iShot_2025-07-06_18.31.07.png",
 ]
 
-const copyImageLink = async (event: {key: string}) => {
-    await toClipboard(event.key);
-    message.success('链接复制成功...');
+const githubImageLinkGenerator = new GithubImageLinkGenerator();
+const jsDelivrImageLinkGenerator = new JsDelivrImageLinkGenerator();
+const jSDMirrorImageLinkGenerator = new JSDMirrorImageLinkGenerator();
+const relayImageLinkGenerator = new RelayImageLinkGenerator();
+const bestImageLinkGenerator = new BestImageLinkGenerator();
+
+const copyImageLink = async (imageLink: string) => {
+    await toClipboard(imageLink);
+    message.success({content: '链接复制成功...', class: 'ant-message-notice-custom', duration: 2});
 }
 
 const copyImageData = async (event: Event) => {
@@ -94,9 +92,19 @@ const copyImageData = async (event: Event) => {
         }
         parentElement = parentElement.parentElement as HTMLElement;
     }
-    const imgElement = parentElement.querySelector('img') as HTMLImageElement;
+    const img = parentElement.querySelector('img') as HTMLImageElement;
 
-    console.log(imgElement);
+    // 检查图片是否已经加载完成
+    if(img.complete && img.naturalHeight !== 0){
+        // 图片已加载，转换为base64并复制
+        await toClipboard(convertToBase64(img));
+    }else{
+        // 图片未加载，添加事件监听器
+        img.addEventListener('load', async () => {
+            await toClipboard(convertToBase64(img));
+        });
+    }
+    message.success({content: '数据复制成功...', class: 'ant-message-notice-custom', duration: 2});
 }
 
 
@@ -108,77 +116,54 @@ const copyImageData = async (event: Event) => {
             <component :is="titleElement"/>
             <div class="flex justify-center items-center space-x-4">
                 <a :href="`https://github.com/${ownerName}/MorningstarPicRepo`" class="flex justify-center items-center">
-                    <GithubOutlined class="text-2xl"/>
+                    <font-awesome-icon :icon="['fab', 'github']" class="text-2xl"/>
                 </a>
-                <SettingOutlined @click="showConfigMenu" class="text-2xl" />
-                <a-modal v-model:open="configMenuOpen" title="配置菜单" @ok="hideConfigMenu">
-                    <div>
-                        <div>PAT配置</div>
-                        <a-typography-paragraph v-model:content="pat" editable :copyable="{ tooltip: false }"/>
-                    </div>
-                </a-modal>
-                <div title="用户">
-                    <div v-if="userStore.id" class="flex justify-center items-center">
-                        <details class="dropdown dropdown-bottom dropdown-end">
-                            <summary class="list-none w-10 h-10 cursor-pointer">
-                                <img :src="userStore.avatarLink" alt="头像" class="rounded-full w-full h-full" />
-                            </summary>
-                            <ul class="nav-content">
-                                <li class="nav-item" v-if="userStore.isAuthenticated">
-                                    <div class="cursor-pointer" @click="router.push({name: 'auth-profile'})">档案</div>
-                                </li>
-                                <li class="nav-item">
-                                    <div class="cursor-pointer" @click="userStore.handleLogout()">登出</div>
-                                </li>
-                            </ul>
-                        </details>
-                    </div>
-                    <div v-else>
-                        <details class="dropdown dropdown-bottom dropdown-end">
-                            <summary class="list-none">
-                                <font-awesome-icon :icon="['fas', 'user']" class="cursor-pointer"/>
-                            </summary>
-                            <ul class="nav-content">
-                                <li class="nav-item">
-                                    <div class="cursor-pointer" @click="router.push({name: 'auth-login'})">登入</div>
-                                </li>
-                                <li class="nav-item">
-                                    <div class="cursor-pointer" @click="router.push({name: 'auth-register'})">注册</div>
-                                </li>
-                            </ul>
-                        </details>
+                <font-awesome-icon :icon="['fas', 'gear']" @click="showConfigMenu" class="text-2xl" />
+                <div class="modal" :class="{ 'modal-open': configMenuOpen }">
+                    <div class="modal-box">
+                        <div class="text-2xl">配置菜单</div>
+                        <div>
+                            <div class="text-xl">PAT配置</div>
+                            <div>
+                                {{pat}}
+                            </div>
+                        </div>
+                        <div class="modal-action">
+                            <button class="btn" @click="hideConfigMenu">
+                                关闭
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex flex-wrap" v-if="ownerName">
+        <div class="grid grid-cols-4" v-if="ownerName">
             <template v-for="filePath in filePaths">
-                <div class="w-64">
-                    <img :src="`${bestImageLinkGenerator.generate(ownerName, filePath)}`" :alt="filePath.split('/')[1]" class="h-48"/>
-                    <div class="flex justify-center items-center space-x-4">
-                        <a-dropdown>
-                            <template #overlay>
-                                <a-menu @click="copyImageLink" class="text-sm">
-                                    <a-menu-item :key="githubImageLinkGenerator.generate(ownerName, filePath)">
-                                        {{githubImageLinkGenerator.sourceName}}
-                                    </a-menu-item>
-                                    <a-menu-item :key="jsDelivrImageLinkGenerator.generate(ownerName, filePath)">
-                                        {{jsDelivrImageLinkGenerator.sourceName}}
-                                    </a-menu-item>
-                                    <a-menu-item :key="jSDMirrorImageLinkGenerator.generate(ownerName, filePath)">
-                                        {{jSDMirrorImageLinkGenerator.sourceName}}
-                                    </a-menu-item>
-                                    <a-menu-item :key="relayImageLinkGenerator.generate(ownerName, filePath)">
-                                        {{relayImageLinkGenerator.sourceName}}
-                                    </a-menu-item>
-                                </a-menu>
-                            </template>
-                            <a-button>
-                                复制链接 <font-awesome-icon :icon="['fas', 'chevron-down']" class="ml-1"/>
-                            </a-button>
-                        </a-dropdown>
-                        <a-button @click="copyImageData">复制内容</a-button>
+                <div class="flex justify-center items-center">
+                    <div class="w-[20rem] p-4">
+                        <img :src="`${bestImageLinkGenerator.generate(ownerName, filePath)}`" :alt="filePath.split('/')[1]" class="h-48"/>
+                        <div class="flex justify-center items-center space-x-4">
+                            <details class="dropdown">
+                                <summary class="btn btn-outline btn-primary">
+                                    复制链接
+                                </summary>
+                                <ul class="menu dropdown-content p-0 bg-base-100 rounded-box z-[1] w-[5.7rem] shadow">
+                                    <template v-for="imageLinkGenerator in [
+                                    githubImageLinkGenerator,
+                                    jsDelivrImageLinkGenerator,
+                                    jSDMirrorImageLinkGenerator,
+                                    relayImageLinkGenerator
+                                    ]">
+                                        <li @click="copyImageLink(imageLinkGenerator.generate(ownerName, filePath))"
+                                            class="py-2 indent-3 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg w-full cursor-pointer">
+                                            {{imageLinkGenerator.sourceName}}
+                                        </li>
+                                    </template>
+                                </ul>
+                            </details>
+                            <button class="btn btn-outline btn-accent" @click="copyImageData">复制内容</button>
+                        </div>
                     </div>
                 </div>
             </template>
@@ -187,10 +172,4 @@ const copyImageData = async (event: Event) => {
 </template>
 
 <style scoped lang="scss">
-.nav-content {
-    @apply dropdown-content mt-1 rounded-box shadow flex flex-col space-y-1 text-lg;
-    .nav-item {
-        @apply rounded-sm lg:rounded-xl w-[4rem] p-1;
-    }
-}
 </style>

@@ -18,6 +18,7 @@ export default {
     logs: true,
     themes: ["light", "dark"],
   },
-  darkMode: 'class'
+  // darkMode: 'class'
+  darkMode: ['selector', '[data-theme="dark"]']
 }
 

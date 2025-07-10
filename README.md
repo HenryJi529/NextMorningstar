@@ -47,8 +47,9 @@
     - VSCode, IntelliJ IDEA, WebStorm
     - DataGrip
 - 前端: 
-    - Vue3, Vue Use, Vite, Vitest, Vue Router, Pinia, TypeScript, Ant Design Vue
-    - TailwindCSS, Sass, DaisyUI, `animate.css`, ECharts, FontAwesome
+    - JavaScript, TypeScript, Vue3, Vue Use, Vite, Vitest, Vue Router, Pinia
+    - TailwindCSS, Sass, DaisyUI, Ant Design Vue
+    - `animate.css`, ECharts, FontAwesome
     - Axios, SockJS, StompJS
     - `vue-clipboard3`, `vue-print-next`, `localstorage-slim`, Marked, `highlight.js`, KaTex
     - QiniuKodo(JS)

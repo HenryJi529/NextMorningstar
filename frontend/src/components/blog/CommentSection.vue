@@ -227,27 +227,27 @@ const toggleThumbsDown = async (comment: CommentDetail) => {
 .comment-body{
     @include markdown();
     @apply text-base;
-    ::v-deep(.katex) {
+    :deep(.katex) {
         @apply text-lg;
     }
-    ::v-deep(.katex:has(math[display="block"])) {
+    :deep(.katex:has(math[display="block"])) {
         @apply text-xl block py-3 overflow-x-scroll;
     }
-    ::v-deep(h1) {
+    :deep(h1) {
         @apply text-2xl mt-3 mb-2;
         &::before {
             content: "#";
             @apply text-gray-500 mr-2;
         }
     }
-    ::v-deep(h2) {
+    :deep(h2) {
         @apply text-xl mt-2 mb-2;
         &::before {
             content: "##";
             @apply text-gray-500 mr-2;
         }
     }
-    ::v-deep(h3) {
+    :deep(h3) {
         @apply text-lg mt-1 mb-1;
         &::before {
             content: "###";
@@ -255,10 +255,10 @@ const toggleThumbsDown = async (comment: CommentDetail) => {
         }
     }
 
-    ::v-deep(blockquote) {
+    :deep(blockquote) {
         @apply pt-2 pr-0 pb-2 pl-3 mb-2 rounded-none border-0 border-l-[0.35rem] border-solid border-yellow-300;
     }
-    ::v-deep(table) {
+    :deep(table) {
         @apply my-0 pt-3;
         thead th, tbody td {
             @apply p-[6px];

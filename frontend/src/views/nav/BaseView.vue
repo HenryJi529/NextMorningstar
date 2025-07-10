@@ -15,8 +15,10 @@ import {PACE_JS_CSS, PACE_JS_JS} from "@/constants/LibConstant";
 import {isMobile} from "@/utils/handleClient";
 import {hasAnyPermission} from "@/utils/handlePermission";
 import {ROLE_SUPER_ADMIN} from "@/constants/RoleConstant";
+import {getDefaultTheme, setTheme} from "@/utils/handleTheme";
 
 
+setTheme(getDefaultTheme());
 const userStore = useUserStore();
 const {username} = storeToRefs(userStore);
 const isAdmin = hasAnyPermission([ROLE_SUPER_ADMIN]);

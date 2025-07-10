@@ -66,8 +66,8 @@ const router = createRouter({
       path: '/pic',
       component: () => import('@/views/pic/BaseView.vue'),
       meta: {
-        isMaintaining: isProdMode(),
         requiresAuth: true,
+        isMaintaining: isProdMode(),
       }
     },
     {
@@ -113,7 +113,7 @@ const router = createRouter({
     },
   ],
 });
-router.beforeEach(async (to, _, next) => {
+router.beforeEach(async (to, from, next) => {
 
   if(to.meta.requireDesktop && to.meta.requireDesktop == true){
     if(!isDesktop()){
@@ -130,6 +130,9 @@ router.beforeEach(async (to, _, next) => {
     await userStore.loadUser();
   }
 
+  if(to.path.startsWith('/auth') && !from.path.startsWith('/auth')){
+    setPreRoute(from.fullPath);
+  }
   if(to.meta.requiresAuth && !userStore.isAuthenticated){
     setPreRoute(to.fullPath);
     next({name: 'auth-login'});

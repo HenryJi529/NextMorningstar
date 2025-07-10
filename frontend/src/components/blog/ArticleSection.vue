@@ -34,44 +34,44 @@ onMounted(()=>{
 .article-body {
     @include markdown();
     @apply text-lg;
-    ::v-deep(.katex) {
+    :deep(.katex) {
         @apply text-xl;
     }
-    ::v-deep(.katex:has(math[display="block"])) {
+    :deep(.katex:has(math[display="block"])) {
         @apply text-2xl block py-4 overflow-x-scroll;
     }
-    ::v-deep(h2) {
+    :deep(h2) {
         @apply text-3xl mt-6 mb-3;
         &::before {
             content: "#";
             @apply text-gray-500 mr-2;
         }
     }
-    ::v-deep(h3) {
+    :deep(h3) {
         @apply text-2xl mt-5 mb-2;
         &::before {
             content: "##";
             @apply text-gray-500 mr-2;
         }
     }
-    ::v-deep(h4) {
+    :deep(h4) {
         @apply text-xl mt-4 mb-1;
         &::before {
             content: "###";
             @apply text-gray-500 mr-2;
         }
     }
-    ::v-deep(h5) {
+    :deep(h5) {
         @apply text-lg mt-3 mb-1;
         &::before {
             content: "####";
             @apply text-gray-500 mr-2;
         }
     }
-    ::v-deep(blockquote) {
+    :deep(blockquote) {
         @apply pt-2 pr-0 pb-2 pl-3 mb-2 rounded-none border-0 border-l-[0.35rem] border-solid border-yellow-300;
     }
-    ::v-deep(table) {
+    :deep(table) {
         @apply my-0 pt-5;
         thead th, tbody td {
             @apply p-[10px];

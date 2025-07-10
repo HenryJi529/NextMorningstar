@@ -18,44 +18,44 @@ blog-search-term {
 @mixin markdown() {
   overflow-x: hidden;
 
-  ::v-deep(kbd){
+  :deep(kbd){
     @apply bg-slate-100 dark:bg-gray-800 rounded-md p-1 text-lime-700 dark:text-lime-500;
     overflow-wrap: break-word;
   }
-  ::v-deep(p){
+  :deep(p){
     @apply break-words;
   }
-  ::v-deep(strong){
+  :deep(strong){
       @apply font-bold;
   }
-  ::v-deep(em){
+  :deep(em){
       @apply italic;
   }
-  ::v-deep(p){
+  :deep(p){
     @apply mb-4;
   }
-  ::v-deep(li){
+  :deep(li){
     p {
       @apply mb-[0.25rem];
     }
   }
-  ::v-deep(ul), ::v-deep(ol){
+  :deep(ul), :deep(ol){
     @apply pl-8;
   }
-  ::v-deep(ol ol), ::v-deep(ul ol), ::v-deep(ol ul), ::v-deep(ul ul){
+  :deep(ol ol), :deep(ul ol), :deep(ol ul), :deep(ul ul){
     @apply pl-6;
   }
-  ::v-deep(ol) {
+  :deep(ol) {
     li {
       @apply mb-[0.2rem];
     }
   }
-  ::v-deep(ul) {
+  :deep(ul) {
     li {
       @apply mb-[0.2rem];
     }
   }
-  ::v-deep(ol) {
+  :deep(ol) {
     li {
       @apply list-decimal;
       li {
@@ -69,7 +69,7 @@ blog-search-term {
       }
     }
   }
-  ::v-deep(ul) {
+  :deep(ul) {
     li {
       @apply list-disc;
       li {
@@ -83,18 +83,18 @@ blog-search-term {
       }
     }
   }
-  ::v-deep(img) {
+  :deep(img) {
     @apply block w-10/12 mx-auto my-2;
   }
-  ::v-deep(code:not(pre code)){
+  :deep(code:not(pre code)){
     @apply mx-[0.2rem];
   }
-  ::v-deep(code) {
+  :deep(code) {
     @apply text-red-600 dark:text-lime-600 bg-slate-200 dark:bg-gray-800 rounded-[4px] p-[4px] text-sm;
     font-family: monospace;
     overflow-wrap: break-word;
   }
-  ::v-deep(pre){
+  :deep(pre){
     @apply mb-2 border-4 border-solid rounded-2xl relative dark:border-gray-500;
     .hljs-copy-button {
       @apply block absolute top-2 right-4;
@@ -103,7 +103,7 @@ blog-search-term {
       @apply overflow-scroll max-w-full block bg-transparent p-2 rounded-2xl;
     }
   }
-  ::v-deep(table) {
+  :deep(table) {
     @apply max-w-full mx-auto;
 
     thead th {
@@ -123,7 +123,7 @@ blog-search-term {
       }
     }
   }
-  ::v-deep(a) {
+  :deep(a) {
     @apply font-bold mx-[0.2rem] decoration-2 underline text-cyan-600 hover:text-cyan-300;
   }
 }
