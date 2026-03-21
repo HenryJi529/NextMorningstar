@@ -182,6 +182,8 @@ services:
     container_name: morningstar_frps
     working_dir: /root
     restart: unless-stopped
+    environment:
+      - FRPS_PASSWORD=${FRPS_PASSWORD}
     volumes:
       - ./frp/config:/etc/frp
     network_mode: "host"
