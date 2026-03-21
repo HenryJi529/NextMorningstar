@@ -184,6 +184,7 @@ services:
     restart: unless-stopped
     environment:
       - FRPS_PASSWORD=${FRPS_PASSWORD}
+      - FRPS_TOKEN=${FRPS_TOKEN}
     volumes:
       - ./frp/config:/etc/frp
     network_mode: "host"
