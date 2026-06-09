@@ -24,7 +24,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
-        <springboot.version>3.3.2</springboot.version>
+        <springboot.version>3.5.14</springboot.version>
         <springdoc.version>2.6.0</springdoc.version>
         <junit.version>5.10.3</junit.version>
         <druid.version>1.2.15</druid.version>
