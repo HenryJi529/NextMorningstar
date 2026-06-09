@@ -1034,7 +1034,7 @@ onMounted(async () => {
                         min="1"
                         :max="totalPageCount"
                         v-model.lazy.trim.number="pageNum"
-                        class="w-[3rem] p-1 my-1 bg-transparent border-2 rounded-lg" />
+                        class="w-[3rem] py-1 my-1 text-center bg-transparent border-2 rounded-lg" />
                     <span class="px-1"> / </span>
                     <span>{{ totalPageCount }}</span>
                     <font-awesome-icon
