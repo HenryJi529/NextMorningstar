@@ -3,6 +3,8 @@ Thumbs.db
 Desktop.ini
 
 .VSCodeCounter/
+.vscode/*
+!.vscode/settings.json
 .claude/
 .codex/
 .cursor/
@@ -14,4 +16,6 @@ openspec/
 
 .env
 /deploy/backup/*
-/TEMP
+
+/logs/
+/TEMP/
