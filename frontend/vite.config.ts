@@ -72,6 +72,7 @@ export default defineConfig(({ command, mode }) => {
             coverage: {
                 enabled: true,
                 all: false, // 默认仅包含被测试的文件，而不会统计项目中完全未被测试的文件
+                reportOnFailure: true, // 测试失败时也生成覆盖率报告
                 reporter: ['html', 'text'],
                 reportsDirectory: path.resolve(__dirname, 'report/coverage/'),
             },
