@@ -1,8 +1,8 @@
 package com.morningstar.system.dao.mapper;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.morningstar.system.pojo.po.SysParam;
 import com.morningstar.infra.util.JsonUtil;
+import com.morningstar.system.pojo.po.SysParam;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,7 @@ public class SysParamMapperTest {
 
     @Test
     public void test() throws JsonProcessingException {
-        SysParam sysParam = SysParam.builder().name("testName").value("testValue").scope(SysParam.Scope.PUBLIC).build();
+        SysParam sysParam = SysParam.builder().name("testName").value("\"testValue\"").scope(SysParam.Scope.PUBLIC).build();
         System.out.println(JsonUtil.objectMapper().writeValueAsString(sysParam));
         sysParamMapper.insert(sysParam);
         System.out.println(JsonUtil.objectMapper().writeValueAsString(sysParam));

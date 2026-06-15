@@ -26,7 +26,7 @@
         <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
         <springboot.version>3.5.14</springboot.version>
         <springdoc.version>2.6.0</springdoc.version>
-        <junit.version>5.10.3</junit.version>
+        <junit.version>5.14.4</junit.version>
         <druid.version>1.2.15</druid.version>
         <easyexcel.version>4.0.2</easyexcel.version>
         <hutool.version>5.8.29</hutool.version>
