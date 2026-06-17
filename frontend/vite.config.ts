@@ -74,11 +74,11 @@ export default defineConfig(({ command, mode }) => {
                 all: false, // 默认仅包含被测试的文件，而不会统计项目中完全未被测试的文件
                 reportOnFailure: true, // 测试失败时也生成覆盖率报告
                 exclude: [
-                    './report/**',
-                    './src/axios/**',
-                    './src/router/**',
-                    './src/types/**',
-                    './src/main.ts',
+                    'report/**',
+                    'src/axios/**',
+                    'src/router/**',
+                    'src/types/**',
+                    'src/main.ts',
                     '*.config.ts',
                     'env.d.ts',
                 ],
