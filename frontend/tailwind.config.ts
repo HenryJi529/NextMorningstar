@@ -8,11 +8,7 @@ const config: Config = {
     theme: {
         extend: {},
     },
-    plugins: [
-        daisyui,
-        aspectRatio,
-        containerQueries,
-    ],
+    plugins: [daisyui, aspectRatio, containerQueries],
     daisyui: {
         prefix: '',
         darkTheme: 'dark',

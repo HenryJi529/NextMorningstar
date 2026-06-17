@@ -1,8 +1,6 @@
 {
     "extends": "@tsconfig/node20/tsconfig.json",
-    "include": [
-        "*.config.ts"
-    ],
+    "include": ["*.config.ts"],
     "compilerOptions": {
         "composite": true,
 
