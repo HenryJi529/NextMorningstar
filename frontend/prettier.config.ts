@@ -1,4 +1,6 @@
-export default {
+import type { Config } from 'prettier';
+
+const config: Config = {
     useTabs: false, // 禁用Tab，统一用空格缩进
     tabWidth: 4, // 缩进4个空格
     endOfLine: 'lf', // 换行符用 LF
@@ -15,3 +17,5 @@ export default {
     singleAttributePerLine: false, // 多个属性不强制独占一行
     embeddedLanguageFormatting: 'auto', // 自动格式化嵌入在 HTML/MD 中的 JS/CSS 代码
 };
+
+export default config;
