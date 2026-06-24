@@ -93,6 +93,7 @@ services:
       - ./nginx/www:/etc/nginx/www
       - certbot_etc:/etc/letsencrypt
       - certbot_webroot:/var/www/html
+      - /home/${CLOUD_USERNAME}/smart-union-prototype:/opt/smart-union-prototype
     network_mode: host
   certbot:
     image: certbot/certbot
