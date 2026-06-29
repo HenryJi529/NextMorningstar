@@ -134,8 +134,6 @@ config_docker() {
     # sudo apt install -y docker-compose
     # NOTE: 设置镜像源(https://github.com/dongyubin/DockerHub)
     echo '{"registry-mirrors": ["https://proxy.vvvv.ee"]}' >> /etc/docker/daemon.json # echo '{"registry-mirrors": ["https://proxy.vvvv.ee"]}' | sudo tee /etc/docker/daemon.json
-    # NOTE: 设置备份路径
-    test -d "/home/${CLOUD_USERNAME}/backup/docker_volume/" || mkdir /home/${CLOUD_USERNAME}/backup/docker_volume/
 }
 ```
 

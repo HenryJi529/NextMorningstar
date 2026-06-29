@@ -1,70 +1,70 @@
 volumes:
   redis_data: 
     external: true
-    name: morningstar_redis_data
+    name: ${PROJECT_NAME}_redis_data
   mysql_data: 
     external: true
-    name: morningstar_mysql_data
+    name: ${PROJECT_NAME}_mysql_data
   mongodb_db: 
     external: true
-    name: morningstar_mongodb_db
+    name: ${PROJECT_NAME}_mongodb_db
   mongodb_configdb: 
     external: true
-    name: morningstar_mongodb_configdb
+    name: ${PROJECT_NAME}_mongodb_configdb
   rabbitmq_data: 
     external: true
-    name: morningstar_rabbitmq_data
+    name: ${PROJECT_NAME}_rabbitmq_data
   certbot_etc: 
     external: true
-    name: morningstar_certbot_etc
+    name: ${PROJECT_NAME}_certbot_etc
   certbot_lib: 
     external: true
-    name: morningstar_certbot_lib
+    name: ${PROJECT_NAME}_certbot_lib
   certbot_webroot: 
     external: true
-    name: morningstar_certbot_webroot
+    name: ${PROJECT_NAME}_certbot_webroot
   es_data: 
     external: true
-    name: morningstar_es_data
+    name: ${PROJECT_NAME}_es_data
   es_logs: 
     external: true
-    name: morningstar_es_logs
+    name: ${PROJECT_NAME}_es_logs
   jellyfin_cache: 
     external: true
-    name: morningstar_jellyfin_cache
+    name: ${PROJECT_NAME}_jellyfin_cache
   jellyfin_config: 
     external: true
-    name: morningstar_jellyfin_config
+    name: ${PROJECT_NAME}_jellyfin_config
   jellyfin_media: 
     external: true
-    name: morningstar_jellyfin_media
+    name: ${PROJECT_NAME}_jellyfin_media
   ftpd_data: 
     external: true
-    name: morningstar_ftpd_data
+    name: ${PROJECT_NAME}_ftpd_data
   ftpd_logs: 
     external: true
-    name: morningstar_ftpd_logs
+    name: ${PROJECT_NAME}_ftpd_logs
   sftpd_data: 
     external: true
-    name: morningstar_sftpd_data
+    name: ${PROJECT_NAME}_sftpd_data
   springboot_logs: 
     external: true
-    name: morningstar_springboot_logs
+    name: ${PROJECT_NAME}_springboot_logs
   neo4j_data: 
     external: true
-    name: morningstar_neo4j_data
+    name: ${PROJECT_NAME}_neo4j_data
   neo4j_logs: 
     external: true
-    name: morningstar_neo4j_logs
+    name: ${PROJECT_NAME}_neo4j_logs
   neo4j_import: 
     external: true
-    name: morningstar_neo4j_import
+    name: ${PROJECT_NAME}_neo4j_import
   neo4j_plugins: 
     external: true
-    name: morningstar_neo4j_plugins
+    name: ${PROJECT_NAME}_neo4j_plugins
   gitea_data: 
     external: true
-    name: morningstar_gitea_data
+    name: ${PROJECT_NAME}_gitea_data
 
 networks:
   website:
@@ -73,7 +73,7 @@ networks:
 services:
   redis:
     image: valkey/valkey:7
-    container_name: morningstar_redis
+    container_name: ${PROJECT_NAME}_redis
     restart: unless-stopped
     volumes:
       - redis_data:/data
@@ -86,7 +86,7 @@ services:
       - website
   nginx:
     image: nginx:1.27.3
-    container_name: morningstar_nginx
+    container_name: ${PROJECT_NAME}_nginx
     restart: unless-stopped
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d
@@ -97,7 +97,7 @@ services:
     network_mode: host
   certbot:
     image: certbot/certbot
-    container_name: morningstar_certbot
+    container_name: ${PROJECT_NAME}_certbot
     restart: unless-stopped
     volumes:
       - certbot_webroot:/var/www/html
@@ -108,7 +108,7 @@ services:
     network_mode: host
   mysql:
     image: mysql:9
-    container_name: morningstar_mysql
+    container_name: ${PROJECT_NAME}_mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -122,7 +122,7 @@ services:
   mongodb:
     image: mongo:8
     restart: unless-stopped
-    container_name: morningstar_mongodb
+    container_name: ${PROJECT_NAME}_mongodb
     ports:
       - 27017:27017
     volumes:
@@ -134,7 +134,7 @@ services:
     networks:
       - website
   rabbitmq:
-    container_name: morningstar_rabbitmq
+    container_name: ${PROJECT_NAME}_rabbitmq
     build:
       context: .
       dockerfile: rabbitmq/Dockerfile
@@ -152,8 +152,7 @@ services:
     networks:
       - website
   es:
-    container_name: morningstar_es
-    hostname: morningstar_es
+    container_name: ${PROJECT_NAME}_es
     build:
       context: .
       dockerfile: elasticsearch/Dockerfile
@@ -182,13 +181,13 @@ services:
       - website
   sshwifty:
     image: niruix/sshwifty:0.3.25-beta-release
-    container_name: morningstar_sshwifty
+    container_name: ${PROJECT_NAME}_sshwifty
     restart: unless-stopped
     ports:
       - 8182:8182
   jellyfin:
     image: jellyfin/jellyfin
-    container_name: morningstar_jellyfin
+    container_name: ${PROJECT_NAME}_jellyfin
     volumes:
       - jellyfin_cache:/cache
       - jellyfin_config:/config
@@ -197,9 +196,9 @@ services:
     ports:
       - 8096:8096
     environment:
-      - JELLYFIN_PublishedServerUrl=https://jellyfin.morningstar369.com
+      - JELLYFIN_PublishedServerUrl=${JELLYFIN_URL}
   springboot:
-    container_name: morningstar_springboot
+    container_name: ${PROJECT_NAME}_springboot
     build:
       context: .
       dockerfile: springboot/Dockerfile
@@ -226,7 +225,7 @@ services:
       - website
   frps:
     image: snowdreamtech/frps
-    container_name: morningstar_frps
+    container_name: ${PROJECT_NAME}_frps
     working_dir: /root
     restart: unless-stopped
     environment:
@@ -237,7 +236,7 @@ services:
     network_mode: "host"
   ftpd: # 只用于公开一些文件
     image: fauria/vsftpd
-    container_name: morningstar_ftpd
+    container_name: ${PROJECT_NAME}_ftpd
     restart: unless-stopped
     volumes:
       - ftpd_data:/home/vsftpd
@@ -245,8 +244,8 @@ services:
     environment:
       - FTP_USER=ftp
       - FTP_PASS=1234asdw
-      # - PASV_ADDRESS=server.morningstar369.com # cyberduck 客户端支持使用域名
-      - PASV_ADDRESS=${CLOUD_IP} # python ftplib 只支持ip
+      # - PASV_ADDRESS=${CLOUD_DOMAIN} # NOTE: cyberduck 客户端支持使用域名
+      - PASV_ADDRESS=${CLOUD_IP} # NOTE: python ftplib 只支持ip
       - PASV_MIN_PORT=21100
       - PASV_MAX_PORT=21110
     ports:
@@ -255,7 +254,7 @@ services:
       - 21100-21110:21100-21110
   sftpd:
     image: atmoz/sftp
-    container_name: morningstar_sftpd
+    container_name: ${PROJECT_NAME}_sftpd
     restart: unless-stopped
     volumes:
       - sftpd_data:/home/sftp/upload
@@ -265,7 +264,7 @@ services:
       - SFTP_USERS=sftp:${SFTP_PASSWORD}:1001
   neo4j:
     image: neo4j:latest
-    container_name: morningstar_neo4j
+    container_name: ${PROJECT_NAME}_neo4j
     ports:
       - "7474:7474"  # HTTP
       - "7687:7687"  # Bolt
@@ -286,7 +285,7 @@ services:
       - website
   gitea:
     image: docker.gitea.com/gitea:1.25.4
-    container_name: morningstar_gitea
+    container_name: ${PROJECT_NAME}_gitea
     environment:
       - USER_UID=1000 # NOTE: 只是大概率的"巧合"
       - USER_GID=1000 # NOTE: 只是大概率的"巧合"

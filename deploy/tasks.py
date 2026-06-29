@@ -76,9 +76,11 @@ class Env:
     CLOUD_HOST = os.getenv("CLOUD_HOST")
     CLOUD_DOMAIN = os.getenv("CLOUD_DOMAIN")
     CLOUD_USERNAME = os.getenv("CLOUD_USERNAME")
-    CLOUD_PASSWORD = os.getenv("CLOUD_PASSWORD")
+    PROJECT_NAME = os.getenv("PROJECT_NAME")
 
-DEPLOY_BASE_DIR = Path(f"/home/{Env.CLOUD_USERNAME}/deploy")
+SERVER_BASE_DIR = Path(f"/home/{Env.CLOUD_USERNAME}/morningstar")
+DEPLOY_BASE_DIR = Path(SERVER_BASE_DIR, "deploy")
+BACKUP_BASE_DIR = Path(SERVER_BASE_DIR, "backup")
 
 def get_ip_address(domain):
     try:
@@ -107,7 +109,7 @@ class MorningstarConnection(Connection):
 conn = MorningstarConnection()
 
 DOCKER_VOLUME_NAMES: list[str] = conn.run(
-    "docker volume ls | grep " + DEPLOY_BASE_DIR.name + " | awk '{print $2}' | tr '\n' ' '", hide=True
+    "docker volume ls | grep " + Env.PROJECT_NAME + " | awk '{print $2}' | tr '\n' ' '", hide=True
 ).stdout.split(" ")[:-1]
 
 class Commands:
@@ -126,47 +128,47 @@ class Commands:
         )
         colored_print("应用更新...")
         with conn.cd(DEPLOY_BASE_DIR):
-            conn.run("docker compose -p morningstar up --build -d")
+            conn.run(f"docker compose -p {Env.PROJECT_NAME} up --build -d")
         colored_print("前端刷新...")
-        conn.run("docker restart morningstar_nginx")
+        conn.run(f"docker restart {Env.PROJECT_NAME}_nginx")
 
     @staticmethod
     def backup():
         colored_print("暂停容器...")
         with conn.cd(DEPLOY_BASE_DIR):
-            conn.run("docker compose -p morningstar pause")
+            conn.run(f"docker compose -p {Env.PROJECT_NAME} pause")
         colored_print("数据卷打包...")
         with conn.cd("~/"):
             for dockerVolumeName in DOCKER_VOLUME_NAMES:
                 print(f"- 备份{dockerVolumeName}")
-                command = f'docker run --rm -v {dockerVolumeName}:/volume -v ~/backup:/backup alpine sh -c "tar -C /volume -cvzf /backup/{dockerVolumeName}.tar.gz ./"'
+                command = f'docker run --rm -v {dockerVolumeName}:/volume -v {BACKUP_BASE_DIR}:/backup alpine sh -c "tar -C /volume -cvzf /backup/{dockerVolumeName}.tar.gz ./"'
                 conn.run(command, hide=True)
         colored_print("重启容器...")
         with conn.cd(DEPLOY_BASE_DIR):
-            conn.run("docker compose -p morningstar unpause")
+            conn.run(f"docker compose -p {Env.PROJECT_NAME} unpause")
         colored_print("数据卷同步到本地...")
         runcmd(
-            f"rsync -avz {Env.CLOUD_HOST}:~/backup {LOCAL_BASE_DIR}"
+            f"rsync -avz {Env.CLOUD_HOST}:{BACKUP_BASE_DIR} {LOCAL_BASE_DIR}"
         )
 
     @staticmethod
     def restore():
         colored_print("同步压缩包到云端...")
         runcmd(
-            f"rsync -avz {LOCAL_BASE_DIR}/backup {Env.CLOUD_HOST}:~/"
+            f"rsync -avz {LOCAL_BASE_DIR}/backup {Env.CLOUD_HOST}:{SERVER_BASE_DIR}"
         )
         colored_print("暂停容器...")
         with conn.cd(DEPLOY_BASE_DIR):
-            conn.run("docker compose -p morningstar pause")
+            conn.run(f"docker compose -p {Env.PROJECT_NAME} pause")
         colored_print("复原压缩包为volume...")
         with conn.cd("~/"):
             for dockerVolumeName in DOCKER_VOLUME_NAMES:
                 print(f"- 还原{dockerVolumeName}")
-                command = f'docker run --rm -v {dockerVolumeName}:/volume -v ~/backup:/backup alpine sh -c "rm -rf /volume/* ; tar -C /volume/ -xzvf /backup/{dockerVolumeName}.tar.gz"'
+                command = f'docker run --rm -v {dockerVolumeName}:/volume -v {BACKUP_BASE_DIR}:/backup alpine sh -c "rm -rf /volume/* ; tar -C /volume/ -xzvf /backup/{dockerVolumeName}.tar.gz"'
                 conn.run(command, hide=True)
         colored_print("重启容器...")
         with conn.cd(DEPLOY_BASE_DIR):
-            conn.run("docker compose -p morningstar unpause")
+            conn.run(f"docker compose -p {Env.PROJECT_NAME} unpause")
 
     @staticmethod
     def cert():
@@ -178,53 +180,53 @@ class Commands:
         # --dry-run --force-renewal
 
         colored_print("更新证书...")
-        conn.run("docker exec morningstar_certbot certbot renew --webroot -w /var/www/html --force-renewal")
+        conn.run(f"docker exec {Env.PROJECT_NAME}_certbot certbot renew --webroot -w /var/www/html --force-renewal")
         colored_print("重载Nginx...")
-        conn.run("docker exec morningstar_nginx nginx -s reload")
+        conn.run(f"docker exec {Env.PROJECT_NAME}_nginx nginx -s reload")
 
     @staticmethod
     def shutdown():
         colored_print("关闭容器...")
         with conn.cd(DEPLOY_BASE_DIR):
-            conn.run("docker compose -p morningstar down")
+            conn.run(f"docker compose -p {Env.PROJECT_NAME} down")
 
     @staticmethod
     def ping():
         mapping = [
             {
                 "name": "MySQL",
-                "host": "morningstar_mysql",
+                "host": f"{Env.PROJECT_NAME}_mysql",
                 "ports": [3306],
             },
             {
                 "name": "Redis",
-                "host": "morningstar_redis",
+                "host": f"{Env.PROJECT_NAME}_redis",
                 "ports": [6379],
             },
             {
                 "name": "MongoDB",
-                "host": "morningstar_mongodb",
+                "host": f"{Env.PROJECT_NAME}_mongodb",
                 "ports": [27017],
             },
             {
                 "name": "RabbitMQ",
-                "host": "morningstar_rabbitmq",
+                "host": f"{Env.PROJECT_NAME}_rabbitmq",
                 "ports": [15672, 5672, 61613],
             },
             {
                 "name": "ElasticSearch",
-                "host": "morningstar_es",
+                "host": f"{Env.PROJECT_NAME}_es",
                 "ports": [9200, 9300],
             },
             {
                 "name": "Neo4J",
-                "host": "morningstar_neo4j",
+                "host": f"{Env.PROJECT_NAME}_neo4j",
                 "ports": [7474, 7687],
             },
         ]
         for service in mapping:
             for port in service["ports"]:
-                conn.run(f"docker exec morningstar_springboot bash -c \"cat < /dev/null > /dev/tcp/{service['host']}/{port} && echo 'SpringBoot 与 {service['name']}:{port} 连通✅' || echo 'SpringBoot 与 {service['name']}:{port} 不连通❌'\"")
+                conn.run(f"docker exec {Env.PROJECT_NAME}_springboot bash -c \"cat < /dev/null > /dev/tcp/{service['host']}/{port} && echo 'SpringBoot 与 {service['name']}:{port} 连通✅' || echo 'SpringBoot 与 {service['name']}:{port} 不连通❌'\"")
 
     @staticmethod
     def _test():
