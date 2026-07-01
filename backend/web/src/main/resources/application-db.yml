@@ -49,7 +49,7 @@ spring:
 # 配置mybatis
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
-  type-aliases-package: com.morningstar.*.pojo
+  type-aliases-package: com.morningstar.*.pojo.po
   configuration:
     map-underscore-to-camel-case: true # 开启驼峰映射
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
