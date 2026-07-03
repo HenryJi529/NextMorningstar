@@ -9,20 +9,29 @@
 
 ### 🐛 fix
 
-- fix1
-- fix2
+- ...
 
 ### 🚀 perf
 
-- perf1
-- perf2
+- ...
 
 ### ♻️ refactor
 
-- refactor1
-- refactor2
+- ...
 
-### ⬆️ chore
+### 🧪 test
+
+- ...
+
+### 📝 docs
+
+- ...
+
+### 🎨 style
+
+- ...
+
+### 🔧 chore
 
 - chore(config): 更新配置文件
 - chore(structure): 调整项目结构
