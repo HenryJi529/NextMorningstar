@@ -502,6 +502,7 @@ public class UserServiceImpl implements UserService {
                 requestEntity,
                 String.class
         );
+        // NOTE: Github 当前仅支持标准 OAuth 2.0 流程（无 id_token），需额外调用 /user API 获取用户信息
         JSONObject jsonObject = JSONUtil.parseObj(response.getBody());
         if (jsonObject.containsKey("error")) {
             throw new BaseException(ResponseCode.AUTHENTICATION_FAILED);
