@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { DatePicker as ADatePicker, ConfigProvider as AConfigProvider } from 'ant-design-vue';
+import { DatePicker as ADatePicker } from 'ant-design-vue';
 import { ref, watch } from 'vue';
 import calendarIcon from '@/assets/img/lab/Calendar.svg';
-import zhCN from 'ant-design-vue/es/locale/zh_CN';
 import dayjs, { type Dayjs } from 'dayjs';
 import 'dayjs/locale/zh-cn';
 dayjs.locale('zh-cn');
@@ -21,11 +20,9 @@ watch(date, () => {
 <template>
     <div class="flex items-center space-x-2 cursor-pointer">
         <img :src="calendarIcon" alt="日历图标" class="h-4" />
-        <a-config-provider :locale="zhCN">
-            <a-date-picker v-model:value="date" :disabled-date="disabledDate">
-                <template #suffixIcon> </template>
-            </a-date-picker>
-        </a-config-provider>
+        <a-date-picker v-model:value="date" :disabled-date="disabledDate">
+            <template #suffixIcon> </template>
+        </a-date-picker>
     </div>
 </template>
 
