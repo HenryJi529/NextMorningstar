@@ -1,8 +1,8 @@
-import { notification } from 'ant-design-vue';
 import { fetchSysParam } from '@/axios/system';
 import type { SysParam } from '@/types/system';
 import type { R } from '@/types/common';
 import { ResponseCode } from '@/constants/response';
+import type { NotificationInstance } from "ant-design-vue/es/notification";
 
 interface Notice {
     type: 'success' | 'info' | 'warning' | 'error';
@@ -29,7 +29,7 @@ const isNotice = (data: unknown): data is Notice => {
     );
 };
 
-export const popupNotice = async () => {
+export const popupNotice = async (notificationInstance: NotificationInstance) => {
     const response: R<SysParam> = (await fetchSysParam('notice')).data;
     if (response.code !== ResponseCode.SUCCESS) {
         return;
@@ -44,7 +44,7 @@ export const popupNotice = async () => {
         }
 
         if (notice.enable) {
-            notification.open({
+            notificationInstance.open({
                 message: notice.message,
                 description: notice.description,
                 duration: 0,

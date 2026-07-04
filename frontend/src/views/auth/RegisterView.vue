@@ -2,6 +2,8 @@
 import axios from '@/axios/index';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import {App} from 'ant-design-vue'
+const { notification } = App.useApp();
 
 import type { ImageCaptchaResponseVo, R } from '@/types/common';
 import type { RegisterRequestVo, RegisterResponseVo } from '@/types/auth';
@@ -86,7 +88,7 @@ const register = async () => {
         localStorage.setItem(LocalStorageKey.TOKEN, registerResponseVo.token);
         errorMessage.value = '';
 
-        await popupNotice();
+        await popupNotice(notification);
 
         const preRoute = getPreRoute();
         if (preRoute) {
