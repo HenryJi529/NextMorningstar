@@ -1,3 +1,10 @@
+body .ant-app {
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
 .ant-message-notice-custom {
     .ant-message-notice-content {
         @apply dark:bg-gray-700 dark:text-gray-100;
