@@ -63,11 +63,6 @@ export default defineConfig(({ command, mode }) => {
                 },
             },
         },
-        build: {
-            commonjsOptions: {
-                transformMixedEsModules: true,
-            },
-        },
         test: {
             coverage: {
                 enabled: true,
