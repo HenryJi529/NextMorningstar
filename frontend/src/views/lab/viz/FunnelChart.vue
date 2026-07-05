@@ -144,6 +144,10 @@ const loadFunnelChart = (
 };
 
 const updateFunnelChart = (chartDom: HTMLElement) => {
+    if(!chartDom || data.value.length <= 0){
+        return;
+    }
+
     removeLabelsByType('funnel-chart-label');
 
     const sizes = [0.04, 0.037, 0.035, 0.032, 0.03, 0.027, 0.025, 0.023, 0.02];
