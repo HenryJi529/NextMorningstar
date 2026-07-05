@@ -12,7 +12,6 @@ Desktop.ini
 .trae/
 .mcp.json
 .zread/
-openspec/
 
 .env
 /deploy/backup/*

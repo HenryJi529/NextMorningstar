@@ -1,0 +1,26 @@
+schema: spec-driven
+
+# 项目上下文：创建 OpenSpec artifacts 时会提供给 AI。
+context: |
+  本项目的 OpenSpec 文档默认使用中文编写。
+  如果必须保留英文关键词、命令、代码标识符或规范语法，可以保留英文原文。
+  面向人的说明、标题、任务描述、需求描述、场景描述、设计说明和影响分析都应使用中文。
+  每次 `/opsx:apply` 完成实现和验证后，都应给出一条建议 commit 信息，但绝不能执行 `git commit`。
+  建议 commit 信息必须从 `feat`、`fix`、`perf`、`refactor`、`test`、`docs`、`style`、`chore` 中选择一个类型，并使用 Conventional Commits 格式，例如：`fix: 修复接口错误日志级别`。
+  OpenSpec/OPSX 执行期间默认只允许 `git log`、`git diff`、`git status`、`git show` 等只读命令。
+  禁止执行任何会修改暂存区、工作区、分支、历史或远端状态的 Git 命令，除非用户在当前对话中明确单独要求。
+  验证配置或处理脚本时，优先使用本机/项目已有工具；JSON 优先用 `jq`，YAML 优先用 Ruby 标准库或项目已有工具，不假设 Python 第三方包存在。
+
+# Artifact 规则：用于约束 proposal、design、tasks、spec 等文档。
+rules:
+  proposal:
+    - 使用中文编写 WHY、WHAT、Capabilities、Impact 等面向人的说明。
+    - 可以保留 OpenSpec 标准标题，但标题后的内容必须使用中文。
+  design:
+    - 使用中文说明上下文、目标、非目标、技术决策和取舍。
+  tasks:
+    - 使用中文描述任务 checklist，命令、路径和代码标识符保持原样。
+    - 不要把 `git add`、`git commit`、`git push` 或其他 Git 写入命令列为 OpenSpec/OPSX apply 任务；apply 完成后只给出建议 commit 信息。
+  specs:
+    - 使用中文编写需求名称、需求描述和场景描述。
+    - WHEN、THEN、AND 等 OpenSpec 场景关键词可以保留英文，关键词后的内容使用中文。
