@@ -29,7 +29,7 @@ _axios.interceptors.response.use(
     response => {
         // NProgress.done();
         if (response.data.code <= 0) {
-            console.log(`code ${response.data.code}: ${response.data.message}`);
+            console.error(`code ${response.data.code}: ${response.data.message}`);
             if (
                 response.data.code === ResponseCode.TOKEN_INVALID ||
                 response.data.code === ResponseCode.TOKEN_EXPIRED
