@@ -486,6 +486,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public OAuthResponseVo githubOAuthCallback(String code) {
+        // NOTE: 换 Token 过程可用 OAuth2AuthorizedClientManager 管理
         String GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token";
 
         HttpHeaders headers = new HttpHeaders();
