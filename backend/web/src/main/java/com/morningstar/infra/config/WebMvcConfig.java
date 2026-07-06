@@ -37,7 +37,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/favicon.ico").addResourceLocations("classpath:/static/")
                 .setCachePeriod(0);
         registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/");
-        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/webjars/");
     }
 
     @Override
