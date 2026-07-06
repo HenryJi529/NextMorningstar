@@ -18,20 +18,19 @@ public class JwtUtilTest {
     @Test
     public void test() {
         String token;
-        token = jwtUtil.create(UUID.randomUUID(), "刘备", "主管");
+        token = jwtUtil.create(UUID.randomUUID(), "刘备");
         log.info(token);
         assert jwtUtil.parse(token) != null;
         log.info(Objects.requireNonNull(jwtUtil.parse(token)).toString());
         assert Objects.requireNonNull(jwtUtil.parse(token)).get(jwtUtil.USERNAME_CLAIM).equals("刘备");
         assert jwtUtil.getUsername(token).equals("刘备");
-        assert jwtUtil.getRole(token).equals("主管");
 
         // 增删改都会验证错误
         assert jwtUtil.parse(token.substring(0, token.length() - 2)) == null;
         assert jwtUtil.parse(token.substring(0, 5) + "a" + token.substring(6)) == null;
         assert jwtUtil.parse(token + "123") == null;
 
-        token = jwtUtil.create(UUID.randomUUID(), "曹操", "主管", 1000L);
+        token = jwtUtil.create(UUID.randomUUID(), "曹操", 1000L);
         log.info(token);
         try {
             Thread.sleep(1000);

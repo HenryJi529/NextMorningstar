@@ -231,7 +231,7 @@ public class UserServiceImpl implements UserService {
         setLoginUserInRedis(loginUser);
 
         // 组装登录成功数据
-        return new LoginResponseVo(loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername(), ""));
+        return new LoginResponseVo(loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername()));
     }
 
     @Override
@@ -266,7 +266,7 @@ public class UserServiceImpl implements UserService {
         setLoginUserInRedis(loginUser);
 
         // 组装注册成功数据
-        return new RegisterResponseVo(loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername(), ""));
+        return new RegisterResponseVo(loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername()));
     }
 
     @Override
@@ -366,7 +366,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public String refreshToken() {
         LoginUser loginUser = AuthUtil.getLoginUser();
-        return jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername(), "");
+        return jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername());
     }
 
     private void sendRecoverEmail(UUID id, String email) {
@@ -418,7 +418,7 @@ public class UserServiceImpl implements UserService {
         setLoginUserInRedis(loginUser);
 
         // 组装恢复成功数据
-        return new CompleteRecoveryResponseVo(loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername(), ""));
+        return new CompleteRecoveryResponseVo(loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername()));
     }
 
     @Override
@@ -543,6 +543,6 @@ public class UserServiceImpl implements UserService {
         setLoginUserInRedis(loginUser);
 
         // 组装注册成功数据
-        return new OAuthResponseVo(loginUser.getUser().getId(), loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername(), ""));
+        return new OAuthResponseVo(loginUser.getUser().getId(), loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername()));
     }
 }

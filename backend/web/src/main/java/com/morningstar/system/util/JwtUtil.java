@@ -24,7 +24,6 @@ public class JwtUtil {
     public final SignatureAlgorithm algorithm = SignatureAlgorithm.HS256;
     // 声明字段名
     public final String USERNAME_CLAIM = "username";
-    public final String ROLE_CLAIM = "role";
     private final JwtProperties jwtProperties;
 
     private SecretKey getSecretKey() {
@@ -34,7 +33,7 @@ public class JwtUtil {
     /**
      * 生成Token
      */
-    public String create(UUID id, String username, String role, Long ttl) {
+    public String create(UUID id, String username, Long ttl) {
         if (ttl == null) {
             ttl = jwtProperties.getTtl();
         }
@@ -42,7 +41,6 @@ public class JwtUtil {
         return TOKEN_PREFIX + Jwts
                 .builder()
                 .setSubject(id.toString())
-                .claim(ROLE_CLAIM, role)
                 .claim(USERNAME_CLAIM, username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + ttl))
@@ -50,8 +48,8 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String create(UUID id, String username, String role) {
-        return create(id, username, role, null);
+    public String create(UUID id, String username) {
+        return create(id, username, null);
     }
 
     /**
@@ -81,12 +79,5 @@ public class JwtUtil {
      */
     public String getUsername(String token) {
         return Objects.requireNonNull(parse(token)).get(USERNAME_CLAIM).toString();
-    }
-
-    /**
-     * 从Token中获取用户角色
-     */
-    public String getRole(String token) {
-        return Objects.requireNonNull(parse(token)).get(ROLE_CLAIM).toString();
     }
 }
