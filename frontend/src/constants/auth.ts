@@ -1,7 +1,7 @@
 export const ROLE_PREFIX = 'ROLE_';
 
 export enum Role {
-    SUPER_ADMIN = `${ROLE_PREFIX}super_admin`,
+    SYSTEM_ADMIN = `${ROLE_PREFIX}system_admin`,
     BLOG_ADMIN = `${ROLE_PREFIX}blog_admin`,
     PROXY_ADMIN = `${ROLE_PREFIX}proxy_admin`,
 }

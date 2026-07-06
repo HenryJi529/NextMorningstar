@@ -29,7 +29,7 @@ const router = createRouter({
             children: adminRoutes,
             meta: {
                 requiresAuth: true,
-                permissions: [Role.SUPER_ADMIN],
+                permissions: [Role.SYSTEM_ADMIN],
             },
         },
         {

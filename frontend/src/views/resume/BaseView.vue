@@ -8,7 +8,7 @@ import { isDesktop } from '@/utils/client';
 import { hasAnyPermission } from '@/utils/permission';
 import { Role } from '@/constants/auth';
 
-const isAdmin = hasAnyPermission([Role.SUPER_ADMIN]);
+const isAdmin = hasAnyPermission([Role.SYSTEM_ADMIN]);
 
 const page = ref();
 useFavicon().value = '/resume.ico';

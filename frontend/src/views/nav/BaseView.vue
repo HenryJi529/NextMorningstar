@@ -17,7 +17,7 @@ import { Role } from '@/constants/auth';
 
 const userStore = useUserStore();
 const { username } = storeToRefs(userStore);
-const isAdmin = hasAnyPermission([Role.SUPER_ADMIN]);
+const isAdmin = hasAnyPermission([Role.SYSTEM_ADMIN]);
 const categories = ref<Category[]>(navData as Category[]);
 for (let i = 0; i < categories.value.length; i++) {
     categories.value[i].icon = categories.value[i].icon.replace(/'/g, '"');
