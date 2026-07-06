@@ -1,6 +1,6 @@
 morningstar:
   perm:
-    role:
+    roles:
       - tag: "system_admin"
         status: true
         name: "系统管理员"
@@ -10,7 +10,7 @@ morningstar:
       - tag: "proxy_admin"
         status: true
         name: "代理管理员"
-    permission:
+    permissions:
       - tag: "sys:user:manage"
         status: true
         name: "系统用户管理权限"
@@ -35,7 +35,7 @@ morningstar:
       - tag: "proxy:node:manage"
         status: true
         name: "代理节点管理权限"
-    role-permission:
+    role-permissions:
       system_admin:
         - "sys:user:manage"
         - "sys:param:manage"

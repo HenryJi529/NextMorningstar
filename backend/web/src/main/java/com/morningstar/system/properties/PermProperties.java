@@ -13,7 +13,7 @@ import java.util.Map;
 @ConfigurationProperties(prefix = "morningstar.perm")
 @Data
 public class PermProperties {
-    private List<Role> role;
-    private List<Permission> permission;
-    private Map<String, List<String>> rolePermission;
+    private List<Role> roles;
+    private List<Permission> permissions;
+    private Map<String, List<String>> rolePermissions;
 }

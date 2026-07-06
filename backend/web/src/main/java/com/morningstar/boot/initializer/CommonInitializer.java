@@ -52,18 +52,18 @@ public abstract class CommonInitializer {
     private RolePermissionMapper rolePermissionMapper;
 
     private void initializePerm() {
-        for (Role role : permProperties.getRole()) {
+        for (Role role : permProperties.getRoles()) {
             if (roleMapper.selectByTag(role.getTag()) == null) {
                 roleMapper.insert(role);
             }
         }
-        for (Permission permission : permProperties.getPermission()) {
+        for (Permission permission : permProperties.getPermissions()) {
             if (permissionMapper.selectByTag(permission.getTag()) == null) {
                 permissionMapper.insert(permission);
             }
         }
-        for (String roleTag : permProperties.getRolePermission().keySet()) {
-            for (String permissionTag : permProperties.getRolePermission().get(roleTag)) {
+        for (String roleTag : permProperties.getRolePermissions().keySet()) {
+            for (String permissionTag : permProperties.getRolePermissions().get(roleTag)) {
                 Role role = roleMapper.selectByTag(roleTag);
                 Permission permission = permissionMapper.selectByTag(permissionTag);
                 LambdaQueryWrapper<RolePermission> wrapper = new LambdaQueryWrapper<>();
