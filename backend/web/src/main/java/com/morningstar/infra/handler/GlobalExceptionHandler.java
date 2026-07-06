@@ -2,6 +2,7 @@ package com.morningstar.infra.handler;
 
 import com.morningstar.infra.exception.BaseException;
 import com.morningstar.infra.response.R;
+import com.morningstar.infra.response.ResponseCode;
 import com.morningstar.infra.util.EmailUtil;
 import com.morningstar.infra.util.TimeUtil;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mail.MailParseException;
 import org.springframework.mail.MailSendException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -140,5 +142,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(value = NoResourceFoundException.class)
     public R<Object> handle404(Exception ex) {
         return R.error(HttpStatus.NOT_FOUND.name(), "资源不存在: " + ex.getMessage());
+    }
+
+    /**
+     * 捕捉 403 错误
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public R<Object> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
+        // 打印日志，方便排查
+        log.warn("权限不足被拦截: {}", e.getMessage());
+        // 直接复用你之前写的返回逻辑
+        return R.error(ResponseCode.NO_PERMISSION);
     }
 }
