@@ -142,12 +142,6 @@
             <artifactId>commons-pool2</artifactId>
         </dependency>
 
-        <!-- 密码加密和校验 -->
-        <dependency>
-            <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-crypto</artifactId>
-        </dependency>
-
         <!-- 彩色文本 -->
         <dependency>
             <groupId>org.fusesource.jansi</groupId>
