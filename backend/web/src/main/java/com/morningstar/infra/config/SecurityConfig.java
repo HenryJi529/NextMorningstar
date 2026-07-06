@@ -140,7 +140,7 @@ public class SecurityConfig {
                 // 配置匿名访问
                 .requestMatchers(API_ANONYMOUS_LIST.toArray(new String[0])).anonymous()
                 // 配置Actuator超管访问
-                .requestMatchers("/actuator/**").hasRole("super_admin")
+                .requestMatchers("/actuator/**").hasRole("system_admin")
                 // 其他请求需要鉴权
                 .anyRequest().authenticated());
 
