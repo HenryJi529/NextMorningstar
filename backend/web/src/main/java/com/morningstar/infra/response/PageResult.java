@@ -4,7 +4,6 @@ import com.github.pagehelper.PageInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -12,7 +11,7 @@ import java.util.List;
  */
 @Schema(description = "分页工具类")
 @Data
-public class PageResult<T> implements Serializable {
+public class PageResult<T> {
     /**
      * 总记录数
      */

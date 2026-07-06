@@ -5,8 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
-
 /**
  * 标准响应对象
  *
@@ -16,7 +14,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "标准响应对象")
-public class R<T> implements Serializable {
+public class R<T> {
     // 响应码
     @Schema(description = "响应码")
     private String code;

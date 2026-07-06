@@ -7,7 +7,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -17,7 +16,7 @@ import java.util.UUID;
 @Builder
 @TableName("sys_user")
 @Schema(description = "用户对象")
-public class User implements Serializable {
+public class User {
     /**
      * 主键
      */
