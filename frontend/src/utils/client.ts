@@ -1,17 +1,25 @@
 import type { GeolocationCoords } from '@/types/auth';
 import type { AMapGeolocationResponse } from '@/types/amap';
-import axios from '@/axios/index';
+import axios from 'axios';
 import Bowser from 'bowser';
 import MobileDetect from 'mobile-detect';
 
-export const getClientGeolocationCoords = async () => {
-    if (import.meta.env.DEV) {
-        return {
-            latitude: 31.099,
-            longitude: 117.737,
-        };
-    }
+const getClientGeolocationCoordsByBrowser = async () => {
+    return new Promise((resolve, reject) => { // 这一层 new Promise 就是关键
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const coords: GeolocationCoords = {
+                    latitude: pos.coords.latitude,
+                    longitude: pos.coords.longitude,
+                };
+                return resolve(coords);
+            },
+            (err) => reject(err)
+        );
+    });
+};
 
+const getClientGeolocationCoordsByAMap = async () => {
     const response: AMapGeolocationResponse = (
         await axios.get(`https://restapi.amap.com/v3/ip?key=${import.meta.env.VITE_AMAP_KEY}`)
     ).data;
@@ -29,13 +37,21 @@ export const getClientGeolocationCoords = async () => {
     return coords;
 };
 
-const getClientInfo = () => {
+export const getClientGeolocationCoords = async () => {
+    try {
+        return await getClientGeolocationCoordsByBrowser();
+    } catch (e) {
+        return await getClientGeolocationCoordsByAMap();
+    }
+};
+
+const getClientDeviceInfo = () => {
     // @ts-expect-error 忽略 userAgentData 类型提示
     return Bowser.parse(window.navigator.userAgent, navigator.userAgentData);
 };
 
-export const isMobile = () => getClientInfo().platform.type === 'mobile';
+export const isMobile = () => getClientDeviceInfo().platform.type === 'mobile';
 
-export const isDesktop = () => getClientInfo().platform.type === 'desktop';
+export const isDesktop = () => getClientDeviceInfo().platform.type === 'desktop';
 
 export const isBot = () => new MobileDetect(navigator.userAgent).is('bot');
