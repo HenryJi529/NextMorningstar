@@ -4,6 +4,7 @@ import { useUserStore } from '@/stores/users';
 import router from '@/router';
 import { message } from 'ant-design-vue';
 import { ResponseCode } from '@/constants/response';
+import {getClientDeviceId} from "@/utils/client";
 
 const config = {
     timeout: 10 * 60 * 1000,
@@ -14,10 +15,9 @@ const _axios = axios.create(config);
 _axios.interceptors.request.use(
     config => {
         // NProgress.start();
+        config.headers['X-Device-Id'] = getClientDeviceId();
         const token = localStorage.getItem(LocalStorageKey.TOKEN);
-        if (token) {
-            config.headers['Authorization'] = token;
-        }
+        token && (config.headers['Authorization'] = token);
         return config;
     },
     error => {

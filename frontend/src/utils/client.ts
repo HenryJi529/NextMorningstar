@@ -1,5 +1,6 @@
 import type { GeolocationCoords } from '@/types/auth';
 import type { AMapGeolocationResponse } from '@/types/amap';
+import { LocalStorageKey } from '@/constants/storage';
 import axios from 'axios';
 import Bowser from 'bowser';
 import MobileDetect from 'mobile-detect';
@@ -43,6 +44,15 @@ export const getClientGeolocationCoords = async () => {
     } catch (e) {
         return await getClientGeolocationCoordsByAMap();
     }
+};
+
+export const getClientDeviceId = () => {
+    let deviceId = localStorage.getItem(LocalStorageKey.DEVICE_ID);
+    if (!deviceId) {
+        deviceId = crypto.randomUUID();
+        localStorage.setItem(LocalStorageKey.DEVICE_ID, deviceId);
+    }
+    return deviceId;
 };
 
 const getClientDeviceInfo = () => {
