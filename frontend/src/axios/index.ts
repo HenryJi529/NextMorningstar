@@ -17,7 +17,9 @@ _axios.interceptors.request.use(
         // NProgress.start();
         config.headers['X-Device-Id'] = getClientDeviceId();
         const token = localStorage.getItem(LocalStorageKey.ACCESS_TOKEN);
-        token && (config.headers['Authorization'] = token);
+        if (token) {
+            config.headers['Authorization'] = token;
+        }
         return config;
     },
     error => {
