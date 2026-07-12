@@ -2,7 +2,7 @@
 import axios from '@/axios/index';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import {App} from 'ant-design-vue'
+import { App } from 'ant-design-vue';
 const { notification } = App.useApp();
 
 import type { ImageCaptchaResponseVo, R } from '@/types/common';

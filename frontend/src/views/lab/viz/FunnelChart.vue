@@ -144,7 +144,7 @@ const loadFunnelChart = (
 };
 
 const updateFunnelChart = (chartDom: HTMLElement) => {
-    if(!chartDom || data.value.length <= 0){
+    if (!chartDom || data.value.length <= 0) {
         return;
     }
 

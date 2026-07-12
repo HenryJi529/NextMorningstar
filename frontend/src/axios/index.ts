@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/users';
 import router from '@/router';
 import { message } from 'ant-design-vue';
 import { ResponseCode } from '@/constants/response';
-import {getClientDeviceId} from "@/utils/client";
+import { getClientDeviceId } from '@/utils/client';
 
 const config = {
     timeout: 10 * 60 * 1000,

@@ -2,7 +2,7 @@ import { fetchSysParam } from '@/axios/system';
 import type { SysParam } from '@/types/system';
 import type { R } from '@/types/common';
 import { ResponseCode } from '@/constants/response';
-import type { NotificationInstance } from "ant-design-vue/es/notification";
+import type { NotificationInstance } from 'ant-design-vue/es/notification';
 
 interface Notice {
     type: 'success' | 'info' | 'warning' | 'error';
