@@ -13,6 +13,9 @@ import {
 import { getAvatarLink } from '@/utils/media';
 import { ResponseCode } from '@/constants/response';
 
+let heartbeatTimerId: number | undefined;
+let refreshTimerId: number | undefined;
+
 export const useUserStore = defineStore('users', {
     state: (): UserPrivateInfo => {
         return {
@@ -33,6 +36,14 @@ export const useUserStore = defineStore('users', {
     },
     actions: {
         clear() {
+            if (heartbeatTimerId) {
+                window.clearInterval(heartbeatTimerId);
+                heartbeatTimerId = undefined;
+            }
+            if (refreshTimerId) {
+                window.clearInterval(refreshTimerId);
+                refreshTimerId = undefined;
+            }
             localStorage.removeItem(LocalStorageKey.ACCESS_TOKEN);
             this.$reset();
         },
@@ -62,17 +73,20 @@ export const useUserStore = defineStore('users', {
         },
 
         refresh() {
-            window.setInterval(
-                async () => {
-                    const response: R<string> = (await axios.post(API_USER_AUTH_REFRESH, {})).data;
-                    if (response.code !== ResponseCode.SUCCESS) {
-                        this.clear();
-                        return;
-                    }
-                    localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, response.data);
-                },
-                1000 * 60 * 30
-            );
+            const one = async () => {
+                const response: R<string> = (await axios.post(API_USER_AUTH_REFRESH, {})).data;
+                if (response.code !== ResponseCode.SUCCESS) {
+                    this.clear();
+                    return;
+                }
+                localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, response.data);
+            };
+            if (refreshTimerId) {
+                window.clearInterval(refreshTimerId);
+            }
+            refreshTimerId = window.setInterval(async () => {
+                await one();
+            }, 1000 * 60 * 30);
         },
 
         async heartbeat() {
@@ -83,7 +97,10 @@ export const useUserStore = defineStore('users', {
                 }
             };
             await one();
-            window.setInterval(async () => {
+            if (heartbeatTimerId) {
+                window.clearInterval(heartbeatTimerId);
+            }
+            heartbeatTimerId = window.setInterval(async () => {
                 await one();
             }, 1000 * 10);
         },
