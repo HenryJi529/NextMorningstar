@@ -41,7 +41,7 @@ const getClientGeolocationCoordsByAMap = async () => {
 export const getClientGeolocationCoords = async () => {
     try {
         return await getClientGeolocationCoordsByBrowser();
-    } catch (e) {
+    } catch {
         return await getClientGeolocationCoordsByAMap();
     }
 };
