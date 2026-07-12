@@ -286,7 +286,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .nav-content {
-    @apply dropdown-content mt-1 rounded-box shadow flex flex-col space-y-1 text-lg;
+    @apply dropdown-content bg-white dark:bg-gray-800 mt-1 rounded-box shadow flex flex-col space-y-1 text-lg;
     .nav-item {
         @apply z-10 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-sm lg:rounded-xl w-[4rem] p-1;
     }
