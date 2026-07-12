@@ -424,7 +424,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void heartbeat() {
         UUID userId = AuthUtil.getUserId();
-        redisTemplate.opsForValue().set(RedisConstant.AUTH_HEARTBEAT + RedisConstant.KEY_SEPARATOR + userId, System.currentTimeMillis(), 12, TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(RedisConstant.AUTH_HEARTBEAT + RedisConstant.KEY_SEPARATOR + userId, System.currentTimeMillis(), 30, TimeUnit.SECONDS);
     }
 
     @Override

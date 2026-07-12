@@ -12,6 +12,7 @@ import {
 } from '@/constants/api';
 import { getAvatarLink } from '@/utils/media';
 import { ResponseCode } from '@/constants/response';
+import { jwtDecode } from 'jwt-decode';
 
 let heartbeatTimerId: number | undefined;
 let refreshTimerId: number | undefined;
@@ -41,7 +42,7 @@ export const useUserStore = defineStore('users', {
                 heartbeatTimerId = undefined;
             }
             if (refreshTimerId) {
-                window.clearInterval(refreshTimerId);
+                window.clearTimeout(refreshTimerId);
                 refreshTimerId = undefined;
             }
             localStorage.removeItem(LocalStorageKey.ACCESS_TOKEN);
@@ -80,13 +81,23 @@ export const useUserStore = defineStore('users', {
                     return;
                 }
                 localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, response.data);
+                this.refresh();
             };
             if (refreshTimerId) {
-                window.clearInterval(refreshTimerId);
+                window.clearTimeout(refreshTimerId);
             }
-            refreshTimerId = window.setInterval(async () => {
-                await one();
-            }, 1000 * 60 * 30);
+            const accessToken = localStorage.getItem(LocalStorageKey.ACCESS_TOKEN);
+            if (!accessToken) {
+                return;
+            }
+            const timeout = (jwtDecode(accessToken).exp as number) * 1000 - Date.now() - 1000 * 10;
+            refreshTimerId = window.setTimeout(
+                async () => {
+                    refreshTimerId = undefined;
+                    await one();
+                },
+                Math.max(timeout, 0)
+            );
         },
 
         async heartbeat() {
