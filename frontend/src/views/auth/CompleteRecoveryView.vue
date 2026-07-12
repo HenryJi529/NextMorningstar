@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router';
 import { onMounted, ref } from 'vue';
 import axios from '@/axios/index';
 import { API_USER_AUTH_RECOVER_COMPLETE } from '@/constants/api';
-import type { CompleteRecoveryRequestVo, CompleteRecoveryResponseVo } from '@/types/auth';
+import type { CompleteRecoveryRequestVo, CompleteRecoveryResponseVo } from '@/types/system';
 import type { R } from '@/types/common';
 import { getFirstParam } from '@/utils/http';
 import { LocalStorageKey } from '@/constants/storage';

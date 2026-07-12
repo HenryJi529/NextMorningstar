@@ -6,7 +6,7 @@ import { App } from 'ant-design-vue';
 const { notification } = App.useApp();
 
 import type { ImageCaptchaResponseVo, R } from '@/types/common';
-import type { RegisterRequestVo, RegisterResponseVo } from '@/types/auth';
+import type { RegisterRequestVo, RegisterResponseVo } from '@/types/system';
 import {
     API_COMMON_CAPTCHA_IMAGE,
     API_USER_AUTH_REGISTER,

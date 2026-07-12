@@ -4,7 +4,7 @@ import axios from '@/axios/index';
 import { API_USER_MANAGE_INFO_ALL } from '@/constants/api';
 import { onMounted, ref } from 'vue';
 import CommonManageListTable from '@/components/manage/CommonManageListTable.vue';
-import type { UserManageableInfo, UserPrivateInfo } from '@/types/auth';
+import type { UserManageableInfo, UserPrivateInfo } from '@/types/system';
 import { ROLE_PREFIX } from '@/constants/auth';
 
 const config: ListResourceConfig = {

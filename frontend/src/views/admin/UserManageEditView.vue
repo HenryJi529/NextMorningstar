@@ -9,7 +9,7 @@ import {
     API_USER_MANAGE_RECOVER,
     API_USER_MANAGE_ROLE,
 } from '@/constants/api';
-import type { UserPrivateInfo } from '@/types/auth';
+import type { UserPrivateInfo } from '@/types/system';
 import AlertSuccess from '@/components/alert/AlertSuccess.vue';
 import AlertError from '@/components/alert/AlertError.vue';
 import { ROLE_PREFIX } from '@/constants/auth';

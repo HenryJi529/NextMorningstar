@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from '@/axios/index';
 import { API_USER_AUTH_OAUTH2_GITHUB } from '@/constants/api';
-import type { OAuthResponseVo } from '@/types/auth';
+import type { OAuthResponseVo } from '@/types/system';
 import type { R } from '@/types/common';
 import { LocalStorageKey } from '@/constants/storage';
 import { getPreRoute, removePreRoute } from '@/utils/route';

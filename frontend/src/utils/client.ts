@@ -1,4 +1,4 @@
-import type { GeolocationCoords } from '@/types/auth';
+import type { GeolocationCoords } from '@/types/system';
 import type { AMapGeolocationResponse } from '@/types/amap';
 import { LocalStorageKey } from '@/constants/storage';
 import axios from 'axios';

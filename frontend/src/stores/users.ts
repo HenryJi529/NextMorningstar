@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import axios from '@/axios/index';
 
 import type { R } from '@/types/common';
-import type { LogoutResponseVo, UserPrivateInfo } from '@/types/auth';
+import type { LogoutResponseVo, UserPrivateInfo } from '@/types/system';
 import { LocalStorageKey } from '@/constants/storage';
 import {
     API_USER_AUTH_HEARTBEAT,

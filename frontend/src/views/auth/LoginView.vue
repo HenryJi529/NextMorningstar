@@ -6,7 +6,7 @@ import { App } from 'ant-design-vue';
 const { notification } = App.useApp();
 
 import type { ImageCaptchaResponseVo, R } from '@/types/common';
-import type { LoginRequestVo, LoginResponseVo } from '@/types/auth';
+import type { LoginRequestVo, LoginResponseVo } from '@/types/system';
 import { API_COMMON_CAPTCHA_IMAGE, API_USER_AUTH_LOGIN } from '@/constants/api';
 import { LocalStorageKey } from '@/constants/storage';
 import StandaloneForm from '@/views/auth/components/StandaloneForm.vue';

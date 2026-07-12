@@ -7,7 +7,7 @@ import axios from '@/axios/index';
 import { API_CONTACT_EMAIL, API_USER_AUTH_RECOVER_INITIATE } from '@/constants/api';
 import type { R } from '@/types/common';
 import EmailCaptchaField from '@/components/input/EmailCaptchaField.vue';
-import type { InitiateRecoveryRequestVo } from '@/types/auth';
+import type { InitiateRecoveryRequestVo } from '@/types/system';
 import OAuthLinks from '@/views/auth/components/OAuthLinks.vue';
 import { useUserStore } from '@/stores/users';
 import { ResponseCode } from '@/constants/response';
