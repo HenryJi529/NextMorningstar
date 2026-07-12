@@ -114,7 +114,7 @@ public class UserServiceImpl implements UserService {
         redisTemplate.opsForValue().set(RedisConstant.AUTH_LOGIN + RedisConstant.KEY_SEPARATOR + loginUser.getUser().getId(), loginUser, jwtProperties.getTtl(), TimeUnit.MILLISECONDS);
     }
 
-    private void updateLoginUserInRedis(UUID userId) {
+    private void setLoginUserInRedis(UUID userId) {
         String username = userMapper.selectById(userId).getUsername();
         LoginUser newLoginUser = (LoginUser) userDetailsService.loadUserByUsername(username);
         setLoginUserInRedis(newLoginUser);
@@ -123,7 +123,7 @@ public class UserServiceImpl implements UserService {
     private void updateCurrentLoginUserInRedis() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         LoginUser oldLoginUser = (LoginUser) authentication.getPrincipal();
-        updateLoginUserInRedis(oldLoginUser.getUser().getId());
+        setLoginUserInRedis(oldLoginUser.getUser().getId());
     }
 
     private void preCheckImageCaptcha(ImageCaptchaProtectedRequestVo vo) {
@@ -481,7 +481,7 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        updateLoginUserInRedis(dbUser.getId());
+        setLoginUserInRedis(dbUser.getId());
     }
 
     @Override
