@@ -56,7 +56,7 @@ const login = async () => {
         }
     } else {
         const loginResponseVo = response.data;
-        localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, loginResponseVo.token);
+        localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, loginResponseVo.accessToken);
         errorMessage.value = '';
 
         await popupNotice(notification);

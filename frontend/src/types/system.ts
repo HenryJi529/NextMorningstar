@@ -59,7 +59,7 @@ export interface RegisterRequestVo {
 
 export interface RegisterResponseVo {
     username: string;
-    token: string;
+    accessToken: string;
 }
 
 export interface LoginRequestVo {
@@ -71,13 +71,12 @@ export interface LoginRequestVo {
 
 export interface LoginResponseVo {
     username: string;
-    token: string;
+    accessToken: string;
 }
 
 export interface OAuthResponseVo {
-    id: string;
     username: string;
-    token: string;
+    accessToken: string;
 }
 
 export interface LogoutResponseVo {
@@ -106,12 +105,12 @@ export interface InitiateRecoveryRequestVo {
 
 export interface CompleteRecoveryRequestVo {
     id: string;
-    token: string;
+    accessToken: string;
 }
 
 export interface CompleteRecoveryResponseVo {
     username: string;
-    token: string;
+    accessToken: string;
 }
 
 export enum Scope {

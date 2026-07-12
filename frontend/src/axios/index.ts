@@ -14,11 +14,10 @@ const _axios = axios.create(config);
 
 _axios.interceptors.request.use(
     config => {
-        // NProgress.start();
         config.headers['X-Device-Id'] = getClientDeviceId();
-        const token = localStorage.getItem(LocalStorageKey.ACCESS_TOKEN);
-        if (token) {
-            config.headers['Authorization'] = token;
+        const accessToken = localStorage.getItem(LocalStorageKey.ACCESS_TOKEN);
+        if (accessToken) {
+            config.headers['Authorization'] = accessToken;
         }
         return config;
     },

@@ -543,6 +543,6 @@ public class UserServiceImpl implements UserService {
         setLoginUserInRedis(loginUser);
 
         // 组装注册成功数据
-        return new OAuthResponseVo(loginUser.getUser().getId(), loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername()));
+        return new OAuthResponseVo(loginUser.getUsername(), jwtUtil.create(loginUser.getUser().getId(), loginUser.getUsername()));
     }
 }

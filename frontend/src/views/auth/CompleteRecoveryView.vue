@@ -19,7 +19,7 @@ const errorMessage = ref('');
 
 const verify = async () => {
     const completeRecoveryResponseVo: CompleteRecoveryRequestVo = {
-        token: getFirstParam(route.query.token as string[] | string),
+        accessToken: getFirstParam(route.query.token as string[] | string),
         id: getFirstParam(route.query.id as string[] | string),
     };
     isLoading.value = true;
@@ -31,7 +31,7 @@ const verify = async () => {
         errorMessage.value = response.msg;
         return;
     }
-    localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, response.data.token);
+    localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, response.data.accessToken);
     await userStore.loadUser();
     await router.push({ name: 'index' });
 };

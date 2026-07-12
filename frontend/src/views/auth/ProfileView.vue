@@ -17,7 +17,11 @@ import { getFileExtension } from '@/utils/file';
 import type { R } from '@/types/common';
 import AlertSuccess from '@/components/alert/AlertSuccess.vue';
 import AlertError from '@/components/alert/AlertError.vue';
-import type { UpdateEmailRequestVo, UpdatePasswordRequestVo, UserEditableInfo } from '@/types/system';
+import type {
+    UpdateEmailRequestVo,
+    UpdatePasswordRequestVo,
+    UserEditableInfo,
+} from '@/types/system';
 import EmailCaptchaField from '@/components/input/EmailCaptchaField.vue';
 import { ResponseCode } from '@/constants/response';
 
