@@ -6,17 +6,24 @@ import { API_USER_AUTH_OAUTH2_GITHUB } from '@/constants/api';
 import type { OAuthResponseVo } from '@/types/system';
 import type { R } from '@/types/common';
 import { LocalStorageKey } from '@/constants/storage';
+import { consumeGithubOAuthState } from '@/utils/oauth';
 import { getPreRoute, removePreRoute } from '@/utils/route';
 import { useUserStore } from '@/stores/users';
 import { ResponseCode } from '@/constants/response';
 
 const router = useRouter();
 const route = useRoute();
-const code = route.query.code;
+const code = route.query.code as string;
+const state = route.query.state as string;
 const message = ref('认证中...');
 
 onMounted(async () => {
     useUserStore().clear();
+    if (!consumeGithubOAuthState(state)) {
+        message.value = '认证无效';
+        return;
+    }
+
     const response: R<OAuthResponseVo> = (
         await axios.get(`${API_USER_AUTH_OAUTH2_GITHUB}?code=${code}`)
     ).data;
