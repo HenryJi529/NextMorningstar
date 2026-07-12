@@ -39,7 +39,7 @@ const connect = () => {
     stompClient.heartbeat.incoming = 10000;
     stompClient.connect(
         {
-            Authorization: localStorage.getItem(LocalStorageKey.TOKEN),
+            Authorization: localStorage.getItem(LocalStorageKey.ACCESS_TOKEN),
         },
         (frame: Frame) => {
             console.log('connected: ' + frame);

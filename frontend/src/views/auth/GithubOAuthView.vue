@@ -24,7 +24,7 @@ onMounted(async () => {
     if (response.code !== ResponseCode.SUCCESS) {
         message.value = response.msg;
     } else {
-        localStorage.setItem(LocalStorageKey.TOKEN, response.data.token);
+        localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, response.data.token);
         const preRoute = getPreRoute();
         if (preRoute) {
             removePreRoute();

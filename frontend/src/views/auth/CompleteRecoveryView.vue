@@ -31,7 +31,7 @@ const verify = async () => {
         errorMessage.value = response.msg;
         return;
     }
-    localStorage.setItem(LocalStorageKey.TOKEN, response.data.token);
+    localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, response.data.token);
     await userStore.loadUser();
     await router.push({ name: 'index' });
 };

@@ -1,5 +1,5 @@
 export enum LocalStorageKey {
-    TOKEN = 'token',
+    ACCESS_TOKEN = 'access-token',
     BLOG_PREFER_THEME = 'blog-prefer-theme',
     DEVICE_ID = 'device-id',
 }

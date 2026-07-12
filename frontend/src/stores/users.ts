@@ -33,12 +33,12 @@ export const useUserStore = defineStore('users', {
     },
     actions: {
         clear() {
-            localStorage.removeItem(LocalStorageKey.TOKEN);
+            localStorage.removeItem(LocalStorageKey.ACCESS_TOKEN);
             this.$reset();
         },
 
         async loadUser() {
-            if (!localStorage.getItem(LocalStorageKey.TOKEN)) {
+            if (!localStorage.getItem(LocalStorageKey.ACCESS_TOKEN)) {
                 return;
             }
 
@@ -69,7 +69,7 @@ export const useUserStore = defineStore('users', {
                         this.clear();
                         return;
                     }
-                    localStorage.setItem(LocalStorageKey.TOKEN, response.data);
+                    localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, response.data);
                 },
                 1000 * 60 * 30
             );

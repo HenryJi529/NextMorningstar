@@ -85,7 +85,7 @@ const register = async () => {
         }
     } else {
         const registerResponseVo = response.data;
-        localStorage.setItem(LocalStorageKey.TOKEN, registerResponseVo.token);
+        localStorage.setItem(LocalStorageKey.ACCESS_TOKEN, registerResponseVo.token);
         errorMessage.value = '';
 
         await popupNotice(notification);
