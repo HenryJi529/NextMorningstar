@@ -1,7 +1,5 @@
 import axios from 'axios';
 import { LocalStorageKey } from '@/constants/storage';
-import { useUserStore } from '@/stores/users';
-import router from '@/router';
 import { message } from 'ant-design-vue';
 import { ResponseCode } from '@/constants/response';
 import { getClientDeviceId } from '@/utils/client';
@@ -28,15 +26,14 @@ _axios.interceptors.request.use(
 
 _axios.interceptors.response.use(
     response => {
-        // NProgress.done();
         if (response.data.code <= 0) {
             console.error(`code ${response.data.code}: ${response.data.message}`);
             if (
                 response.data.code === ResponseCode.TOKEN_INVALID ||
                 response.data.code === ResponseCode.TOKEN_EXPIRED
             ) {
-                useUserStore().clear();
-                router.go(0);
+                localStorage.removeItem(LocalStorageKey.ACCESS_TOKEN);
+                window.location.reload();
                 return Promise.reject('令牌失效/错误');
             }
         }
