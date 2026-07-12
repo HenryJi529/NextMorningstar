@@ -5,17 +5,17 @@ import axios from 'axios';
 import Bowser from 'bowser';
 import MobileDetect from 'mobile-detect';
 
-const getClientGeolocationCoordsByBrowser = async () => {
-    return new Promise((resolve, reject) => { // 这一层 new Promise 就是关键
+const getClientGeolocationCoordsByBrowser = (): Promise<GeolocationCoords> => {
+    return new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-            (pos) => {
+            pos => {
                 const coords: GeolocationCoords = {
                     latitude: pos.coords.latitude,
                     longitude: pos.coords.longitude,
                 };
                 return resolve(coords);
             },
-            (err) => reject(err)
+            err => reject(err)
         );
     });
 };
