@@ -120,6 +120,6 @@
         "vue-tsc": "^3.2.5"
     },
     "browserslist": [
-        "Chrome >= 86"
+        "last 2 years"
     ]
 }
