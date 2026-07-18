@@ -3,12 +3,15 @@ springdoc:
     path: /docs/json
   swagger-ui:
     path: /docs/ui
-  packagesToScan:
-    - com.morningstar.common.web.controller
-    - com.morningstar.blog.web.controller
-    - com.morningstar.love.web.controller
-    - com.morningstar.pic.web.controller
-    - com.morningstar.lab.web.controller
-    - com.morningstar.proxy.web.controller
-    - org.springframework.boot.actuate
   show-actuator: true
+  group-configs:
+    - group: "业务接口"
+      packages-to-scan:
+        - com.morningstar.system.web.controller
+        - com.morningstar.blog.web.controller
+        - com.morningstar.lab.web.controller
+        - com.morningstar.love.web.controller
+        - com.morningstar.pic.web.controller
+        - com.morningstar.proxy.web.controller
+    - group: "系统监控"
+      paths-to-match: /actuator/**
