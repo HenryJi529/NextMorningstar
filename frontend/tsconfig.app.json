@@ -5,6 +5,11 @@
     "compilerOptions": {
         "composite": true,
 
+        // 语法版本用最新
+        "target": "ESNext",
+        // API字典用最新
+        "lib": ["DOM", "DOM.Iterable", "ESNext"],
+
         // 不开启数组/对象索引越界风险检查（避免误判）
         "noUncheckedIndexedAccess": false,
 
