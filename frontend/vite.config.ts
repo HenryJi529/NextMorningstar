@@ -3,10 +3,12 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import { configDefaults } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
+import legacy from '@vitejs/plugin-legacy';
 import viteCompression from 'vite-plugin-compression';
 import { visualizer } from 'rollup-plugin-visualizer';
 import removeConsole from 'vite-plugin-remove-console';
 import vueDevTools from 'vite-plugin-vue-devtools';
+import browserslist from 'browserslist';
 import path from 'path';
 
 // https://vitejs.dev/config/
@@ -48,6 +50,11 @@ export default defineConfig(({ command, mode }) => {
                 ext: '.gz', // 生成的压缩后缀
                 threshold: 1024, // 仅压缩大于 1KB 的文件
                 deleteOriginFile: false, // 是否删除原始文件（建议 false）
+            }),
+            legacy({
+                renderLegacyChunks: false,
+                modernTargets: browserslist(),
+                modernPolyfills: true
             }),
         ],
         resolve: {
