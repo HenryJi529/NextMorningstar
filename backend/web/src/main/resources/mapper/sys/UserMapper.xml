@@ -25,6 +25,7 @@
             </if>
         </where>
         order by create_time desc
+        limit #{limit} offset #{offset}
     </select>
     <select id="selectAllByPage" resultType="com.morningstar.system.pojo.po.User">
         select *

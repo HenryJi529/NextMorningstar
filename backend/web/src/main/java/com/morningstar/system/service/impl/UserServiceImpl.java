@@ -4,9 +4,6 @@ import cn.hutool.core.lang.Validator;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
 import com.morningstar.infra.constant.GithubConstant;
 import com.morningstar.infra.constant.RedisConstant;
 import com.morningstar.infra.exception.BaseException;
@@ -142,15 +139,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public PageResult<UserPublicInfo> getPublicInfo(UserPublicInfoFuzzyPageQueryRequestVo vo) {
-        try (Page<Object> ignored = PageHelper.startPage(vo.getPage(), vo.getPageSize())) {
-            List<User> userList = userMapper.selectByFuzzyValue(vo.getFuzzyValue());
-
-            PageResult<UserPublicInfo> pageResult = new PageResult<>(new PageInfo<>(
-                    userList.stream().map(this::getPublicInfo).toList()
-            ));
-            pageResult.fixPageInfo(new PageInfo<>(userList));
-            return pageResult;
-        }
+        long totalRecordNum = userMapper.selectByFuzzyValue(vo.getFuzzyValue(), Integer.MAX_VALUE, 0).size();
+        List<User> userList = userMapper.selectByFuzzyValue(vo.getFuzzyValue(), vo.getPageSize(), (vo.getPage() - 1) * vo.getPageSize());
+        List<UserPublicInfo> userPublicInfoList = userList.stream().map(this::getPublicInfo).toList();
+        return new PageResult<>(userPublicInfoList, vo.getPageSize(), vo.getPage(), totalRecordNum);
     }
 
     /**

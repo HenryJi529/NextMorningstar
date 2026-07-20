@@ -1,6 +1,5 @@
 package com.morningstar.infra.response;
 
-import com.github.pagehelper.PageInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -51,11 +50,6 @@ public class PageResult<T> {
     /**
      * 分页数据组装
      */
-    public PageResult(PageInfo<T> pageInfo) {
-        loadPageInfo(pageInfo);
-        records = pageInfo.getList();
-    }
-
     public PageResult(List<T> records, int pageNum, int pageSize, long totalRecordNum) {
         this.totalRecordNum = (int) totalRecordNum;
         this.totalPageNum = (int) ((totalRecordNum % pageSize == 0) ? totalRecordNum / pageSize : totalRecordNum / pageSize + 1);
@@ -63,20 +57,5 @@ public class PageResult<T> {
         this.pageSize = pageSize;
         this.currentPageSize = records.size();
         this.records = records;
-    }
-
-    private void loadPageInfo(PageInfo<?> pageInfo) {
-        totalRecordNum = (int) pageInfo.getTotal();
-        totalPageNum = pageInfo.getPages();
-        pageNum = pageInfo.getPageNum();
-        pageSize = pageInfo.getPageSize();
-        currentPageSize = pageInfo.getSize();
-    }
-
-    /**
-     * 修正分页信息
-     */
-    public void fixPageInfo(PageInfo<Object> otherPageInfo) {
-        loadPageInfo(otherPageInfo);
     }
 }

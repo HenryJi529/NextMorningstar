@@ -39,7 +39,6 @@
         <qiniu.version>7.15.1</qiniu.version>
         <mybatis.version>3.0.4</mybatis.version>
         <mybatis-plus.version>3.5.8</mybatis-plus.version>
-        <pagehelper.version>2.1.0</pagehelper.version>
         <metadata-extractor.version>2.19.0</metadata-extractor.version>
         <commonmark.version>0.24.0</commonmark.version>
         <elasticsearch.version>7.17.5</elasticsearch.version>
@@ -159,11 +158,6 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-boot-starter</artifactId>
                 <version>${mybatis-plus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.pagehelper</groupId>
-                <artifactId>pagehelper-spring-boot-starter</artifactId>
-                <version>${pagehelper.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.drewnoakes</groupId>

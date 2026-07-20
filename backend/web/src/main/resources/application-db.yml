@@ -65,7 +65,3 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
 
-# pagehelper配置
-pagehelper:
-  helper-dialect: mysql # 指定分页数据库类型(方言)【某些数据库可能不支持limit】
-  reasonable: true # 合理查询: e.g. 超过最大页，则查询最后一页

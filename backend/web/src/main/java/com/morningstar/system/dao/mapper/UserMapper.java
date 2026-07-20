@@ -12,7 +12,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     User selectByEmail(@Param("email") String email);
 
-    List<User> selectByFuzzyValue(@Param("fuzzyValue") String fuzzyValue);
+    List<User> selectByFuzzyValue(@Param("fuzzyValue") String fuzzyValue, @Param("limit") int limit, @Param("offset") int offset);
 
     IPage<User> selectAllByPage(IPage<User> page);
 
