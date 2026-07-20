@@ -59,7 +59,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -147,7 +146,7 @@ public class UserServiceImpl implements UserService {
             List<User> userList = userMapper.selectByFuzzyValue(vo.getFuzzyValue());
 
             PageResult<UserPublicInfo> pageResult = new PageResult<>(new PageInfo<>(
-                    userList.stream().map(this::getPublicInfo).collect(Collectors.toList())
+                    userList.stream().map(this::getPublicInfo).toList()
             ));
             pageResult.fixPageInfo(new PageInfo<>(userList));
             return pageResult;
