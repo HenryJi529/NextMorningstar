@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 
 public class ThreadLocalTest {
 
-    public static ThreadLocal<String> threadLocal = new ThreadLocal<>();
+    public final static ThreadLocal<String> threadLocal = new ThreadLocal<>();
 
     @Test
     public void test() {
