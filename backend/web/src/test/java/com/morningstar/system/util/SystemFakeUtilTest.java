@@ -13,7 +13,7 @@ import java.util.Arrays;
 public class SystemFakeUtilTest {
     @Autowired
     private SystemFakeUtil systemFakeUtil;
-    
+
     @Test
     public void testFakeUser() {
         User[] users = new User[10];

@@ -1,8 +1,8 @@
 package com.morningstar.system.service.impl;
 
+import com.morningstar.infra.util.EmailUtil;
 import com.morningstar.system.pojo.vo.req.EmailContactRequestVo;
 import com.morningstar.system.service.ContactService;
-import com.morningstar.infra.util.EmailUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

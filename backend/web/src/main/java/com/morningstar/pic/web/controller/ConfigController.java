@@ -1,10 +1,10 @@
 package com.morningstar.pic.web.controller;
 
 import com.morningstar.infra.exception.BaseException;
-import com.morningstar.pic.pojo.vo.req.SetGithubPatRequestVo;
-import com.morningstar.pic.service.ConfigService;
 import com.morningstar.infra.response.R;
 import com.morningstar.infra.response.ResponseCode;
+import com.morningstar.pic.pojo.vo.req.SetGithubPatRequestVo;
+import com.morningstar.pic.service.ConfigService;
 import com.morningstar.system.util.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -1,6 +1,11 @@
 package com.morningstar.pic.web.controller;
 
 import com.morningstar.infra.exception.BaseException;
+import com.morningstar.infra.response.PageResult;
+import com.morningstar.infra.response.R;
+import com.morningstar.infra.response.ResponseCode;
+import com.morningstar.infra.util.ImageUtil;
+import com.morningstar.infra.validation.constraint.FileNotEmpty;
 import com.morningstar.pic.lib.ImageLinkGenerators;
 import com.morningstar.pic.pojo.bo.Image;
 import com.morningstar.pic.pojo.bo.ImageDetail;
@@ -9,12 +14,7 @@ import com.morningstar.pic.pojo.po.Config;
 import com.morningstar.pic.pojo.vo.req.UploadSmallImageRequestVo;
 import com.morningstar.pic.service.ConfigService;
 import com.morningstar.pic.service.ResourceService;
-import com.morningstar.infra.response.PageResult;
-import com.morningstar.infra.response.R;
-import com.morningstar.infra.response.ResponseCode;
 import com.morningstar.system.util.AuthUtil;
-import com.morningstar.infra.util.ImageUtil;
-import com.morningstar.infra.validation.constraint.FileNotEmpty;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

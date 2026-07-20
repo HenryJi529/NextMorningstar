@@ -1,9 +1,9 @@
 package com.morningstar.system.web.controller;
 
 
+import com.morningstar.infra.response.R;
 import com.morningstar.system.pojo.vo.resp.ImageCaptchaResponseVo;
 import com.morningstar.system.service.CommonService;
-import com.morningstar.infra.response.R;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;

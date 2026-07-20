@@ -1,8 +1,8 @@
 package com.morningstar.love.web.controller;
 
+import com.morningstar.infra.response.R;
 import com.morningstar.love.pojo.bo.LovePhotoData;
 import com.morningstar.love.service.LoveService;
-import com.morningstar.infra.response.R;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

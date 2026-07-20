@@ -1,11 +1,11 @@
 package com.morningstar.system.service;
 
+import com.morningstar.infra.response.PageResult;
 import com.morningstar.system.pojo.bo.UserEditableInfo;
 import com.morningstar.system.pojo.bo.UserPrivateInfo;
 import com.morningstar.system.pojo.bo.UserPublicInfo;
 import com.morningstar.system.pojo.vo.req.*;
 import com.morningstar.system.pojo.vo.resp.*;
-import com.morningstar.infra.response.PageResult;
 
 import java.util.List;
 import java.util.UUID;

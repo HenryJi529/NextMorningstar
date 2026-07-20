@@ -1,8 +1,8 @@
 package com.morningstar.system.web.controller;
 
+import com.morningstar.infra.response.R;
 import com.morningstar.system.pojo.vo.req.EmailContactRequestVo;
 import com.morningstar.system.service.ContactService;
-import com.morningstar.infra.response.R;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

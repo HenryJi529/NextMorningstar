@@ -1,12 +1,12 @@
 package com.morningstar.pic.service;
 
+import com.morningstar.infra.response.PageResult;
 import com.morningstar.pic.lib.ImageLinkGenerator;
 import com.morningstar.pic.pojo.bo.Image;
 import com.morningstar.pic.pojo.bo.ImageDetail;
 import com.morningstar.pic.pojo.bo.Usage;
 import com.morningstar.pic.pojo.po.Config;
 import com.morningstar.pic.pojo.vo.req.UploadSmallImageRequestVo;
-import com.morningstar.infra.response.PageResult;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
