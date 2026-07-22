@@ -12,6 +12,7 @@ Desktop.ini
 .trae/
 .mcp.json
 .zread/
+.scannerwork/
 
 .env
 /deploy/backup/*
