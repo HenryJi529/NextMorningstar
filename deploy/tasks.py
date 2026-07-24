@@ -124,7 +124,7 @@ class Commands:
     def deploy():
         colored_print("同步代码...")
         runcmd(
-            f"rsync -avz . {Env.CLOUD_HOST}:{DEPLOY_BASE_DIR} --exclude-from='rsync-exclude.txt'"
+            f"rsync -avzL . {Env.CLOUD_HOST}:{DEPLOY_BASE_DIR} --exclude-from='rsync-exclude.txt'"
         )
         colored_print("应用更新...")
         with conn.cd(DEPLOY_BASE_DIR):
