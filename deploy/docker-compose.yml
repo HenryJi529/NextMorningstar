@@ -62,6 +62,12 @@ volumes:
   neo4j_plugins: 
     external: true
     name: ${PROJECT_NAME}_neo4j_plugins
+  njcb_union_redis_data: 
+    external: true
+    name: njcb_union_redis_data
+  njcb_union_mysql_data:
+    external: true
+    name: njcb_union_mysql_data
 
 networks:
   website:
@@ -90,7 +96,7 @@ services:
       - ./nginx/www:/etc/nginx/www
       - certbot_etc:/etc/letsencrypt
       - certbot_webroot:/var/www/html
-      - /home/${CLOUD_USERNAME}/njcb/union/prototype:/opt/njcb/union-prototype
+      - /home/${CLOUD_USERNAME}/njcb-union/prototype:/opt/njcb-union-prototype
     network_mode: host
   certbot:
     image: certbot/certbot
@@ -280,3 +286,36 @@ services:
     restart: unless-stopped
     networks:
       - website
+  njcb-union-backend:
+    container_name: njcb_union_backend
+    build:
+      context: .
+      dockerfile: njcb-union/Dockerfile
+    tty: true
+    ports:
+      - 8123:8123
+    depends_on:
+      - njcb-union-redis
+      - njcb-union-mysql
+  njcb-union-redis:
+    container_name: server_redis
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - njcb_union_redis_data:/data
+    ports:
+      - 6380:6379
+    command: redis-server --requirepass "" --loglevel warning --maxmemory 256mb --maxmemory-policy volatile-lfu
+  njcb-union-mysql:
+    image: mysql:8
+    container_name: server_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234asdw
+      TZ: Asia/Shanghai
+    command: 
+      - --max-allowed-packet=32M
+    volumes:
+      - njcb_union_mysql_data:/var/lib/mysql
+    ports:
+      - 3307:3306
