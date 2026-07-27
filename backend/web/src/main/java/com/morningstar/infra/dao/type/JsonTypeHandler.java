@@ -1,4 +1,4 @@
-package com.morningstar.system.dao.type;
+package com.morningstar.infra.dao.type;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

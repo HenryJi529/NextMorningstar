@@ -1,4 +1,4 @@
-package com.morningstar.system.dao.type;
+package com.morningstar.infra.dao.type;
 
 import com.morningstar.infra.util.ByteUtil;
 import org.apache.ibatis.type.BaseTypeHandler;
