@@ -17,7 +17,7 @@ import java.util.concurrent.RejectedExecutionHandler;
 
 
 @Configuration
-@EnableAsync
+@EnableAsync(proxyTargetClass = true)
 @Slf4j
 @RequiredArgsConstructor
 public class AsyncConfig implements AsyncConfigurer {
