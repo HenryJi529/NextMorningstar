@@ -61,8 +61,8 @@ public enum ResponseCode {
     BLOG_TAG_UPDATE_FAILED("博客标签[%d]更新失败"),
     BLOG_CATEGORY_NAME_ALREADY_EXISTS("博客分类\"%s\"已存在"),
     BLOG_CATEGORY_DELETE_FAILED("博客分类[%d]删除失败"),
-    BLOG_COMMENT_NOT_FOUND("博客评论[%d]不存在");
-
+    BLOG_COMMENT_NOT_FOUND("博客评论[%d]不存在"),
+    ;
 
     private final String message;
 
