@@ -7,17 +7,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @Slf4j
 @SpringBootTest
-public class CategoryMapperTest {
+class CategoryMapperTest {
     @Autowired
     private CategoryMapper categoryMapper;
 
     @Test
-    public void testSelectRandomN() {
+    void testSelectRandomN() {
         System.out.println(categoryMapper.selectRandomN(2));
     }
 
     @Test
-    public void testSelectAllCategoryDetail() {
+    void testSelectAllCategoryDetail() {
         System.out.println(categoryMapper.selectAllCategoryDetail());
     }
 }
