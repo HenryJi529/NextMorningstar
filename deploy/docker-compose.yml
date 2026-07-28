@@ -62,6 +62,9 @@ volumes:
   neo4j_plugins: 
     external: true
     name: ${PROJECT_NAME}_neo4j_plugins
+  gitea_data: 
+    external: true
+    name: ${PROJECT_NAME}_gitea_data
   njcb_union_redis_data: 
     external: true
     name: njcb_union_redis_data
@@ -296,6 +299,25 @@ services:
     depends_on:
       - njcb-union-redis
       - njcb-union-mysql
+  gitea:
+    image: gitea/gitea:latest
+    container_name: morningstar_gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=sqlite3
+      - GITEA__database__PATH=/data/gitea/gitea.db
+      - GITEA__server__DOMAIN=gitea.morningstar369.com
+      - GITEA__server__ROOT_URL=https://gitea.morningstar369.com/
+      - GITEA__server__SSH_DOMAIN=server.morningstar369.com
+      - GITEA__server__SSH_PORT=222
+    restart: unless-stopped
+    volumes:
+      - gitea_data:/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "7001:3000"
+      - "222:22"
   njcb-union-redis:
     container_name: server_redis
     image: redis:7
