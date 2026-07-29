@@ -65,6 +65,12 @@ volumes:
   gitea_data: 
     external: true
     name: ${PROJECT_NAME}_gitea_data
+  sonarqube_data:
+    external: true
+    name: ${PROJECT_NAME}_sonarqube_data
+  sonarqube_extensions:
+    external: true
+    name: ${PROJECT_NAME}_sonarqube_extensions
   njcb_union_redis_data: 
     external: true
     name: njcb_union_redis_data
@@ -301,7 +307,7 @@ services:
       - njcb-union-mysql
   gitea:
     image: gitea/gitea:latest
-    container_name: morningstar_gitea
+    container_name: ${PROJECT_NAME}_gitea
     environment:
       - USER_UID=1000
       - USER_GID=1000
@@ -318,6 +324,27 @@ services:
     ports:
       - "7001:3000"
       - "222:22"
+  sonarqube-server:
+    image: sonarqube:community
+    container_name: ${PROJECT_NAME}_sonarqube-server
+    ports:
+      - "7002:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    restart: unless-stopped
+  sonarqube-mcp:
+    image: sonarsource/sonarqube-mcp:latest
+    container_name: ${PROJECT_NAME}_sonarqube-mcp
+    ports:
+      - "7003:9001"
+    environment:
+      - SONARQUBE_TRANSPORT=http
+      - SONARQUBE_HTTP_HOST=0.0.0.0
+      - SONARQUBE_HTTP_PORT=9001
+      - SONARQUBE_TOKEN=${SONARQUBE_TOKEN}
+      - SONARQUBE_URL=http://sonarqube-server:9000
+    restart: unless-stopped
   njcb-union-redis:
     container_name: server_redis
     image: redis:7
