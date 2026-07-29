@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.morningstar.dev.dao.mapper.ActionAttemptMapper">
+
+    <select id="selectMaxAttemptNo" resultType="Integer">
+        select ifnull(max(attempt_no), 0)
+        from dev_action_attempt
+        where run_id = #{runId}
+          and action_type = #{actionType}
+    </select>
+    <select id="selectLatestActionAttempt" resultType="com.morningstar.dev.pojo.po.ActionAttempt">
+        select *
+        from dev_action_attempt
+        where run_id = #{runId}
+          and action_type = #{actionType}
+        order by attempt_no desc
+        limit 1
+    </select>
+
+</mapper>

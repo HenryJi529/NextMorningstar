@@ -6,5 +6,5 @@ import com.morningstar.proxy.pojo.po.Sub;
 import java.util.List;
 
 public interface SubMapper extends BaseMapper<Sub> {
-    List<Sub> selectRandomN(int N);
+    List<Sub> selectRandomN(int n);
 }

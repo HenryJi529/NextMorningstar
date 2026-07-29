@@ -7,7 +7,7 @@ import com.morningstar.blog.pojo.po.Category;
 import java.util.List;
 
 public interface CategoryMapper extends BaseMapper<Category> {
-    List<Category> selectRandomN(int N);
+    List<Category> selectRandomN(int n);
 
     List<CategoryDetail> selectAllCategoryDetail();
 }

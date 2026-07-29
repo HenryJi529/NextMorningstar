@@ -7,6 +7,6 @@
         select *
         from proxy_sub
         order by rand()
-        limit #{N}
+        limit #{n}
     </select>
 </mapper>

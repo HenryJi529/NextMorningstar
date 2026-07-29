@@ -10,3 +10,10 @@ morningstar:
       atom-title: "Morningstar Blog Atom Feed"
       excerpt-max-sentence-num: 40
       excerpt-max-visual-length: 300
+    dev:
+      max-attempts:
+        sync: 10
+        scan: 10
+        fix: 10
+        verify: 10
+        submit: 10

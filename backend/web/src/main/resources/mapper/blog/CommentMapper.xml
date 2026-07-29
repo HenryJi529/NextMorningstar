@@ -13,7 +13,7 @@
         select *
         from blog_comment
         order by rand()
-        limit #{N}
+        limit #{n}
     </select>
     <select id="selectCommentDetailByArticleId" resultMap="commentDetailResultMap">
         select C.*, U.username, U.nickname, U.avatar

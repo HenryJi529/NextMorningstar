@@ -178,4 +178,40 @@ create table if not exists pic_config
     primary key (user_id)
 ) comment '图床配置表';
 
+
+-- ======================
+-- Dev相关
+-- ======================
+
+create table if not exists dev_project
+(
+    id                binary(16),
+    link              varchar(256) not null,
+    description       varchar(256),
+    max_fixes_per_run int,
+    primary key (id)
+) comment '研发项目表';
+
+create table if not exists dev_run
+(
+    id         binary(16),
+    project_id binary(16),
+    state      varchar(64) not null,
+    status     varchar(64) not null,
+    primary key (id)
+) comment '研发运行表';
+
+create table if not exists dev_action_attempt
+(
+    id          int auto_increment,
+    run_id      binary(16),
+    action_type varchar(64) not null,
+    attempt_no  int         not null default 1,
+    status      varchar(16) not null,
+    result      json,
+    start_time  datetime,
+    end_time    datetime,
+    primary key (id)
+) comment '研发动作表';
+
 set FOREIGN_KEY_CHECKS = 1;

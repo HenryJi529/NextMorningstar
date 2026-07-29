@@ -42,7 +42,7 @@
         select *
         from blog_article
         order by rand()
-        limit #{N}
+        limit #{n}
     </select>
     <select id="selectArticleDetailByArticleId" resultMap="articleDetailResultMap">
         select

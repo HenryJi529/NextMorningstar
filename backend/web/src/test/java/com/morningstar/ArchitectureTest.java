@@ -23,6 +23,7 @@ public class ArchitectureTest {
             "com.morningstar.love..",
             "com.morningstar.pic..",
             "com.morningstar.proxy..",
+            "com.morningstar.dev..",
     };
 
 

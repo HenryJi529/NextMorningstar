@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 public interface ArticleMapper extends BaseMapper<Article> {
-    List<Article> selectRandomN(int N);
+    List<Article> selectRandomN(int n);
 
     ArticleDetail selectArticleDetailByArticleId(@Param("articleId") long id);
 

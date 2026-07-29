@@ -7,7 +7,7 @@
         select *
         from blog_category
         order by rand()
-        limit #{N}
+        limit #{n}
     </select>
     <select id="selectAllCategoryDetail" resultType="com.morningstar.blog.pojo.bo.CategoryDetail">
         select C.id, C.name, count(A.category_id) as `count`

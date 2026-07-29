@@ -7,7 +7,7 @@ import com.morningstar.blog.pojo.po.Tag;
 import java.util.List;
 
 public interface TagMapper extends BaseMapper<Tag> {
-    List<Tag> selectRandomN(int N);
+    List<Tag> selectRandomN(int n);
 
     List<TagDetail> selectAllTagDetail();
 }

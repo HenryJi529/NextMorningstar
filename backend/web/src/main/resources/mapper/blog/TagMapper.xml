@@ -7,7 +7,7 @@
         select *
         from blog_tag
         order by rand()
-        limit #{N}
+        limit #{n}
     </select>
     <select id="selectAllTagDetail" resultType="com.morningstar.blog.pojo.bo.TagDetail">
         select T.id, T.name, count(AT.article_id) as `count`
