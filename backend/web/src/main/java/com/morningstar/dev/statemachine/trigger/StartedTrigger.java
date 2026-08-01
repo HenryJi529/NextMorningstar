@@ -18,6 +18,10 @@ public class StartedTrigger implements Trigger {
         if (event.getToState() != State.STARTED) {
             return;
         }
+        if (stateMachineService.isCancelingRun(event.getRunId())) {
+            stateMachineService.sendEvent(event.getRunId(), Event.CLEAN);
+            return;
+        }
         stateMachineService.sendEvent(event.getRunId(), Event.SYNC);
     }
 }

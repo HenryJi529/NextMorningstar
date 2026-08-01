@@ -32,8 +32,8 @@ public class ActionAttempt {
     private ActionResult result;
 
     @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime startTime;
+    private LocalDateTime createTime;
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime endTime;
+    private LocalDateTime updateTime;
 }

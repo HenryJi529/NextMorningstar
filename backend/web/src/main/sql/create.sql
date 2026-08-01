@@ -186,20 +186,32 @@ create table if not exists pic_config
 create table if not exists dev_project
 (
     id                binary(16),
+    admin_id          binary(16)   not null,
+    name              varchar(128) not null,
     link              varchar(256) not null,
-    description       varchar(256),
+    branch_name       varchar(64)  not null,
+    sonar_project_key varchar(128),
+    description       text,
+    enabled           boolean      not null default true,
     max_fixes_per_run int,
+    create_time       datetime,
+    update_time       datetime,
+    unique key uk_dev_project_link (link),
     primary key (id)
 ) comment '研发项目表';
 
 create table if not exists dev_run
 (
-    id         binary(16),
-    project_id binary(16),
-    state      varchar(64) not null,
-    status     varchar(64) not null,
+    id           binary(16),
+    project_id   binary(16),
+    state        varchar(64) not null,
+    status       varchar(64) not null,
+    container_id varchar(128),
+    pr_id        int,
+    create_time  datetime,
+    update_time  datetime,
     primary key (id)
-) comment '研发运行表';
+) comment '研发任务表';
 
 create table if not exists dev_action_attempt
 (
@@ -209,9 +221,29 @@ create table if not exists dev_action_attempt
     attempt_no  int         not null default 1,
     status      varchar(16) not null,
     result      json,
-    start_time  datetime,
-    end_time    datetime,
+    create_time datetime,
+    update_time datetime,
     primary key (id)
-) comment '研发动作表';
+) comment '研发过程表';
+
+create table if not exists dev_issue
+(
+    id                int auto_increment,
+    run_id            binary(16)    not null,
+    sonar_project_key varchar(128)  not null,
+    sonar_issue_key   varchar(128)  not null,
+    sonar_rule_key    varchar(128)  not null,
+    sonar_severity    varchar(16)   not null,
+    sonar_type        varchar(16)   not null,
+    sonar_message     varchar(1024) not null,
+    sonar_effort      varchar(16),
+    status            varchar(16)   not null,
+    commit_sha        varchar(64),
+    commit_message    text,
+    create_time       datetime,
+    update_time       datetime,
+    primary key (id),
+    unique key uk_dev_run_issue (run_id, sonar_issue_key)
+) comment '研发问题表';
 
 set FOREIGN_KEY_CHECKS = 1;

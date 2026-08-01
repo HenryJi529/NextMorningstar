@@ -1,5 +1,7 @@
 package com.morningstar.dev.pojo.po;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
@@ -7,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
@@ -18,9 +21,25 @@ public class Project {
     @TableId("id")
     private UUID id;
 
+    private UUID adminId;
+
+    private String name;
+
     private String link;
+
+    private String branchName;
+
+    private String sonarProjectKey;
 
     private String description;
 
+    private Boolean enabled;
+
     private Integer maxFixesPerRun;
+
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 }

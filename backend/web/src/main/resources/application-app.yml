@@ -17,3 +17,10 @@ morningstar:
         fix: 10
         verify: 10
         submit: 10
+      schedule:
+        create-cron: "0 0 21 * * ?"
+        dispatch-cron: "*/30 * * * * ?"
+        timeout-cron: "0 */5 * * * ?"
+        cleanup-cron: "0 0 6 * * ?"
+        run-timeout-minutes: 60
+        max-concurrency: 2

@@ -62,6 +62,14 @@ public enum ResponseCode {
     BLOG_CATEGORY_NAME_ALREADY_EXISTS("博客分类\"%s\"已存在"),
     BLOG_CATEGORY_DELETE_FAILED("博客分类[%d]删除失败"),
     BLOG_COMMENT_NOT_FOUND("博客评论[%d]不存在"),
+
+    DEV_PROJECT_NOT_FOUND("项目[%s]不存在"),
+    DEV_PROJECT_ACCESS_DENIED("您无权访问项目[%s]"),
+    DEV_PROJECT_LINK_DUPLICATE("项目链接[%s]已存在"),
+    DEV_RUN_NOT_FOUND("任务[%s]不存在"),
+    DEV_RUN_ACCESS_DENIED("您无权访问任务[%s]"),
+    DEV_PROJECT_REPO_LINK_INVALID("项目仓库链接[%s]无效，无法解析owner/repo"),
+    DEV_PROJECT_REPO_NOT_FOUND("项目仓库[%s]不存在"),
     ;
 
     private final String message;
