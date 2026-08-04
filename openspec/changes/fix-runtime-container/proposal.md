@@ -4,7 +4,7 @@
 
 ## 变更内容
 
-- 编写 `deploy/dev-fix-runtime.Dockerfile`:基于 JDK17 镜像,装入 maven/node/python/claude code CLI/sonar-scanner(**不装 git 凭证**)。
+- 编写 `deploy/dev-fix-runtime.Dockerfile`:基于 JDK17 镜像,装入 maven/node/python/claude code CLI/sonar-scanner(**不装 git**——git 操作与凭证均归后端命令行,见决策 4)。
 - 工作区以**共享卷**互通:宿主机 `~/dev-workspaces/<runId>/repo` ↔ 容器 `/workspace/<runId>/repo`;后端 git 与容器 claude/maven 操作同一份代码。
 - 模型连接(`~/.claude/settings.json`)与 `.mcp.json` 运行时挂载,不写死镜像(外网 deepseek ↔ 内网模型可切换)。
 - `StartAction` 创建宿主机工作区目录并启动容器挂载之;`CleanAction` 删除容器。

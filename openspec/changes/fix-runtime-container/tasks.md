@@ -1,6 +1,6 @@
 ## 1. 镜像
 
-- [ ] 1.1 编写 `dev-fix-runtime.Dockerfile`(JDK17 + maven/git/node/python + claude CLI + sonar-scanner)。
+- [ ] 1.1 编写 `dev-fix-runtime.Dockerfile`(JDK17 + maven/node/python + claude CLI + sonar-scanner,**不装 git**——见决策 4)。
 - [ ] 1.2 模型 settings 与 `.mcp.json` 通过运行时挂载注入。
 
 ## 2. 容器接入
