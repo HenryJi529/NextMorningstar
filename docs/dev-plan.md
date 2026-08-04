@@ -294,24 +294,24 @@ morningstar.app.dev:
 - [ ] 维护 `runId → containerId`(存 `dev_run.container_id`)
 - **验收**:Start/Clean 真实起删容器
 
-### 阶段 2 · 代码同步 / 还原(~4h)— *8/4*
+### 阶段 2 · 代码同步 / 还原(~4h)— *8/6*
 - [ ] `SyncAction`:**后端命令行 git** `clone --recursive` + 切分支(到共享卷,凭证在后端)
 - [ ] `RestoreAction`:**后端命令行 git** `checkout . && clean -fd`(失败/取消还原用)
 - **验收**:共享卷看到克隆代码、容器内可见,且能还原
 
-### 阶段 3 · 漏洞扫描(~3h)— *8/5*
+### 阶段 3 · 漏洞扫描(~3h)— *8/6–8/7*
 - [ ] `ScanAction`:`mvn -q compile` → `sonar-scanner` → 调 `/api/issues/search`
 - [ ] severity 排序 + 规则黑名单过滤(密钥排除)+ 截断 `maxFixesPerRun`
 - [ ] 落 `dev_issue` 表
 - **验收**:真实仓库拉出 N 条 issue 进表
 
-### 阶段 4 · 漏洞修复 ⭐(~8h)— *8/6–8/7*
+### 阶段 4 · 漏洞修复 ⭐(~8h)— *8/7–8/8*
 - [ ] `FixAction`:遍历 `dev_issue`,逐个 claude+MCP 修复(见 4.2)
 - [ ] 平台 `git commit`(一漏洞一 commit),回写 `commit_sha` + `ai_report`
 - [ ] 单 issue / 整 run 超时
 - **验收**:demo 仓库某空指针,容器内 claude 真能修掉并产出一个 commit
 
-### 阶段 5 · 验证(~3h)— *8/8*
+### 阶段 5 · 验证(~3h)— *8/9*
 - [ ] `VerifyAction`:`mvn -q compile` → `sonar-scanner` 重扫 → 查 issue 状态(见 4.3)
 - [ ] 失败 → `git revert` + `dev_issue.status=FAILED`
 - **验收**:故意改坏,Verify 抓到并回滚
@@ -328,7 +328,7 @@ morningstar.app.dev:
 - [ ] 大屏:run 实时状态机流转(SSE/WS)、修复成功率、节省人月(20min/bug)、高频缺陷 Top
 - **MVP**:大屏先保 3 核心指标,高频缺陷图表有时间再做
 
-### 阶段 8 · 联调 + 演示案例 + 无人值守(~6h)— *8/11–8/13*
+### 阶段 8 · 联调 + 演示案例 + 无人值守(~6h)— *8/12–8/13*
 - [ ] 造 demo 仓库:埋 5–8 个 sonar 真问题(空指针/资源泄漏/废弃 API/SQL 拼接)
 - [ ] 用 NextMorningstar backend 自己跑一轮(真实价值演示)
 - [ ] 跑通夜间定时真实触发
@@ -360,7 +360,7 @@ morningstar.app.dev:
 
 ### 8/2 缓冲日建议(可选,不写平台代码,只做风险前置) — ✅ 8/2 已完成,三步全通过
 
-核心命门是 **8/4 的容器内 claude spike**。若 8/2 有零碎精力,在**本地**(先不进容器)验证这条链能跑通,可把头号风险提前暴露:
+核心命门是 **8/5 的容器内 claude spike**。若 8/2 有零碎精力,在**本地**(先不进容器)验证这条链能跑通,可把头号风险提前暴露:
 ```bash
 # 1. 确认 claude code CLI 装好、deepseek 连接配好
 claude --permission-mode bypassPermissions --print "ping"
@@ -369,7 +369,7 @@ claude --permission-mode bypassPermissions --print "使用 sonarqube mcp 的 sea
 # 3. 拿一个真 issue 让它修(在 demo 仓库工作目录里跑)
 claude --permission-mode bypassPermissions --print "使用 sonarqube mcp 查看 issue <id> 与 rule,修复它,勿格式化其他部分,修完只打印 rule key"
 ```
-跑通这三步 → 8/4 只需"把这套搬进容器",风险大降。跑不通 → 8/3 就有时间切方案(如换模型/API 直连),不至于 8/4 才炸。
+跑通这三步 → 8/5 只需"把这套搬进容器",风险大降。跑不通 → 8/3 就有时间切方案(如换模型/API 直连),不至于 8/5 才炸。
 
 ---
 
