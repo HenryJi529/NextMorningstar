@@ -74,7 +74,7 @@
 
 | # | 决策 | 方案 |
 |---|---|---|
-| 1 | **容器策略** | 预构建 `dev-fix-runtime` 镜像(jdk+maven+node+python+**claude CLI**+sonar-scanner+`.mcp.json`,**不装 git 凭证**),每 run 起一个独立容器,**只跑 claude 改文件 + maven/sonar 构建**。宿主机↔容器靠**共享卷**互通代码;git 由后端执行(决策 12)。容器隔离并发 |
+| 1 | **容器策略** | 预构建 `morningstar-dev-sandbox` 镜像(jdk+maven+node+python+**claude CLI**+sonar-scanner + 配置模板 settings.json/mcp.json 占位符打进镜像,**不装 git**),每 run 起一个独立容器,**只跑 claude 改文件 + maven/sonar 构建**。宿主机↔容器靠**共享卷**互通代码;git 由后端执行(决策 12)。容器隔离并发 |
 | 2 | **verify 本质** | **不是"编译通过",而是"sonar 重扫后 issue 消失"**。Java build 只为产 `target/classes` 喂给 scanner。sonar 既出题又阅卷 |
 | 3 | **scan 方式** | 用 `sonar-scanner` 自己扫(已验证参数:`sonar.java.binaries` / `skipUnresolvedTypeChecks` / 多模块逗号分隔) |
 | 4 | **新增 `dev_issue` 表** | 一漏洞一记录、一漏洞一 commit 的载体。Fix→Verify→Submit 串联的关键,**必加** |
@@ -117,11 +117,11 @@ PENDING
 
 ### 4.1 修复容器与镜像
 
-镜像 `dev-fix-runtime:latest`(放 `deploy/dev-fix-runtime.Dockerfile`):
+镜像 `morningstar-dev-sandbox:latest`(放 `deploy/dev-sandbox/Dockerfile`):
 - 基础:`eclipse-temurin:17-jdk`
-- 装入:maven、node、python3、**claude code CLI**、sonar-scanner(**不装 git 凭证**——git 操作由后端完成,见决策 12)
+- 装入:maven、node、python3、**claude code CLI**、sonar-scanner(**不装 git**——git 操作由后端完成,见决策 12)
 - **共享卷**:宿主机 `~/dev-workspaces/<runId>/repo` ↔ 容器 `/workspace/<runId>/repo`,后端 git 与容器 claude/maven 操作同一份代码
-- **模型连接可插拔**:`~/.claude/settings.json` + `.mcp.json` 运行时挂载(不写死镜像);开发期(外网)挂 deepseek,内网部署换行内模型——镜像通用
+- **模型连接可插拔**:`settings.json`(用户级 `~/.claude/`)+ `mcp.json`(**项目级 `/workspace/.mcp.json`**,claude 跟 cwd 走)以**占位符模板打进镜像**,entrypoint 启动时用 env(`DEEPSEEK_API_KEY`/`SONARQUBE_TOKEN`)替换真 key(真 key 不进镜像);开发期(外网)注入 deepseek key,内网部署换行内模型 key——镜像通用
 
 > 🔴 **Day-1 spike(阶段 1)**:容器内跑通 `claude -p "..."`(deepseek + sonarqube MCP),且后端命令行 git 能 clone 到共享卷、容器内可见。全流程前提。
 
@@ -177,15 +177,15 @@ curl -s -u "<token>:" "http://<sonar>/api/issues/search?issues=<issueKey>" | jq 
 |---|---|---|---|
 | Gitea **admin token** | 后端,用完即弃 | 加/删 collaborator | 高,但瞬间 |
 | Gitea **bot token**(git) | 后端 credential store | git clone/push(后端命令行 git) | 高 → 锁后端 |
-| Sonar token | **容器内** | sonar-scanner + claude MCP | 中(非代码权限) |
-| deepseek key | **容器内** | claude 调模型 | 中(可独立轮换) |
+| Sonar token | **容器内(env 注入)** | sonar-scanner + claude MCP | 中(非代码权限) |
+| deepseek key | **容器内(env 注入)** | claude 调模型 | 中(可独立轮换) |
 
 **三层防御:**
 1. **凭证隔离**:git 凭证只在后端,AI 容器内没有 → prompt injection 偷不到代码仓库写权限
 2. **网络出站白名单**:容器只放行 gitea/sonar/deepseek,其余挡死 → 即使容器内 sonar/deepseek 凭证被偷也外传不出
 3. **bot token 最小权限**:单仓库 write,后端凭证文件若泄漏也只限已授权仓库
 
-**为什么 deepseek key 必须进容器(唯一不得不的让步):** claude 必须容器内跑(隔离 AI,不能放后端直接操作),调模型就要 key。让步的是 AI 服务 key(可独立轮换、非代码权限),不是 git 凭证;靠网络白名单兜底。
+**为什么 deepseek key 必须进容器(唯一不得不的让步):** claude 必须容器内跑(隔离 AI,不能放后端直接操作),调模型就要 key——以**运行时 env 注入**(`DEEPSEEK_API_KEY`,entrypoint 替换占位符),**不进镜像层**。让步的是 AI 服务 key(可独立轮换、非代码权限),不是 git 凭证;靠网络白名单兜底。
 
 **为什么弃用 JGit、选命令行 git:** JGit 对 submodule(递归/多认证/LFS)支持差、易踩坑;命令行 git `--recursive` 原生稳定,且命令与原方案几乎一致。
 
@@ -251,7 +251,7 @@ morningstar.app.dev:
       - common-java:S2068
       - secrets:*
   runtime:
-    image: dev-fix-runtime:latest
+    image: morningstar-dev-sandbox:latest
     workspace: /workspace
     workspace-host-bind: ~/dev-workspaces  # 宿主机挂载根
     concurrency: 2                          # 资源池:同时跑的 run 数(Fix 是 I/O,2 核可并发 2–3)
@@ -287,7 +287,7 @@ morningstar.app.dev:
 - [x] 验收:mock 模式端到端跑通(PENDING→CLEANED)，接口查询/取消正常(8/3 通过)
 
 ### 阶段 1 · 修复容器 + Docker 接入(~5h)— *8/4–8/5*
-- [ ] 写 `deploy/dev-fix-runtime.Dockerfile`(含 claude CLI + sonar-scanner + `.mcp.json` COPY)
+- [x] 写 `deploy/dev-sandbox/Dockerfile`(claude CLI + sonar-scanner + 配置模板 settings.json/mcp.json 占位符 COPY + entrypoint env 替换)
 - [ ] 🔴 **spike:容器内 `claude -p "..."` 跑通(deepseek + sonarqube MCP)**
 - [ ] `StartAction`:docker create/run + 挂载**共享卷**(宿主机 `~/dev-workspaces/<runId>` ↔ 容器 `/workspace/<runId>`)
 - [ ] `CleanAction`:docker rm -f
@@ -346,7 +346,7 @@ morningstar.app.dev:
 |---|---|---|---|---|
 | 8/2 | 日 | 缓冲 | — | ✅ 本地预研三步全通过(claude 连通/MCP 查 issue/真修复) |
 | 8/3 | 一 | 4h ✅ | 0 地基 | ✅ 数据模型/Controller/定时骨架/mock 验收,超出预期 |
-| 8/4 | 二 | 4h | 0 收尾 + 1 镜像 | Gitea 授权(任务 3) + 写 Dockerfile |
+| 8/4 | 二 | 4h ✅ | 0 收尾 + 1 镜像 | ✅ Gitea 授权(任务 3)+ Dockerfile(多阶段 node + entrypoint env 注入 + mcp 项目级 /workspace);超前打通 spike 3.1(claude+deepseek) |
 | 8/5 | 三 | 4h | 1 容器 + claude spike | 🔴 **容器内 claude+deepseek+MCP 跑通** |
 | 8/6 | 四 | 4h | 2 git + 3 scan 起步 | clone/restore 真实 |
 | 8/7 | 五 | 4h | 3 收尾 + 4 fix 起步 | 拉 issue 落表 |
@@ -414,8 +414,8 @@ claude --permission-mode bypassPermissions --print "使用 sonarqube mcp 查看 
 ## 待办与下一步
 
 - [x] 用 **OpenSpec** 把阶段 0–9 拆成可追踪 change(已建 10 个)
-- [ ] 提供 `.mcp.json`(sonarqube MCP 配置),阶段 1 打进镜像
-- [ ] 提供 deepseek 的 `~/.claude/settings.json` 连接方式
+- [x] 提供 mcp.json(sonarqube MCP 配置,占位符版)已打进镜像;真 token 运行时 env(`SONARQUBE_TOKEN`)注入
+- [x] 提供 settings.json(deepseek 连接,占位符版)已打进镜像;真 key 运行时 env(`DEEPSEEK_API_KEY`)注入
 - [ ] 提供 **Gitea bot 账号 + 双 token**(admin 授权 + bot write)
 - [ ] 提供 demo 仓库(或由我生成脚手架 + 埋漏洞)
 - [x] AI 诊断报告通过 `commit_message` 生成(决策 15:基于 SonarQube 数据 + resources 模板,中文)

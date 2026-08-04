@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "sonarqube": {
+      "type": "http",
+      "url": "http://host.docker.internal:7003/mcp",
+      "headers": {
+        "Authorization": "Bearer <SONARQUBE_TOKEN>",
+        "SONARQUBE_TOOLSETS": "analysis,issues,security-hotspots,quality-gates,rules,duplications,measures,dependency-risks,coverage,sources,languages,portfolios,system,webhooks"
+      }
+    }
+  }
+}
