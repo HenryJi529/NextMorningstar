@@ -24,3 +24,5 @@ morningstar:
         cleanup-cron: "0 0 6 * * ?"
         run-timeout-minutes: 60
         max-concurrency: 2
+      sandbox:
+        image: morningstar-dev-sandbox:latest

@@ -12,8 +12,8 @@
 ### 决策 1:claude+MCP 自查自修
 prompt 极简(喂 issueId),claude 经 MCP 取 rule/flow 后修复,平台无需解析 issue 详情。
 
-### 决策 2:commit 归后端命令行 git
-claude 只改共享卷文件,**后端命令行 git** `add`/`commit`(凭证不进容器),保证一漏洞一 commit + 规范 message + 可按 commit revert。
+### 决策 2:commit 归临时 alpine/git 容器
+claude 只改 named volume 文件,**临时 alpine/git 容器** `add`/`commit`(凭证 `-e` 注入,用完即毁),保证一漏洞一 commit + 规范 message + 可按 commit revert。
 
 ### 决策 3:双层超时
 单 issue 限深度(`--max-turns`),整 run 限时(wall-clock + CancelTracker)。

@@ -6,7 +6,7 @@
 
 - `FixAction`:遍历 `dev_issue`(status=`SELECTED`),逐个 `docker exec claude --permission-mode bypassPermissions --print "..."` 修复。
 - prompt 让 claude 经 sonarqube MCP 查 issue+rule 后修复,仅输出 rule key。
-- **后端命令行 git** `add -A && commit`(一漏洞一 commit,凭证不进容器),回写 `commit_sha`/status。
+- 临时 alpine/git 容器 `add -A && commit`(一漏洞一 commit,凭证 `-e` 注入,用完即毁),回写 `commit_sha`/status。
 - **ai_report**:claude 基于 SonarQube 数据(rule/issue)用**中文**按 `resources/dev/ai-report-template.md` 模板生成诊断,回写 `dev_issue.ai_report`(供 PR 评论)。
 - 单 issue(`--max-turns`)与整 run(wall-clock)超时;复用 CancelTracker。
 

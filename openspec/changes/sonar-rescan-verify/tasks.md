@@ -6,7 +6,7 @@
 ## 2. 结果处理
 
 - [ ] 2.1 已关闭 → `status=VERIFIED`。
-- [ ] 2.2 仍 OPEN → 后端命令行 git `revert <commit_sha>` + `status=FAILED`。
+- [ ] 2.2 仍 OPEN → 临时 alpine/git 容器 `revert <commit_sha>` + `status=FAILED`。
 
 ## 3. 验证
 

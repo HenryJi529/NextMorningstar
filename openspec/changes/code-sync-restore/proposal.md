@@ -4,9 +4,9 @@
 
 ## 变更内容
 
-- `SyncAction`:**后端命令行 git** `clone --recursive`(含 submodule)到共享卷工作区,并切到 `dev_project.branchName`(凭证在后端,不进容器)。
-- `RestoreAction`:**后端命令行 git** `checkout . && clean -fd`,还原到克隆时状态。
-- 工作区目录约定:宿主机 `~/dev-workspaces/<runId>/repo`(共享卷挂载到容器)。
+- `SyncAction`:通过临时 alpine/git 容器操作 named volume `ws-<projectId>:/workspace`,首次 `clone --recursive` / 后续 `fetch + reset --hard`(决策 10),并切到 `dev_project.branchName`(凭证 `-e` 注入,用完即毁)。
+- `RestoreAction`:通过临时 alpine/git 容器执行 `checkout . && clean -fd`,还原工作区。
+- 工作区:named volume `ws-<projectId>:/workspace`,容器与临时 git 容器共享。
 
 ## 能力
 
