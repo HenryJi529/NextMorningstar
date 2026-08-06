@@ -8,7 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 
 @SpringBootTest
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class AsyncTest {
     private final LabService labService;
 

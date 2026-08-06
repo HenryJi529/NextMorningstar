@@ -13,7 +13,7 @@ import java.util.Objects;
 import java.util.Random;
 
 @SpringBootTest
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class GithubUtilTest {
     private final GithubUtil githubUtil;
     private final String testRepoName = "GithubRestApiTestRepo";

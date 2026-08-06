@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 
 @SpringBootTest
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class EsTest {
     private final EsUtil esUtil;
     private final String indexName = "new_index";

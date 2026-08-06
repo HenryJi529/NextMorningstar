@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 
 @SpringBootTest
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class RedisTemplateTest {
 
     private final RedisTemplate<String, Object> redisTemplate;
