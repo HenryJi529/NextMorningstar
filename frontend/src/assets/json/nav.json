@@ -57,7 +57,7 @@
             {
                 "name": "域名管理",
                 "url": "https://cloudflare.com/",
-                "image": "Admin/域名管理.png",
+                "image": "Admin/域名管理.svg",
                 "desc": "通过Cloudflare配置子域名与安全防护"
             },
             {
