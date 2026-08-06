@@ -5,9 +5,9 @@
 
 ## 2. 容器接入
 
-- [ ] 2.1 `StartAction`:确保 volume 存在(`docker volume create ws-<projectId>`,决策 10),启动容器挂载 `ws-<projectId>:/workspace`(决策 9),注入 `MODEL_API_KEY`/`SONARQUBE_TOKEN` env + `--add-host=host.docker.internal:host-gateway`,回写 `container_id`。
-- [ ] 2.2 `CleanAction`:删除容器(`docker rm -f`),**不删 volume**(volume 持久化为项目缓存,决策 10)。
-- [ ] 2.3 `SyncAction`(补充):首次 clone、后续 `git fetch + reset --hard` 增量更新(决策 10)。
+- [x] 2.1 `StartAction`:确保 volume 存在(`docker volume create morningstar_dev_repo_<projectId>`,决策 10),启动容器(命名 `morningstar_dev_sandbox_<runId>`,不记 `container_id`,决策 11)挂载 `morningstar_dev_repo_<projectId>:/workspace/repo`(决策 9),注入 `MODEL_API_KEY`/`SONARQUBE_TOKEN` env + `--add-host=host.docker.internal:host-gateway`;异常转 FAILED 结果。
+- [x] 2.2 `CleanAction`:删除容器(`docker rm -f`,"No such container" 幂等成功),**不删 volume**(volume 持久化为项目缓存,决策 10);`FailedTrigger` 破环(FAILED 来自 CLEANING 不再发 CLEAN,决策 11)。
+- [x] 2.3 `SyncAction`(补充,8/7 实测通过):首次 clone、后续 `fetch + switch -C + clean -fdx` 增量更新(决策 10);MVP 无子模块(决策 22);`-c safe.directory` + `docker exec chown` 属主修正(决策 21)。
 
 ## 3. Spike 验证
 

@@ -9,4 +9,6 @@ import org.springframework.stereotype.Component;
 @Data
 public class SandboxProperties {
     private String image;
+    private String containerNamePrefix;
+    private String volumeNamePrefix;
 }

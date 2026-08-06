@@ -26,8 +26,6 @@ public class Run {
 
     private State state;
 
-    private String containerId;
-
     private Integer prId;
 
     // NOTE: 观测变量

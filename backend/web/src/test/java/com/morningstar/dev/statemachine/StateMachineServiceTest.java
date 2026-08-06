@@ -1,10 +1,12 @@
 package com.morningstar.dev.statemachine;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
-import com.morningstar.dev.dao.mapper.RunMapper;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
-import com.morningstar.infra.util.RandomUtil;
+import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
+import com.morningstar.dev.service.ProjectService;
+import com.morningstar.dev.service.RunService;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,32 +19,32 @@ import java.util.UUID;
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class StateMachineServiceTest {
     private final StateMachineService stateMachineService;
+    private final ProjectService projectService;
+    private final RunService runService;
     private final ProjectMapper projectMapper;
-    private final RunMapper runMapper;
     private Run run;
 
     @BeforeEach
     void setUp() {
-        Project project = Project
-                .builder()
-                .name("test-project")
-                .id(UUID.randomUUID())
-                .branchName("dev")
-                .adminId(UUID.randomUUID())
-                .link(RandomUtil.getEnglishString(12))
-                .maxFixesPerRun(10)
-                .build();
-        projectMapper.insert(project);
-        this.run = Run
-                .builder()
-                .id(UUID.randomUUID())
-                .projectId(project.getId())
-                .state(State.PENDING)
-                .status(Run.Status.RUNNING)
-                .build();
-        runMapper.insert(this.run);
+        String repoLink = "http://127.0.0.1:7001/SpiderMan/backend";
+        Project project = projectMapper.selectOne(
+                new LambdaQueryWrapper<Project>()
+                        .eq(Project::getLink, repoLink));
+        if (project == null) {
+            project = projectService.createProject(
+                    CreateProjectRequestVo
+                            .builder()
+                            .name("test-project")
+                            .link(repoLink)
+                            .branchName("main")
+                            .description("test-description")
+                            .maxFixesPerRun(10)
+                            .adminId(UUID.randomUUID())
+                            .build()
+            );
+        }
+        this.run = runService.createRun(project.getId());
     }
-
 
     @Test
     @SuppressWarnings({"squid:S2699", "java:S2925"})

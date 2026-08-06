@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "morningstar.app.dev.gitea")
 @Data
 public class GiteaProperties {
-    private String origin;
+    private String publicOrigin;
+
+    private String containerOrigin;
 
     private String botUsername;
 

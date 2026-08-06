@@ -13,14 +13,14 @@
 独立容器天然隔离并发,简单可靠;容器即用即删,无需池化。
 
 ### 决策 2:配置打进镜像 + 运行时 env 注入
-`settings.json`/`mcp.json` 以**占位符模板**(`<MODEL_API_KEY>`/`<SONARQUBE_TOKEN>`)COPY 进镜像(无真 key,可安全分发);`entrypoint` 启动时用环境变量(`MODEL_API_KEY`/`SONARQUBE_TOKEN`)替换占位符。真 key 不进镜像、由后端 `docker run -e` 注入。**路径层级**:`settings.json` 用户级(`~/.claude/`,claude 全局读、不依赖 cwd);`mcp.json` **项目级**(`/workspace/.mcp.json`,claude 跟 cwd 走)。
+`settings.json`/`mcp.json` 以**占位符模板**(`<MODEL_API_KEY>`/`<SONARQUBE_TOKEN>`)COPY 进镜像(无真 key,可安全分发);`entrypoint` 启动时用环境变量(`MODEL_API_KEY`/`SONARQUBE_TOKEN`)替换占位符。真 key 不进镜像、由后端 `docker run -e` 注入。**路径层级**:`settings.json` 用户级(`~/.claude/`,claude 全局读、不依赖 cwd);`mcp.json` **项目级**(`/workspace/.mcp.json`,claude 跟 cwd 走)。volume 挂载点是 `/workspace/repo`(决策 9),`.mcp.json` 留在镜像层——每次起容器都是新鲜占位符副本,entrypoint 每次用当前 env 替换(token 轮换即换即生效,真 key 不滞留 volume)。
 
 ### 决策 3:容器网络
 容器内 sonar `127.0.0.1` 不可达宿主机,统一用 `host.docker.internal`。Mac(Docker Desktop)自动解析;**Linux 生产**需在 `docker run` 加 `--add-host=host.docker.internal:host-gateway`(原生 Docker 默认不提供该 DNS)。
 
 ### 决策 4:git 归临时容器、凭证不进 AI 容器
 
-git clone/commit/push 由后端通过 `docker run --rm -v ws-<projectId>:/workspace` 起临时 alpine/git 容器执行,凭证以 `-e GIT_TOKEN=...` 注入,用完即毁。AI 容器(dev-sandbox)内无 git 凭证 → prompt injection 偷不到。submodule 用 `--recursive` 原生支持(规避 JGit 兼容坑)。与决策 9(named volume)统一:后端不存代码、不碰文件系统,纯编排。
+git clone/commit/push 由后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器执行(**alpine/git 镜像名写死、不进配置**——工具镜像,不与 sandbox 镜像同一生命周期),用完即毁。clone/fetch URL 一律**无凭证形式**(host/owner/repo.git),token 通过 `git -c http.extraHeader=Authorization: token <value>` 直接拼入命令参数(Java 字符串拼接,当次生效,不需要 `-e` 环境变量),**不拼进 remote URL**(token 进 URL 会被 git 原样写入 volume 里 `.git/config`,持久化泄露)。AI 容器(dev-sandbox)内无 git 凭证 → prompt injection 偷不到。**MVP 不处理子模块**(clone 无 `--recursive`,增量无 `submodule update`),后续独立任务补。与决策 9(named volume)统一:后端不存代码、不碰文件系统,纯编排。
 
 ### 决策 5:镜像跨架构构建(sonar-scanner 按 `TARGETARCH` 选包)
 开发者本地 Apple Silicon(arm64)、部署服务器 amd64。sonar-scanner 官方按架构分包(`linux-x64`/`linux-aarch64`),无统一包、官方 Docker 镜像仅 amd64。Dockerfile 用 BuildKit 自动注入的 `TARGETARCH` 选包(`amd64→x64`/`arm64→aarch64`),两边**原生构建**,不依赖 Rosetta——arm64 容器跑 x64 二进制会触发 `rosetta error: failed to open elf at /lib64/ld-linux-x86-64.so.2` → SIGTRAP(exit 133)。
@@ -44,8 +44,49 @@ Claude Code CLI 在 root/sudo 下禁止 `--dangerously-skip-permissions`。Docke
 
 ### 决策 9:workspace 使用 named volume(`docker volume`)
 
-容器以非 root 运行时,bind mount 宿主目录会导致 UID 不对齐(容器内 bot ≠ 宿主机用户),导致无写权限。改用 named volume(`docker volume create ws-<projectId>`,启动时 `-v ws-<projectId>:/workspace`):Docker 自动从镜像复制目录结构并保留属主,UID 天然正确。
+容器以非 root 运行时,bind mount 宿主目录会导致 UID 不对齐(容器内 bot ≠ 宿主机用户),导致无写权限。改用 named volume(`docker volume create morningstar_dev_repo_<projectId>`,启动时 `-v morningstar_dev_repo_<projectId>:/workspace/repo`):Docker 自动从镜像复制目录结构并保留属主,UID 天然正确。**挂载点取 `/workspace/repo` 而非 `/workspace`**:volume 只装仓库代码,`.mcp.json` 留在镜像层(决策 2)。前提:镜像里 `/workspace/repo` 必须**存在且属主为 bot**(Dockerfile `mkdir -p /workspace/repo` + `chown`)——否则 Docker 以 root 属主创建挂载点,bot 无写权限(8/6 实测踩坑)。
 
 ### 决策 10:volume 持久化作项目级本地缓存
 
-volume 命名从 `ws-<runId>` 改为 `ws-<projectId>`,绑定项目生命周期(非 run)。SyncAction 首次 clone,后续 run 只做 `git fetch + reset --hard` 增量更新(几秒,避免每次全量 clone)。CleanAction 只删容器,**不删 volume**(`docker volume rm` 仅在项目删除时触发)。效果:volume 成为项目级代码缓存,大幅减少网络 I/O 和时间。
+volume 命名从 `ws-<runId>` 改为 `morningstar_dev_repo_<projectId>`,绑定项目生命周期(非 run)。SyncAction 首次 clone,后续 run 只做 `fetch + switch -C + clean -fdx` 增量更新(几秒,避免每次全量 clone)。CleanAction 只删容器,**不删 volume**(`docker volume rm` 仅在项目删除时触发)。效果:volume 成为项目级代码缓存,大幅减少网络 I/O 和时间。
+
+### 决策 11:命名确定性 + 失败语义(8/6 落地 StartAction/CleanAction 时定)
+
+- 容器名 `morningstar_dev_sandbox_<runId>`、volume 名 `morningstar_dev_repo_<projectId>` 均由 ID **确定性推导**(前缀配置 `sandbox.container-name-prefix`/`volume-name-prefix`)→ **不记 `dev_run.container_id`**:DB 副本会和 docker 实际状态漂移,能推导就不存;`CleanAction`/`FixAction`(`docker exec`)按 runId 算名直用。
+- Action 失败统一 catch `ProcessExecutionException` → 返回 FAILED `ActionResult`(message = 命令+退出码+stderr,落 `action_attempt.result`)。**不裸抛**:`AbstractAction.execute` 无兜底,裸抛 → attempt 停 RUNNING、run 卡中间态占并发槽,只能等 60min 超时兜底。
+- `CleanAction` 幂等:`docker rm -f` 报 "No such container" 视为成功(清理目标即"容器不存在",已不存在 = 目标达成)。
+- `FailedTrigger` 破环:FAILED **来自 CLEANING** 时不再发 CLEAN——否则 CLEAN 失败 → FAILED → 自动 CLEAN → 再失败,无限循环刷 `action_attempt` 表(START 失败必踩:容器没起来,rm 必报 no such container)。破环后链路:START_FAILED → FAILED → CLEAN(幂等成功)→ CLEANED 终态;docker daemon 级故障则停在 FAILED 躺平,错误现场在 attempt 记录里。
+- START 无重试(max-attempts 只覆盖 sync/scan/fix/verify/submit),故 StartAction 无需 `rm -f` 预清理——下次是新 runId、新容器名,不冲突。
+
+### 决策 12: Gitea 双视角地址(8/7 定)
+
+Gitea 地址按消费方拆两份,**每环境显式配全、无任何回退**:
+
+| 配置 | 用途 | dev | prod |
+|------|------|-----|------|
+| `public-origin` | 后端 API、PR 链接、浏览器访问 | `http://127.0.0.1:7001` | `https://gitea.morningstar369.com` |
+| `container-origin` | 临时 git 容器内访问 Gitea | `http://host.docker.internal:7001` | `https://gitea.morningstar369.com` |
+
+命名选择:`public-origin` 对齐 Gitea ROOT_URL 语义(官方文档称"对外访问地址"),`container-origin` 表"容器网络内视角"。dev 两个值不同(Mac 宿主机不解析 host.docker.internal,8/7 ping 实测否决单配置方案),生产两者同为公网域名但显式写出,不依赖隐式回退。
+
+代码影响:`GiteaProperties.origin` → `publicOrigin` + 新增 `containerOrigin`;`GiteaUtil.formatRepoLink`/`collaboratorUrl`/`authHeaders` 三处随迁;SyncAction 拼 clone URL 无条件用 `containerOrigin`。
+
+### 决策 13: ProcessUtil.test() 探测模式(8/7 定)
+
+`ProcessUtil` 新增 `test(String... args)` 方法:命令成功返回 `true`,失败返回 `false`,**不抛异常**。与 `run()` 互补——`run` 表达"必须成功,失败即异常",`test` 表达"成败都只是答案,返回布尔值"。
+
+SyncAction 里两处探测用 `test` 消掉内层 try-catch:
+
+- `!test("git rev-parse --is-inside-work-tree")` → 首次/增量分支(失败=首次,命令语义本身就回答"是不是 git 仓库")
+- `test("alpine test -f /workspace/repo/.gitmodules")` → 有无子模块
+
+`test` 放在 `ProcessUtil` 而非 SyncAction 私有方法:和 `run` 一样都是对进程执行结果的通用处理策略,不属于某个 Action 独有逻辑。后续 RestoreAction、FixAction 的探测需求可复用。
+
+### 决策 14: 属主漂移处理(8/7 实测定)
+
+alpine/git 容器以 root 运行,在 volume 上创建的文件属主 root:root;sandbox 容器以 bot 运行,无法修改 root 文件。两管齐下:
+
+- **git 侧**:所有 `-C /workspace/repo` 的 git 命令统一加 `-c safe.directory=/workspace/repo`(volume 属主 bot 但容器以 root 跑,git 报 "dubious ownership";clone 除外——目录尚不存在)
+- **文件侧**:if-else 之后末尾统一 `docker exec --user root <containerName> chown -R bot:bot /workspace/repo`(覆盖 clone/switch 产生的 root 文件;`--user root` 覆盖容器的 `USER bot` 限制)
+
+两条路径一把收,无分支。

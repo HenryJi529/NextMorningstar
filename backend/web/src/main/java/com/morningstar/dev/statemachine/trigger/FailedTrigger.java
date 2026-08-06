@@ -16,7 +16,7 @@ public class FailedTrigger implements Trigger {
     @Override
     @EventListener
     public void onStateChanged(StateChangedEvent event) {
-        if (event.getToState() != State.FAILED) {
+        if (event.getToState() != State.FAILED || event.getFromState() == State.CLEANING) {
             return;
         }
         stateMachineService.sendEvent(event.getRunId(), Event.CLEAN);

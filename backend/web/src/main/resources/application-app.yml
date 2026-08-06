@@ -22,9 +22,11 @@ morningstar:
         dispatch-cron: "*/30 * * * * ?"
         timeout-cron: "0 */5 * * * ?"
         cleanup-cron: "0 0 6 * * ?"
-        run-timeout-minutes: 60
+        run-timeout-minutes: 120
         max-concurrency: 2
       sandbox:
         image: morningstar-dev-sandbox:latest
+        container-name-prefix: morningstar_dev_sandbox_
+        volume-name-prefix: morningstar_dev_repo_
       claude-code:
         model-api-key: ${DEEPSEEK_API_KEY}

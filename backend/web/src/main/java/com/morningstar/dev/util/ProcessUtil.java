@@ -50,6 +50,18 @@ public class ProcessUtil {
         }
     }
 
+    /**
+     * 判断这个命令是否成功
+     */
+    public boolean test(String... args) {
+        try {
+            run(args);
+            return true;
+        } catch (ProcessExecutionException e) {
+            return false;
+        }
+    }
+
     public static class ProcessExecutionException extends RuntimeException {
         public ProcessExecutionException(List<String> command, int exitCode, String stderr) {
             super("命令执行失败(exit " + exitCode + "): " + String.join(" ", command)

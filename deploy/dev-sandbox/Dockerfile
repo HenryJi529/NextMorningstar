@@ -16,7 +16,7 @@ ENV TZ=Asia/Shanghai
 
 # ===== 系统依赖 =====
 RUN DEBIAN_FRONTEND=noninteractive apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates unzip python3 python3-pip \
+    && apt-get install -y --no-install-recommends vim curl ca-certificates unzip python3 python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # ===== Node.js =====
@@ -31,6 +31,7 @@ RUN npm install -g @anthropic-ai/claude-code \
     && (claude --version || true)
 # Claude Code CLI 禁止 root 使用 --dangerously-skip-permissions
 RUN groupadd -r bot && useradd -r -g bot -m -d /home/bot -s /bin/sh bot \
+    && mkdir -p /workspace/repo \
     && chown -R bot:bot /workspace
 COPY --chown=bot:bot dev-sandbox/config/claude/settings.json /home/bot/.claude/settings.json
 RUN chown -R bot:bot /home/bot/.claude

@@ -11,7 +11,8 @@ morningstar:
         token: squ_582d6a8085c8faa67488b29d479b6e14028be4b3
         origin: https://sonarqube.morningstar369.com
       gitea:
-        origin: http://127.0.0.1:7001
+        public-origin: http://127.0.0.1:7001
+        container-origin: http://host.docker.internal:7001
         bot-username: HaibaraAi369
         bot-token: d093b22293b5840087fe574378955b1d20cb3c7c
         admin-token: 4e972cc47581af2bbf41446af53a8d614560904d

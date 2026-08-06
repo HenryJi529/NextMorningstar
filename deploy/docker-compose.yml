@@ -71,6 +71,12 @@ volumes:
   sonarqube_extensions:
     external: true
     name: ${PROJECT_NAME}_sonarqube_extensions
+  sonarqube_logs:
+    external: true
+    name: ${PROJECT_NAME}_sonarqube_logs
+  sonarqube_temp:
+    external: true
+    name: ${PROJECT_NAME}_sonarqube_temp
   njcb_union_redis_data: 
     external: true
     name: njcb_union_redis_data
@@ -332,6 +338,8 @@ services:
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_temp:/opt/sonarqube/temp
     restart: unless-stopped
   sonarqube-mcp:
     image: sonarsource/sonarqube-mcp:latest

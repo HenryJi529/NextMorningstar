@@ -4,9 +4,17 @@
 
 ## 变更内容
 
-- `SyncAction`:通过临时 alpine/git 容器操作 named volume `ws-<projectId>:/workspace`,首次 `clone --recursive` / 后续 `fetch + reset --hard`(决策 10),并切到 `dev_project.branchName`(凭证 `-e` 注入,用完即毁)。
+- `SyncAction`:通过临时 alpine/git 容器(镜像名写死,不进配置)操作 named volume `morningstar_dev_repo_<projectId>:/workspace/repo`。✅ 8/7 落地,实测通过(首次 clone、增量更新、换分支)。
+  - **探测策略**:`processUtil.test("rev-parse --is-inside-work-tree")` 返回 false=首次(决策 20),`test` 内部 catch 转 boolean,不抛异常。
+  - **首次克隆**:先清空 `/workspace/repo`(`alpine find -mindepth 1 -delete`,保证 SYNC 重试幂等——上次 clone 半截残骸会阻塞 clone),再 `clone --branch <branchName>`(MVP 不处理子模块,无 `--recursive`)。
+  - **增量更新**:`fetch origin <branchName>`(带 `--add-host` + `http.extraHeader`) + `switch -C <branchName> origin/<branchName>`(在任何 HEAD 状态下强制将目标分支指到远端并切过去,不用 `reset --hard`——上一轮 FixAction 可能把 HEAD 停在修复分支) + `git clean -fdx`(清除 untracked/ignored,保证每轮开工工作区绝对干净)。
+  - **凭证安全**:clone/fetch URL 一律无凭证形式(host/owner/repo.git),token 通过 `git -c http.extraHeader=Authorization: token <value>` 直接拼入命令参数(Java 字符串拼接,当次生效),**不拼进 remote URL**(token 进 URL 会被 git 原样写入 volume 里 `.git/config`,持久化泄露)。
+  - **属主修正**:所有 git 命令统一带 `-c safe.directory=/workspace/repo`(volume 属主 bot,git 容器以 root 运行,不加 git 报 "dubious ownership";clone 除外);末尾 `docker exec --user root <containerName> chown -R bot:bot /workspace/repo`(root 写入的文件 bot 无法修改),if-else 之后一把收。
+  - **结果**:成功后 `git rev-parse HEAD` 取 commitSha,与 branchName 一起落 `SyncResult(gitUrl, branchName, commitSha)` 进 `action_attempt.result`(大屏/追溯用);失败统一 catch → FAILED 结果(不裸抛,决策 18)。
+  - **新增**:`SyncResult extends ActionResult`(gitUrl/branchName/commitSha),注册到 `@JsonSubTypes`。
 - `RestoreAction`:通过临时 alpine/git 容器执行 `checkout . && clean -fd`,还原工作区。
-- 工作区:named volume `ws-<projectId>:/workspace`,容器与临时 git 容器共享。
+- **Gitea 双视角地址**(决策 19):`GiteaProperties.origin` → `publicOrigin`(对外地址:后端 API、PR 链接)+ 新增 `containerOrigin`(容器网络内地址:临时 git 容器 clone/fetch/push)。每环境显式配全、无回退。`GiteaUtil` 三处 `origin` 引用随迁 `publicOrigin`。
+- 临时 git 容器统一带 `--add-host host.docker.internal:host-gateway`(Docker 20.10+ 全内置,跨平台一致,8/6 实测不报错),clone/fetch URL 使用 `containerOrigin`。
 
 ## 能力
 
@@ -16,3 +24,8 @@
 ## 影响范围
 
 - `SyncAction`/`RestoreAction`:替换 Mock。
+- `SyncResult`:新增,`@JsonSubTypes` 补注册。
+- `GiteaProperties`:`origin` → `publicOrigin` + 新增 `containerOrigin`。
+- `GiteaUtil`:`formatRepoLink`/`collaboratorUrl`/auth headers 三处 `origin` → `publicOrigin`。
+- `application-dev.yml` / `application-prod.yml`:gitea 段改名 + 补 `container-origin`。
+- `ProcessUtil.test()`:新增探测方法(决策 20)。
