@@ -26,7 +26,14 @@ git clone/commit/push 由后端通过 `docker run --rm -v ws-<projectId>:/worksp
 开发者本地 Apple Silicon(arm64)、部署服务器 amd64。sonar-scanner 官方按架构分包(`linux-x64`/`linux-aarch64`),无统一包、官方 Docker 镜像仅 amd64。Dockerfile 用 BuildKit 自动注入的 `TARGETARCH` 选包(`amd64→x64`/`arm64→aarch64`),两边**原生构建**,不依赖 Rosetta——arm64 容器跑 x64 二进制会触发 `rosetta error: failed to open elf at /lib64/ld-linux-x86-64.so.2` → SIGTRAP(exit 133)。
 
 ### 决策 6:容器操作走命令行(ProcessBuilder + docker CLI)
-`StartAction`/`CleanAction` 的 docker 操作走 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`),不引 docker-java 库——与决策 12 的命令行 git 同套,共用 `util/ProcessRunner`(执行 + 捕获 stdout + 异常)。命令即文档、调试直观、零新依赖。前提:后端进程能访问 docker(开发期 Mac 宿主机有 docker CLI ✅;生产后端容器化部署需挂 docker.sock,8/14 前不处理)。
+`StartAction`/`CleanAction` 的 docker 操作走 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`),不引 docker-java 库——与决策 12 的命令行 git 同套,共用 `util/ProcessUtil`(执行 + 捕获 stdout + 异常,8/6 已实现,6 单测)。命令即文档、调试直观、零新依赖。前提:后端进程能访问 docker(开发期 Mac 宿主机有 docker CLI ✅;生产后端容器化部署需挂 docker.sock,8/14 前不处理)。
+
+**ProcessUtil 实现要点(8/6 对话定稿):**
+- `run(String...)`:执行命令,完整命令打 INFO 日志;返回 stdout——**仅剥末尾换行(`\R+$`),其余空白原样保留**(容器 ID 直接可用,调用方无需 trim;带格式输出不被误伤)。
+- 非零退出抛**静态嵌套异常** `ProcessUtil.ProcessExecutionException`(含命令 + 退出码 + 完整 stderr;嵌套理由:异常语义完全依附 `run()`,与 statemachine 领域异常的独立文件风格区分)。启动失败/中断同样包装。
+- **stderr 独立线程读**,防 >64KB 管道缓冲区死锁(守护测试以 200KB stderr 验证:能跑完 = 不死锁、消息长度 >200KB = 无截断)。
+- 测试为纯 JUnit 单测(无 Spring 上下文,`dev/util/ProcessUtilTest`)。
+- **日志策略**:打完整命令(含 `-e` 注入的 env)可接受——GIT_TOKEN 等是**系统自有凭证**而非用户敏感信息,且注入的是不跑 AI 的临时容器(决策 4 防的 prompt injection 路径不存在);后端日志在安全边界内。
 
 ### 决策 7:模型配置独立分域(`DeepseekProperties`)
 dev 流水线的模型 key 单独 `DeepseekProperties`(prefix `morningstar.app.dev.deepseek`),与 blog 模块的 `spring.ai.deepseek`(spring-ai ChatClient 在用,见 `AiConfig`/`ArticleServiceImpl`)**分域**——两者同源(`${DEEPSEEK_API_KEY}`)但配置路径分开,避免混用 `spring.ai.deepseek` 致语义不清。`morningstar.app.dev.*` 下三个配置类平级:`SandboxProperties`(镜像/工作区)、`DeepseekProperties`(模型 key)、`SonarqubeProperties`(sonar token)。

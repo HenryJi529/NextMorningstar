@@ -21,7 +21,7 @@
 - `deploy/dev-sandbox/Dockerfile`(新增)。
 - `deploy/dev-sandbox/entrypoint.sh`(新增,运行时用 env 替换占位符)。
 - `deploy/dev-sandbox/config/claude/{settings.json,mcp.json}`(新增,占位符模板)。
-- `StartAction`/`CleanAction`:替换 Mock,docker 操作走 `ProcessRunner`(决策 6)。
-- `util/ProcessRunner`(新增,`ProcessBuilder` 封装,docker/git 共用)。
+- `StartAction`/`CleanAction`:替换 Mock,docker 操作走 `ProcessUtil`(决策 6)。
+- `util/ProcessUtil`(新增,`ProcessBuilder` 封装,docker/git 共用;stderr 独立线程防死锁,嵌套 `ProcessExecutionException`)。
 - `properties/SandboxProperties`、`properties/DeepseekProperties`(新增,决策 7);`application-app.yml` 补 `dev.sandbox`/`dev.deepseek` 段。
 - `dev_run`:启用 `container_id`。

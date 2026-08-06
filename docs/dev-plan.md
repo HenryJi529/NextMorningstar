@@ -90,7 +90,7 @@
 | 14 | **失败 issue 跨 run 记忆** | scan 时排除"近期 FAILED"的 issue(查 `dev_issue` 历史 status=FAILED 且近期),避免每夜反复重试同一个修不好的 issue,提升无人值守效率 |
 | 15 | **资源池 + 夜间窗口** ⭐ | 并发度可配(`schedule.max-concurrency`,**默认 2**——Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;Scan/Verify 才 CPU 密集且短)。夜间 21:00 自动创建 PENDING run,次日 **6:00 清晨清理**:`cancelOvernightRuns` 取消所有非终态活跃 run(PENDING 直接标 CANCELED,其余走 `requestCancel`)。另每 5min 超时检测(60min 无响应)+ 每 30s 分发调度 |
 | 16 | **AI 诊断报告(commit message)** | 由 claude 基于 SonarQube 接口数据(rule/issue 详情)用**中文**生成单 issue 诊断,格式按 `resources/dev/ai-report-template.md`(用户提供);平台读模板 + 喂 sonar 数据给 claude → 输出存 `dev_issue.commit_message` → PR 评论汇总。客观数据 + AI 中文改写,避免直接用英文 rule 描述 |
-| 17 | **容器操作走命令行 docker** ⭐ | `StartAction`/`CleanAction`/git 操作均用 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`/`docker run --rm alpine/git`),不引 docker-java 库,共用 `util/ProcessRunner`。后端纯编排,不碰文件系统 |
+| 17 | **容器操作走命令行 docker** ⭐ | `StartAction`/`CleanAction`/git 操作均用 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`/`docker run --rm alpine/git`),不引 docker-java 库,共用 `util/ProcessUtil`(8/6 已实现:stderr 独立线程防死锁、stdout 仅剥末尾换行、静态嵌套异常带完整 stderr、6 单测)。后端纯编排,不碰文件系统 |
 
 ---
 
@@ -294,6 +294,7 @@ morningstar.app.dev:
 ### 阶段 1 · 修复容器 + Docker 接入(~5h)— *8/4–8/6*
 - [x] 写 `deploy/dev-sandbox/Dockerfile`(claude CLI + sonar-scanner + 配置模板 settings.json/mcp.json 占位符 COPY + entrypoint env 替换)
 - [x] 🔴 **spike:容器内 `claude -p "..."` 跑通(deepseek + sonarqube MCP)** — 3.1 deepseek + 3.2 MCP 查 issue 全通
+- [x] `util/ProcessUtil`:docker CLI 统一入口(ProcessBuilder;stderr 独立线程防 64KB 缓冲区死锁;stdout 仅剥末尾换行 `\R+$`;嵌套 `ProcessExecutionException` 含命令+退出码+完整 stderr;纯 JUnit 6 单测)— 8/6
 - [ ] `StartAction`:确保 volume 存在(`docker volume create ws-<projectId>`,决策 10),启动容器挂载 `ws-<projectId>:/workspace`,注入 env(`DEEPSEEK_API_KEY`/`SONARQUBE_TOKEN`) + `--add-host=host.docker.internal:host-gateway`,回写 `container_id`
 - [ ] `CleanAction`:docker rm -f(**不删 volume**,决策 10)
 - [ ] 维护 `runId → containerId`(存 `dev_run.container_id`)
@@ -353,7 +354,7 @@ morningstar.app.dev:
 | 8/3 | 一 | 4h ✅ | 0 地基 | ✅ 数据模型/Controller/定时骨架/mock 验收,超出预期 |
 | 8/4 | 二 | 4h ✅ | 0 收尾 + 1 镜像 | ✅ Gitea 授权(任务 3)+ Dockerfile(多阶段 node + entrypoint env 注入 + mcp 项目级 /workspace);超前打通 spike 3.1(claude+deepseek) |
 | 8/5 | 三 | 休息 | — | 设计决策超额完成:非 root bot + named volume + volume 持久化 + git 归临时容器 |
-| 8/6 | 四 | 4h | 1 收尾 + 2 git | StartAction/CleanAction/SyncAction 写完 |
+| 8/6 | 四 | 4h | 1 收尾 + 2 git | ✅ ProcessUtil 落地(上午);StartAction/CleanAction/SyncAction 写完 |
 | 8/7 | 五 | 4h | 2 收尾 + 3 scan | RestoreAction + 拉 issue 落表 |
 | 8/8 | 六 | 10h ⭐ | 4 fix 主力 | demo 单 issue 真修复 + commit |
 | 8/9 | 日 | 10h ⭐ | 5 verify + 6 submit + 联调 | **Gitea PR → 闭环跑通** 🎉 |
