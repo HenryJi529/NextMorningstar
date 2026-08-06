@@ -1,7 +1,7 @@
 # NOTE: 镜像构建:
 # docker build -f deploy/dev-sandbox/Dockerfile -t morningstar-dev-sandbox:latest deploy/
 # NOTE: 容器运行:
-# docker run -d -e DEEPSEEK_API_KEY=... -e SONARQUBE_TOKEN=... --add-host=host.docker.internal:host-gateway morningstar-dev-sandbox:latest
+# docker run -d -e MODEL_API_KEY=... -e SONARQUBE_TOKEN=... --add-host=host.docker.internal:host-gateway morningstar-dev-sandbox:latest
 
 FROM node:20-bullseye AS node-src
 

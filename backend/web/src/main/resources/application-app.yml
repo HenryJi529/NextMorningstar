@@ -26,3 +26,5 @@ morningstar:
         max-concurrency: 2
       sandbox:
         image: morningstar-dev-sandbox:latest
+      claude-code:
+        model-api-key: ${DEEPSEEK_API_KEY}

@@ -13,7 +13,7 @@
 独立容器天然隔离并发,简单可靠;容器即用即删,无需池化。
 
 ### 决策 2:配置打进镜像 + 运行时 env 注入
-`settings.json`/`mcp.json` 以**占位符模板**(`<DEEPSEEK_API_KEY>`/`<SONARQUBE_TOKEN>`)COPY 进镜像(无真 key,可安全分发);`entrypoint` 启动时用环境变量(`DEEPSEEK_API_KEY`/`SONARQUBE_TOKEN`)替换占位符。真 key 不进镜像、由后端 `docker run -e` 注入。**路径层级**:`settings.json` 用户级(`~/.claude/`,claude 全局读、不依赖 cwd);`mcp.json` **项目级**(`/workspace/.mcp.json`,claude 跟 cwd 走)。
+`settings.json`/`mcp.json` 以**占位符模板**(`<MODEL_API_KEY>`/`<SONARQUBE_TOKEN>`)COPY 进镜像(无真 key,可安全分发);`entrypoint` 启动时用环境变量(`MODEL_API_KEY`/`SONARQUBE_TOKEN`)替换占位符。真 key 不进镜像、由后端 `docker run -e` 注入。**路径层级**:`settings.json` 用户级(`~/.claude/`,claude 全局读、不依赖 cwd);`mcp.json` **项目级**(`/workspace/.mcp.json`,claude 跟 cwd 走)。
 
 ### 决策 3:容器网络
 容器内 sonar `127.0.0.1` 不可达宿主机,统一用 `host.docker.internal`。Mac(Docker Desktop)自动解析;**Linux 生产**需在 `docker run` 加 `--add-host=host.docker.internal:host-gateway`(原生 Docker 默认不提供该 DNS)。
@@ -35,8 +35,8 @@ git clone/commit/push 由后端通过 `docker run --rm -v ws-<projectId>:/worksp
 - 测试为纯 JUnit 单测(无 Spring 上下文,`dev/util/ProcessUtilTest`)。
 - **日志策略**:打完整命令(含 `-e` 注入的 env)可接受——GIT_TOKEN 等是**系统自有凭证**而非用户敏感信息,且注入的是不跑 AI 的临时容器(决策 4 防的 prompt injection 路径不存在);后端日志在安全边界内。
 
-### 决策 7:模型配置独立分域(`DeepseekProperties`)
-dev 流水线的模型 key 单独 `DeepseekProperties`(prefix `morningstar.app.dev.deepseek`),与 blog 模块的 `spring.ai.deepseek`(spring-ai ChatClient 在用,见 `AiConfig`/`ArticleServiceImpl`)**分域**——两者同源(`${DEEPSEEK_API_KEY}`)但配置路径分开,避免混用 `spring.ai.deepseek` 致语义不清。`morningstar.app.dev.*` 下三个配置类平级:`SandboxProperties`(镜像/工作区)、`DeepseekProperties`(模型 key)、`SonarqubeProperties`(sonar token)。
+### 决策 7:模型配置独立分域(`ClaudeCodeProperties`)
+dev 流水线的模型 key 单独 `ClaudeCodeProperties`(prefix `morningstar.app.dev.claude-code`,字段 `modelApiKey`),与 blog 模块的 `spring.ai.deepseek`(spring-ai ChatClient 在用,见 `AiConfig`/`ArticleServiceImpl`)**分域**——两者同源(`${MODEL_API_KEY}`)但配置路径分开,避免混用 `spring.ai.deepseek` 致语义不清。命名为 claude-code 而非 deepseek:配置的本质是"claude code CLI 的模型凭证",供应商可换(外网 deepseek ↔ 内网模型),不与供应商绑死;镜像侧 env/占位符同步中性化为 `MODEL_API_KEY`。`morningstar.app.dev.*` 下三个配置类平级:`SandboxProperties`(仅镜像;`/workspace` 挂载点是镜像契约——entrypoint/mcp.json 路径写死,做成配置项会谎称灵活性,故不收)、`ClaudeCodeProperties`(模型 key)、`SonarqubeProperties`(sonar token)。
 
 ### 决策 8:容器内以非 root 用户运行 bot
 

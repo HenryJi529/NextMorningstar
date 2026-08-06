@@ -123,7 +123,7 @@ PENDING
 - 基础:`eclipse-temurin:17-jdk`
 - 装入:maven、node、python3、**claude code CLI**、sonar-scanner(**不装 git**——git 操作由后端完成,见决策 12)
 - **named volume**:`docker volume create ws-<projectId>`,容器挂载 `ws-<projectId>:/workspace`,后端 git 与容器 claude/maven 操作同一份代码。非 root bot 用户下 UID 天然正确(决策 9)
-- **模型连接可插拔**:`settings.json`(用户级 `~/.claude/`)+ `mcp.json`(**项目级 `/workspace/.mcp.json`**,claude 跟 cwd 走)以**占位符模板打进镜像**,entrypoint 启动时用 env(`DEEPSEEK_API_KEY`/`SONARQUBE_TOKEN`)替换真 key(真 key 不进镜像);开发期(外网)注入 deepseek key,内网部署换行内模型 key——镜像通用
+- **模型连接可插拔**:`settings.json`(用户级 `~/.claude/`)+ `mcp.json`(**项目级 `/workspace/.mcp.json`**,claude 跟 cwd 走)以**占位符模板打进镜像**,entrypoint 启动时用 env(`MODEL_API_KEY`/`SONARQUBE_TOKEN`)替换真 key(真 key 不进镜像);开发期(外网)注入 deepseek key,内网部署换行内模型 key——镜像通用
 
 > 🔴 **Day-1 spike(阶段 1)**:容器内跑通 `claude -p "..."`(deepseek + sonarqube MCP),且后端能通过临时容器 git clone 到 named volume、AI 容器内可见。全流程前提。
 
@@ -190,7 +190,7 @@ curl -s -u "<token>:" "http://<sonar>/api/issues/search?issues=<issueKey>" | jq 
 2. **网络出站白名单**:容器只放行 gitea/sonar/deepseek,其余挡死 → 即使容器内 sonar/deepseek 凭证被偷也外传不出
 3. **bot token 最小权限**:单仓库 write,后端凭证文件若泄漏也只限已授权仓库
 
-**为什么 deepseek key 必须进容器(唯一不得不的让步):** claude 必须容器内跑(隔离 AI,不能放后端直接操作),调模型就要 key——以**运行时 env 注入**(`DEEPSEEK_API_KEY`,entrypoint 替换占位符),**不进镜像层**。让步的是 AI 服务 key(可独立轮换、非代码权限),不是 git 凭证;靠网络白名单兜底。
+**为什么 deepseek key 必须进容器(唯一不得不的让步):** claude 必须容器内跑(隔离 AI,不能放后端直接操作),调模型就要 key——以**运行时 env 注入**(`MODEL_API_KEY`,entrypoint 替换占位符),**不进镜像层**。让步的是 AI 服务 key(可独立轮换、非代码权限),不是 git 凭证;靠网络白名单兜底。
 
 **为什么弃用 JGit、选命令行 git:** JGit 对 submodule(递归/多认证/LFS)支持差、易踩坑;命令行 git `--recursive` 原生稳定,且命令与原方案几乎一致。
 
@@ -257,9 +257,8 @@ morningstar.app.dev:
       - secrets:*
   sandbox:
     image: morningstar-dev-sandbox:latest
-    workspace: /workspace
-  model:
-    api-key: ${DEEPSEEK_API_KEY}
+  claude-code:
+    model-api-key: ${MODEL_API_KEY}
   gitea:
     origin: http://<gitea>
     bot-username: morningstar-bot
@@ -295,7 +294,7 @@ morningstar.app.dev:
 - [x] 写 `deploy/dev-sandbox/Dockerfile`(claude CLI + sonar-scanner + 配置模板 settings.json/mcp.json 占位符 COPY + entrypoint env 替换)
 - [x] 🔴 **spike:容器内 `claude -p "..."` 跑通(deepseek + sonarqube MCP)** — 3.1 deepseek + 3.2 MCP 查 issue 全通
 - [x] `util/ProcessUtil`:docker CLI 统一入口(ProcessBuilder;stderr 独立线程防 64KB 缓冲区死锁;stdout 仅剥末尾换行 `\R+$`;嵌套 `ProcessExecutionException` 含命令+退出码+完整 stderr;纯 JUnit 6 单测)— 8/6
-- [ ] `StartAction`:确保 volume 存在(`docker volume create ws-<projectId>`,决策 10),启动容器挂载 `ws-<projectId>:/workspace`,注入 env(`DEEPSEEK_API_KEY`/`SONARQUBE_TOKEN`) + `--add-host=host.docker.internal:host-gateway`,回写 `container_id`
+- [ ] `StartAction`:确保 volume 存在(`docker volume create ws-<projectId>`,决策 10),启动容器挂载 `ws-<projectId>:/workspace`,注入 env(`MODEL_API_KEY`/`SONARQUBE_TOKEN`) + `--add-host=host.docker.internal:host-gateway`,回写 `container_id`
 - [ ] `CleanAction`:docker rm -f(**不删 volume**,决策 10)
 - [ ] 维护 `runId → containerId`(存 `dev_run.container_id`)
 - **验收**:Start/Clean 真实起删容器
@@ -421,7 +420,7 @@ claude --permission-mode bypassPermissions --print "使用 sonarqube mcp 查看 
 
 - [x] 用 **OpenSpec** 把阶段 0–9 拆成可追踪 change(已建 10 个)
 - [x] 提供 mcp.json(sonarqube MCP 配置,占位符版)已打进镜像;真 token 运行时 env(`SONARQUBE_TOKEN`)注入
-- [x] 提供 settings.json(deepseek 连接,占位符版)已打进镜像;真 key 运行时 env(`DEEPSEEK_API_KEY`)注入
+- [x] 提供 settings.json(deepseek 连接,占位符版)已打进镜像;真 key 运行时 env(`MODEL_API_KEY`)注入
 - [ ] 提供 **Gitea bot 账号 + 双 token**(admin 授权 + bot write)
 - [ ] 提供 demo 仓库(或由我生成脚手架 + 埋漏洞)
 - [x] AI 诊断报告通过 `commit_message` 生成(决策 15:基于 SonarQube 数据 + resources 模板,中文)

@@ -1,11 +1,11 @@
 ## 1. 镜像
 
 - [x] 1.1 编写 `dev-sandbox/Dockerfile`(JDK17 + maven/node/python + claude CLI + sonar-scanner,**不装 git**——见决策 4)。
-- [x] 1.2 配置(settings.json/mcp.json 占位符模板)打进镜像 + `entrypoint` 运行时用 env(`DEEPSEEK_API_KEY`/`SONARQUBE_TOKEN`)替换占位符。
+- [x] 1.2 配置(settings.json/mcp.json 占位符模板)打进镜像 + `entrypoint` 运行时用 env(`MODEL_API_KEY`/`SONARQUBE_TOKEN`)替换占位符。
 
 ## 2. 容器接入
 
-- [ ] 2.1 `StartAction`:确保 volume 存在(`docker volume create ws-<projectId>`,决策 10),启动容器挂载 `ws-<projectId>:/workspace`(决策 9),注入 `DEEPSEEK_API_KEY`/`SONARQUBE_TOKEN` env + `--add-host=host.docker.internal:host-gateway`,回写 `container_id`。
+- [ ] 2.1 `StartAction`:确保 volume 存在(`docker volume create ws-<projectId>`,决策 10),启动容器挂载 `ws-<projectId>:/workspace`(决策 9),注入 `MODEL_API_KEY`/`SONARQUBE_TOKEN` env + `--add-host=host.docker.internal:host-gateway`,回写 `container_id`。
 - [ ] 2.2 `CleanAction`:删除容器(`docker rm -f`),**不删 volume**(volume 持久化为项目缓存,决策 10)。
 - [ ] 2.3 `SyncAction`(补充):首次 clone、后续 `git fetch + reset --hard` 增量更新(决策 10)。
 

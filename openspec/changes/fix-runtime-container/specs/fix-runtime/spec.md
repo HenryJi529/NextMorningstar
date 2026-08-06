@@ -12,7 +12,7 @@
 
 - **WHEN** 运行进入容器启动阶段
 - **THEN** 确保项目专属 named volume 存在(`ws-<projectId>`)
-- **AND** 创建并启动一个独立容器,挂载 `ws-<projectId>:/workspace`,注入所需 env(`DEEPSEEK_API_KEY`/`SONARQUBE_TOKEN`)与 `host.docker.internal` 解析
+- **AND** 创建并启动一个独立容器,挂载 `ws-<projectId>:/workspace`,注入所需 env(`MODEL_API_KEY`/`SONARQUBE_TOKEN`)与 `host.docker.internal` 解析
 - **AND** 将容器 ID 记录到对应 run
 
 #### 场景:清理容器

@@ -2,8 +2,8 @@
 
 set -e
 
-if [ -n "$DEEPSEEK_API_KEY" ]; then
-    sed -i "s|<DEEPSEEK_API_KEY>|$DEEPSEEK_API_KEY|g" /home/bot/.claude/settings.json
+if [ -n "$MODEL_API_KEY" ]; then
+    sed -i "s|<MODEL_API_KEY>|$MODEL_API_KEY|g" /home/bot/.claude/settings.json
 fi
 
 if [ -n "$SONARQUBE_TOKEN" ]; then
