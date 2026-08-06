@@ -25,7 +25,10 @@ class StateMachineServiceTest {
     void setUp() {
         Project project = Project
                 .builder()
+                .name("test-project")
                 .id(UUID.randomUUID())
+                .branchName("dev")
+                .adminId(UUID.randomUUID())
                 .link(RandomUtil.getEnglishString(12))
                 .maxFixesPerRun(10)
                 .build();
@@ -52,7 +55,7 @@ class StateMachineServiceTest {
     @SuppressWarnings({"squid:S2699", "java:S2925"})
     void testCancel() throws InterruptedException {
         stateMachineService.sendEvent(run.getId(), Event.START);
-        Thread.sleep(5000);
+        Thread.sleep(10000);
         stateMachineService.requestCancel(run.getId());
 
         Thread.sleep(100000);
