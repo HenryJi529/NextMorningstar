@@ -33,7 +33,7 @@ public class ScanAction extends MockAction {
                 .message(mockResult.getMessage())
                 .build();
         if (scanResult.getStatus() == ActionResult.Status.SUCCEEDED) {
-            scanResult.setIssueNum(Math.random() < 0.5 ? 10 : 0);
+            scanResult.setIssueNum(10);
         }
         return scanResult;
     }

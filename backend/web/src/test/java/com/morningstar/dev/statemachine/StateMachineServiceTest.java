@@ -44,6 +44,7 @@ class StateMachineServiceTest {
             );
         }
         this.run = runService.createRun(project.getId());
+        System.out.println(run.getId());
     }
 
     @Test

@@ -12,7 +12,8 @@
   - **属主修正**:所有 git 命令统一带 `-c safe.directory=/workspace/repo`(volume 属主 bot,git 容器以 root 运行,不加 git 报 "dubious ownership";clone 除外);末尾 `docker exec --user root <containerName> chown -R bot:bot /workspace/repo`(root 写入的文件 bot 无法修改),if-else 之后一把收。
   - **结果**:成功后 `git rev-parse HEAD` 取 commitSha,与 branchName 一起落 `SyncResult(gitUrl, branchName, commitSha)` 进 `action_attempt.result`(大屏/追溯用);失败统一 catch → FAILED 结果(不裸抛,决策 18)。
   - **新增**:`SyncResult extends ActionResult`(gitUrl/branchName/commitSha),注册到 `@JsonSubTypes`。
-- `RestoreAction`:通过临时 alpine/git 容器执行 `checkout . && clean -fd`,还原工作区。
+- `RestoreAction`:✅ 8/7 落地,实测通过。通过临时 alpine/git 容器执行 7 步还原 + 属主修正:`reset --hard HEAD` → `clean -fdx` → `switch <originalBranch>` → `branch -D fix/<runId>`(先 `rev-parse --verify` 探测) → `reset --hard origin/<originalBranch>` → `rev-parse HEAD`(取证 commitSha 进 `RestoreResult`) → `docker exec --user root chown -R bot:bot`。**纯本地操作,不依赖远端**(无 `--add-host`/`http.extraHeader`/`GiteaProperties`)。失败统一 catch → FAILED(不裸抛)。
+- **状态机重构**(决策 24):`FixingStateTransition`、`VerifyingStateTransition` 简化为无条件 `FIX_FAILED`/`VERIFY_FAILED → RESTORING`(移除 `ActionAttemptMapper`/`MaxAttemptsProperties`/`CancelTracker` 依赖)。所有 FIX/VERIFY 重试+取消决策收敛到 `RestoredTrigger`:通过 `latestFix`/`latestVerify` 时间戳判断最新失败来源,按对应重试上限决定续修或放弃;取消检查嵌入重试条件。`RestoredStateTransition` 新增 `FIX_FAILED`/`VERIFY_FAILED → FAILED`。`StartedStateTransition` 补充 `CLEAN → CLEANING`(cancel 路径对齐)。
 - **Gitea 双视角地址**(决策 19):`GiteaProperties.origin` → `publicOrigin`(对外地址:后端 API、PR 链接)+ 新增 `containerOrigin`(容器网络内地址:临时 git 容器 clone/fetch/push)。每环境显式配全、无回退。`GiteaUtil` 三处 `origin` 引用随迁 `publicOrigin`。
 - 临时 git 容器统一带 `--add-host host.docker.internal:host-gateway`(Docker 20.10+ 全内置,跨平台一致,8/6 实测不报错),clone/fetch URL 使用 `containerOrigin`。
 

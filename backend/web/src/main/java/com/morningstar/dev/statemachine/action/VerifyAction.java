@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class VerifyAction extends MockAction {
     public VerifyAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper) {
-        super(stateMachineService, actionAttemptMapper, 0.6, Event.VERIFY_SUCCEEDED, Event.VERIFY_FAILED);
+        super(stateMachineService, actionAttemptMapper, 0.0, Event.VERIFY_SUCCEEDED, Event.VERIFY_FAILED);
     }
 
     @Override

@@ -33,7 +33,25 @@
 - **AND** **不裸抛**(决策 18:裸抛 = attempt 停 RUNNING + run 卡中间态占并发槽等 60min 超时)
 - **AND** 探测用的 `processUtil.test()` 不抛异常——它内部已 catch 转 boolean,不触发外层 catch
 
-#### 场景:失败还原
+#### 场景:失败/取消还原
 
-- **WHEN** 运行失败或取消进入还原阶段
-- **THEN** 后端起临时 alpine/git 容器执行 `checkout . && clean -fd`,丢弃所有未提交改动
+- **WHEN** 修复失败或取消进入 RESTORING 阶段
+- **THEN** 后端起临时 alpine/git 容器执行 `reset --hard HEAD`(丢弃 fix 分支上已跟踪文件的未提交修改;FixAction 有 commit 不能用 `checkout .`)
+- **AND** `git clean -fdx`(删除 untracked 文件和目录)
+- **AND** `switch <originalBranch>`(切回配置的原始分支)
+- **AND** 探测修复分支是否存在(`rev-parse --verify fix/<runId>`),存在则 `git branch -D fix/<runId>`
+- **AND** `reset --hard origin/<originalBranch>`(重置到上一次 fetch 状态,兜底保证工作区和分支指针与 SyncAction 拉取时一致)
+- **AND** `rev-parse HEAD` 取证 commitSha 存入 `RestoreResult`
+- **AND** `docker exec --user root <containerName> chown -R bot:bot /workspace/repo`(属主修正)
+- **AND** 所有 git 命令统一带 `-c safe.directory=/workspace/repo`
+- **AND** **纯本地操作**:不需要 `--add-host`/`http.extraHeader`/`GiteaProperties`,不碰远端
+- **AND** 任何步骤失败外层 catch `ProcessExecutionException` → FAILED `RestoreResult`(不裸抛)
+
+#### 场景:还原后重试决策
+
+- **WHEN** RestoreAction 成功进入 RESTORED 状态
+- **THEN** `RestoredTrigger` 根据 `latestFix`/`latestVerify` 时间戳判断最新失败来源
+- **AND** 最新失败是 FIX 且 `fixAttempts < maxAttempts.getFix()` 且未被取消 → 发 `Event.FIX`(续修)
+- **AND** 最新失败是 FIX 但重试耗尽或被取消 → 发 `Event.FIX_FAILED` → `FAILED` → `CLEAN`
+- **AND** 最新失败是 VERIFY 且 `verifyAttempts < maxAttempts.getVerify()` 且未被取消 → 发 `Event.FIX`(回退重试)
+- **AND** 最新失败是 VERIFY 但重试耗尽或被取消 → 发 `Event.VERIFY_FAILED` → `FAILED` → `CLEAN`

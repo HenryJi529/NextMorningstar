@@ -20,6 +20,9 @@ public class RestoredStateTransition implements StateTransition {
         if (event == Event.FIX) {
             return State.FIXING;
         }
+        if (event == Event.FIX_FAILED || event == Event.VERIFY_FAILED) {
+            return State.FAILED;
+        }
 
         throw new StateTransitionDeniedException(getCurrentState(), event);
     }

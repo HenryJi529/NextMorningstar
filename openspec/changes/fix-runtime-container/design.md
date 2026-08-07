@@ -75,12 +75,11 @@ Gitea 地址按消费方拆两份,**每环境显式配全、无任何回退**:
 
 `ProcessUtil` 新增 `test(String... args)` 方法:命令成功返回 `true`,失败返回 `false`,**不抛异常**。与 `run()` 互补——`run` 表达"必须成功,失败即异常",`test` 表达"成败都只是答案,返回布尔值"。
 
-SyncAction 里两处探测用 `test` 消掉内层 try-catch:
+实际使用:
+- SyncAction:`!test("rev-parse --is-inside-work-tree")` → 首次/增量分支(失败=首次,命令语义本身就回答"是不是 git 仓库")
+- RestoreAction:`test("rev-parse --verify fix/<runId>")` → fix 分支是否存在(存在才删)
 
-- `!test("git rev-parse --is-inside-work-tree")` → 首次/增量分支(失败=首次,命令语义本身就回答"是不是 git 仓库")
-- `test("alpine test -f /workspace/repo/.gitmodules")` → 有无子模块
-
-`test` 放在 `ProcessUtil` 而非 SyncAction 私有方法:和 `run` 一样都是对进程执行结果的通用处理策略,不属于某个 Action 独有逻辑。后续 RestoreAction、FixAction 的探测需求可复用。
+`test` 放在 `ProcessUtil` 而非 Action 私有方法:和 `run` 一样都是对进程执行结果的通用处理策略,不属于某个 Action 独有逻辑。后续 FixAction 的探测需求可复用。
 
 ### 决策 14: 属主漂移处理(8/7 实测定)
 
@@ -90,3 +89,28 @@ alpine/git 容器以 root 运行,在 volume 上创建的文件属主 root:root;s
 - **文件侧**:if-else 之后末尾统一 `docker exec --user root <containerName> chown -R bot:bot /workspace/repo`(覆盖 clone/switch 产生的 root 文件;`--user root` 覆盖容器的 `USER bot` 限制)
 
 两条路径一把收,无分支。
+
+### 决策 15: RestoreAction 还原流程(8/7 实测通过)
+
+失败/取消后还原工作区到 SyncAction 拉取时的状态,7 步 + 属主修正:
+
+1. `reset --hard HEAD` — FixAction 有 commit(`checkout .` 不够用,reset 才能保证工作区干净)
+2. `clean -fdx` — 删除 untracked 文件和目录
+3. `switch <originalBranch>` — 切回配置的原始分支
+4. `rev-parse --verify fix/<runId>` 探测 → `branch -D fix/<runId>` — 删除本地修复分支
+5. `reset --hard origin/<originalBranch>` — 重置到 fetch 状态,兜底保证分支指针和工作区一致
+6. `rev-parse HEAD` — 取证 commitSha 存入 `RestoreResult`
+7. `docker exec --user root chown -R bot:bot` — 属主修正
+
+**纯本地操作**:不依赖远端,不需要 `--add-host`/`http.extraHeader`/`GiteaProperties`。所有 git 命令带 `-c safe.directory=/workspace/repo`。
+
+### 决策 16: FIX/VERIFY 重试收敛到 RestoredTrigger(8/7 定)
+
+`FixingStateTransition` 和 `VerifyingStateTransition` 不再注入 `ActionAttemptMapper`/`MaxAttemptsProperties`/`CancelTracker`,失败无条件 `→ RESTORING`。所有重试与取消决策集中到 `RestoredTrigger`:
+
+- 通过 `latestFix`/`latestVerify` 时间戳判断最新失败来源(不可能 `fixAttempts > verifyAttempts` 推出来源,因 FIX#1 FAIL → FIX#2 SUCCESS → VERIFY#1 FAIL 时 `fixAttempts=2 > verifyAttempts=1` 但最新失败是 VERIFY)
+- 按对应重试上限(`maxAttempts.getFix()`/`maxAttempts.getVerify()`)决定续修或放弃
+- 取消检查(`cancelTracker.contains()`)嵌入重试条件,取消时走对应失败事件(`FIX_FAILED`/`VERIFY_FAILED → FAILED → CLEAN`)
+- `RestoredStateTransition` 新增 `FIX_FAILED`/`VERIFY_FAILED → FAILED`
+
+优势:重试策略单一控制点,`FixingStateTransition`/`VerifyingStateTransition` 零依赖。

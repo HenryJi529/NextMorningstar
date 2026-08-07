@@ -19,5 +19,5 @@
 
 ## 4. 代码还原
 
-- [ ] 4.1 `RestoreAction` 通过临时 alpine/git 容器执行 `checkout . && clean -fd` 还原工作区。
-- [ ] 4.2 验证还原后工作区与初始克隆一致。
+- [x] 4.1 `RestoreAction` 通过临时 alpine/git 容器执行 7 步还原 + 属主修正:`reset --hard HEAD` → `clean -fdx` → `switch` → `branch -D fix/<runId>`(先 `rev-parse --verify` 探测) → `reset --hard origin/<branchName>` → `rev-parse HEAD`(取证 commitSha) → `docker exec --user root chown -R bot:bot`。纯本地操作,不依赖远端。
+- [x] 4.2 ✅ 验收:untracked/修改/分支提交 全部可还原。

@@ -96,6 +96,8 @@
 | 20 | **ProcessUtil.test() 探测模式**(8/7 定) | `ProcessUtil` 新增 `test(String... args)`:命令成功返 `true`、失败返 `false`,不抛异常。与 `run` 互补——`run` 表"必须成功,失败即异常",`test` 表"成败都是答案"。SyncAction 用 `!test("rev-parse")` 做首次/增量分支,消掉内层 try-catch,只剩外层兜底 git 操作失败。放在 `ProcessUtil` 非私有——探测是通用策略,RestoreAction/FixAction 后续可复用 |
 | 21 | **属主漂移处理**(8/7 实测定) | alpine/git 容器以 root 运行,在 volume 上创建的文件 root:root、sandbox(bot)无法修改。两管齐下:①git 命令统一 `-c safe.directory=/workspace/repo`(clone 除外)②末尾 `docker exec --user root chown -R bot:bot`(覆盖容器的 USER bot)。MVP 不处理子模块(clone 无 `--recursive`,增量无 submodule update),后续独立任务补 |
 | 22 | **MVP 不处理子模块**(8/7 定) | clone 不加 `--recursive`,增量无 `submodule update`,SyncResult 无 `hasSubModule`。子模块需额外处理(子仓库权限链、跨子模块 commit、`.gitmodules` URL 替换),排到 MVP 后独立任务 |
+| 23 | **RestoreAction 还原流程**(8/7 实测定) | 7 步还原 + 属主修正:`reset --hard HEAD`(FixAction 有 commit 不能用 `checkout .`)→ `clean -fdx`(删除 untracked)→ `switch <originalBranch>`(切回原始分支)→ `rev-parse --verify` 探测 → `branch -D fix/<runId>`(删除本地修复分支)→ `reset --hard origin/<originalBranch>`(兜底重置到 fetch 状态)→ `rev-parse HEAD` 取证 commitSha → `docker exec --user root chown -R bot:bot`。**纯本地操作**:不依赖远端,不需要 `--add-host`/`http.extraHeader`/`GiteaProperties`。`RestoreResult` 记 commitSha |
+| 24 | **FIX/VERIFY 重试收敛到 RestoredTrigger**(8/7 定) | `FixingStateTransition`、`VerifyingStateTransition` 无条件 `FIX_FAILED`/`VERIFY_FAILED → RESTORING`,不再注入 `ActionAttemptMapper`/`MaxAttemptsProperties`/`CancelTracker`。所有重试决策收敛到 `RestoredTrigger`:通过 `latestFix`/`latestVerify` 时间戳判断最新失败来源,按对应重试上限(`fix`/`verify`)决定续修(`Event.FIX`)或放弃(`FIX_FAILED`/`VERIFY_FAILED → FAILED`)。取消检查(`cancelTracker.contains()`)嵌入重试条件,取消时自动走对应失败事件。`RestoredStateTransition` 新增 `FIX_FAILED`/`VERIFY_FAILED → FAILED` |
 
 ---
 
@@ -121,7 +123,7 @@ PENDING
  → CLEAN      docker rm -f(不删 volume,保留项目缓存,决策 10)
 ```
 
-> **取消/失败**:任何阶段失败达重试上限 → `FAILED`;用户点取消 → `CancelTracker` 在下个安全点终止 → 走 `RESTORING`(还原代码)→ `CLEANED`。
+> **取消/失败**:任何阶段失败达重试上限 → `FAILED` → `FailedTrigger` 发 `CLEAN`(来自 CLEANING 的 FAILED 除外,破环);FIX/VERIFY 失败 → `RESTORING`(RestoreAction 7 步还原,决策 23)→ `RESTORED` → `RestoredTrigger` 重试决策(决策 24):有重试且未取消 → `FIXING` 续修,否则 `FIX_FAILED`/`VERIFY_FAILED` → `FAILED` → `CLEAN`;用户点取消 → `CancelTracker` 标记 → `*ed` Trigger 发 `CLEAN`(跳过后续阶段)→ `CLEANED`。
 
 ---
 
@@ -318,7 +320,7 @@ morningstar.app.dev:
 - [x] `SyncAction`:✅ 落地(8/7,实测通过:首次 clone、增量更新、换分支全链路冒烟)。通过临时 alpine/git 容器(镜像写死)操作 volume。①取数:runId→projectId→link+branchName,`GiteaUtil.parseRepoIdentity` 解析,`containerOrigin` 拼 clone URL ②探测:`processUtil.test("rev-parse")` 返 false=首次(决策 20),`test` 不抛异常消掉内层 catch ③首次:清空(`alpine find -mindepth 1 -delete`,保重试幂等)→ `clone --branch <branchName>`(无子模块,MVP 不处理)④增量:`fetch`(带 http.extraHeader)+ `switch -C`(不用 reset——HEAD 可能停修复分支)+ `clean -fdx` ⑤每条 git 命令带 `-c safe.directory=/workspace/repo`(volume 属主 bot vs root 容器)⑥所有路径末尾 `docker exec --user root chown -R bot:bot`(防属主漂移)⑦取证:`rev-parse HEAD` 进 `SyncResult(gitUrl/branchName/commitSha)` ⑧外层 catch → FAILED 结果(不裸抛)。`@JsonSubTypes` 已注册 SYNC
 - [x] `GiteaProperties`:`origin` → `publicOrigin` + 新增 `containerOrigin`;`GiteaUtil` 三处引用随迁 `publicOrigin`;yml 两环境配置同步(决策 19)
 - [x] `ProcessUtil.test()`:新增探测方法(决策 20)
-- [ ] `RestoreAction`:后端通过临时 alpine/git 容器执行 `checkout . && clean -fd`(失败/取消还原用)
+- [x] `RestoreAction`:✅ 落地(8/7,实测通过:untracked/修改/分支提交全部可还原)。通过临时 alpine/git 容器(镜像写死)操作 volume。①`reset --hard HEAD`:丢弃 fix 分支上已跟踪文件的修改(FixAction 有 commit,不能用 `checkout .`)②`clean -fdx`:删除 untracked 文件和目录③`switch <originalBranch>`:切回配置的原始分支④`rev-parse --verify fix/<runId>` 探测 → `branch -D fix/<runId>`:删除本地修复分支⑤`reset --hard origin/<originalBranch>`:重置到 fetch 状态,兜底保证工作区干净⑥`rev-parse HEAD`:取证 commitSha 进 `RestoreResult`⑦`docker exec --user root chown -R bot:bot`:属主修正。**纯本地操作,不依赖远端**(无 `--add-host`/`http.extraHeader`/`GiteaProperties`)。外层 catch → FAILED 结果(不裸抛)。`RestoredTrigger` 重试/取消决策(决策 24):`FixingStateTransition`/`VerifyingStateTransition` 简化为无条件进 RESTORING,决策集中在 `RestoredTrigger`;取消检查嵌入重试条件,`StartedStateTransition` 补充 CLEAN 事件
 - **验收**:✅ 首次 clone、增量更新、换分支 全链路通过
 
 ### 阶段 3 · 漏洞扫描(~3h)— *8/7*

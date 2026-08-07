@@ -20,6 +20,9 @@ public class StartedStateTransition implements StateTransition {
         if (event == Event.SYNC) {
             return State.SYNCING;
         }
+        if (event == Event.CLEAN) {
+            return State.CLEANING;
+        }
 
         throw new StateTransitionDeniedException(getCurrentState(), event);
     }

@@ -25,7 +25,7 @@ public class MockAction extends AbstractAction {
     @Override
     protected ActionResult doExecute(UUID runId) {
         try {
-            Thread.sleep(5000);
+            Thread.sleep(1000);
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
         }

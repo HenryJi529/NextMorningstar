@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class FixAction extends MockAction {
     public FixAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper) {
-        super(stateMachineService, actionAttemptMapper, 0.6, Event.FIX_SUCCEEDED, Event.FIX_FAILED);
+        super(stateMachineService, actionAttemptMapper, 0.5, Event.FIX_SUCCEEDED, Event.FIX_FAILED);
     }
 
     @Override
