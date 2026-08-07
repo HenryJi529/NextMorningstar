@@ -116,6 +116,22 @@ public class SyncAction extends AbstractAction {
                         "clean", "-fdx");
             }
 
+            // 配置 commit 需要的用户名和邮箱
+            processUtil.run(
+                    "docker", "run", "--rm",
+                    "-v", volumeName + ":/workspace/repo",
+                    "alpine/git",
+                    "-c", "safe.directory=/workspace/repo",
+                    "-C", "/workspace/repo",
+                    "config", "user.name", giteaProperties.getBotUsername());
+            processUtil.run(
+                    "docker", "run", "--rm",
+                    "-v", volumeName + ":/workspace/repo",
+                    "alpine/git",
+                    "-c", "safe.directory=/workspace/repo",
+                    "-C", "/workspace/repo",
+                    "config", "user.email", giteaProperties.getBotEmail());
+            
             // 获取最新的 commit sha
             String commitSha = processUtil.run(
                     "docker", "run", "--rm",

@@ -14,6 +14,8 @@ public class GiteaProperties {
 
     private String botUsername;
 
+    private String botEmail;
+
     private String botToken;
 
     private String adminToken;
