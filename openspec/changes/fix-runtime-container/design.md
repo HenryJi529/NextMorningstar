@@ -114,3 +114,11 @@ alpine/git 容器以 root 运行,在 volume 上创建的文件属主 root:root;s
 - `RestoredStateTransition` 新增 `FIX_FAILED`/`VERIFY_FAILED → FAILED`
 
 优势:重试策略单一控制点,`FixingStateTransition`/`VerifyingStateTransition` 零依赖。
+
+### 决策 17: 后端容器化(Docker-in-Docker via docker.sock)(8/7 定)
+
+生产后端自身也运行在容器内,需操控宿主机 Docker daemon(起/停 sandbox 容器、临时 alpine/git 容器)。
+
+- **Dockerfile**:多阶段构建,从 `docker:cli` 镜像 COPY `docker` 二进制到 `eclipse-temurin:17-jre`。`docker` CLI 是 Go 纯静态链接(~25MB),无系统依赖,比 apt repo 方式干净。
+- **docker-compose**:springboot 服务挂载 `/var/run/docker.sock:/var/run/docker.sock`。当前 Dockerfile 无 `USER` 指令,容器以 root 运行,访问 docker.sock 无权限问题。
+- **网络**:sandbox 容器用真实域名访问 Gitea/SonarQube,不与 docker-compose 网络绑定(当前 demo 部署在一起,但后续可能拆分为独立部署——域名保持通用性)。

@@ -1,8 +1,11 @@
+FROM docker:cli AS docker
 FROM eclipse-temurin:17-jre
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     echo "Asia/Shanghai" > /etc/timezone
 ENV TZ=Asia/Shanghai
+
+COPY --from=docker /usr/local/bin/docker /usr/local/bin/docker
 
 WORKDIR /app
 

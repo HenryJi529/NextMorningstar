@@ -26,9 +26,17 @@
 - **THEN** 后端起 `docker exec --user root <containerName> chown -R bot:bot /workspace/repo`(统一在 if-else 与 rev-parse 之后执行,两路径一把收;bot 是 sandbox 容器的运行用户,root 写入的文件 bot 无法修改)
 - **AND** 所有 git 命令统一带 `-c safe.directory=/workspace/repo`(volume 属主 bot,git 容器以 root 运行,不加 git 报 "dubious ownership";clone 除外——目录尚不存在)
 
+#### 场景:git commit 身份配置
+
+- **WHEN** git 操作完成(首次 clone 或增量更新),`rev-parse HEAD` 之前
+- **THEN** 后端起临时 alpine/git 容器设 repo 级 git 身份:`git config user.name` 取 `GiteaProperties.botUsername`、`git config user.email` 取 `GiteaProperties.botEmail`
+- **AND** 每次 sync 都重写,不依赖上次值——bot 身份可配置变更,下次跑即生效
+- **AND** 不设 `--global`(临时容器无意义),不拼进 clone URL(token 不进 volume)
+- **AND** 若 `config` 命令失败 → 外层 `catch (ProcessExecutionException)` 兜底,同其他 git 操作(决策 18)
+
 #### 场景:同步失败
 
-- **WHEN** 任何 git 操作失败(清空/clone/fetch/switch/clean/rev-parse/chown)
+- **WHEN** 任何 git 操作失败(清空/clone/fetch/switch/clean/config/rev-parse/chown)
 - **THEN** 外层 `catch (ProcessExecutionException)` 统一兜底,返回 FAILED `SyncResult`(message 含命令+退出码+stderr;不设 commitSha——失败自然没拿到)
 - **AND** **不裸抛**(决策 18:裸抛 = attempt 停 RUNNING + run 卡中间态占并发槽等 60min 超时)
 - **AND** 探测用的 `processUtil.test()` 不抛异常——它内部已 catch 转 boolean,不触发外层 catch

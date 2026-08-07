@@ -225,6 +225,7 @@ services:
       - 8091:8091
     volumes:
       - springboot_logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
