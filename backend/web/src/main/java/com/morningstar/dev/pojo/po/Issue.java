@@ -63,6 +63,7 @@ public class Issue {
     public enum Status {
         SELECTED,
         FIXED,
+        VERIFIED,
         FAILED,
         ACCEPTED,
         REJECTED

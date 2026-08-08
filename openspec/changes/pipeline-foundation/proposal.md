@@ -11,7 +11,7 @@ AI 漏洞修复流水线的状态机骨架(状态/事件/编排 Trigger/重试/�
 - `ResponseCode` 新增 `DEV_PROJECT_NOT_FOUND`/`DEV_PROJECT_ACCESS_DENIED`/`DEV_RUN_NOT_FOUND`/`DEV_RUN_ACCESS_DENIED`。
 - `AbstractAction` 不额外加时间字段 — `createTime`/`updateTime` 已满足。
 - `dev_run` 不加 `finished_at` — `update_time` 即可(与决策 6 一致)。
-- 待实现:`ProjectController`/`RunController`、定时调度骨架、Gitea 仓库授权。
+- ✅ 已实现:`ProjectController`/`RunController`、定时调度骨架、Gitea 仓库授权。
 
 ## 能力
 

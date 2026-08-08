@@ -5,9 +5,9 @@
 
 ## 2. 结果处理
 
-- [ ] 2.1 已关闭 → `status=VERIFIED`。
-- [ ] 2.2 仍 OPEN → 临时 alpine/git 容器 `revert <commit_sha>` + `status=FAILED`。
+- [ ] 2.1 全部已关闭 → 所有 issue `status=VERIFIED`。
+- [ ] 2.2 存在 OPEN → 所有 issue `status=FAILED` → 状态机发 `VERIFY_FAILED` → RestoreAction 整轮回退。
 
 ## 3. 验证
 
-- [ ] 3.1 故意改坏代码,Verify 能捕获并 revert。
+- [ ] 3.1 故意改坏代码,Verify 能捕获并触发 RestoreAction 整轮回退,工作区回到 sync 时状态。

@@ -6,7 +6,7 @@
 
 #### 场景:首次同步
 
-- **WHEN** 运行进入仓库同步阶段,`processUtil.test("rev-parse --is-inside-work-tree")` 返回 `false`(volume 内不是 git 仓库)
+- **WHEN** 运行进入仓库同步阶段,`ProcessUtil.test("rev-parse --is-inside-work-tree")` 返回 `false`(volume 内不是 git 仓库)
 - **THEN** 后端起临时 alpine 容器清空 `/workspace/repo`(`find -mindepth 1 -delete`,保证重试幂等——上次 clone 半截残骸会阻塞 clone)
 - **AND** 后端起临时 alpine/git 容器(镜像写死、`--add-host` 统一带),将目标仓库 `clone --branch <branchName>` 到 `/workspace/repo`(MVP 不处理子模块,无 `--recursive`)
 - **AND** clone URL 用 `containerOrigin` 拼,无凭证形式(host/owner/repo.git);token 通过 `git -c http.extraHeader=Authorization: token <value>` 当次生效,**不拼进 remote URL**(防 token 持久化写入 volume 里 `.git/config`)
@@ -14,7 +14,7 @@
 
 #### 场景:增量同步
 
-- **WHEN** volume 内已是 git 仓库(`processUtil.test("rev-parse --is-inside-work-tree")` 返回 `true`)
+- **WHEN** volume 内已是 git 仓库(`ProcessUtil.test("rev-parse --is-inside-work-tree")` 返回 `true`)
 - **THEN** 后端起临时 alpine/git 容器执行 `fetch origin <branchName>`(带 `--add-host` + `http.extraHeader` 认证)
 - **AND** `switch -C <branchName> origin/<branchName>`(在任何 HEAD 状态下强制将目标分支指到远端最新并切过去,不用 `reset --hard`——上一轮 Fix 可能把 HEAD 停在修复分支上)
 - **AND** `git clean -fdx`(清除 untracked/ignored,保证每轮开工工作区绝对干净)
@@ -32,13 +32,13 @@
 - **THEN** 后端起临时 alpine/git 容器设 repo 级 git 身份:`git config user.name` 取 `GiteaProperties.botUsername`、`git config user.email` 取 `GiteaProperties.botEmail`
 - **AND** 每次 sync 都重写,不依赖上次值——bot 身份可配置变更,下次跑即生效
 - **AND** 不设 `--global`(临时容器无意义),不拼进 clone URL(token 不进 volume)
-- **AND** 若 `config` 命令失败 → 外层 `catch (ProcessExecutionException)` 兜底,同其他 git 操作(决策 18)
+- **AND** 若 `config` 命令失败 → 外层 `catch (ProcessExecutionException)` 兜底,同其他 git 操作(dev-plan 决策 18)
 
 #### 场景:同步失败
 
 - **WHEN** 任何 git 操作失败(清空/clone/fetch/switch/clean/config/rev-parse/chown)
 - **THEN** 外层 `catch (ProcessExecutionException)` 统一兜底,返回 FAILED `SyncResult`(message 含命令+退出码+stderr;不设 commitSha——失败自然没拿到)
-- **AND** **不裸抛**(决策 18:裸抛 = attempt 停 RUNNING + run 卡中间态占并发槽等 60min 超时)
+- **AND** **不裸抛**(dev-plan 决策 18:裸抛 = attempt 停 RUNNING + run 卡中间态占并发槽等 60min 超时)
 - **AND** 探测用的 `processUtil.test()` 不抛异常——它内部已 catch 转 boolean,不触发外层 catch
 
 #### 场景:失败/取消还原

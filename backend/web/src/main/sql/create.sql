@@ -223,7 +223,7 @@ create table if not exists dev_action_attempt
     create_time datetime,
     update_time datetime,
     primary key (id)
-) comment '研发过程表';
+) comment '研发动作记录表';
 
 create table if not exists dev_issue
 (

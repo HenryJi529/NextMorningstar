@@ -4,9 +4,9 @@
 
 ## 变更内容
 
-- `SubmitAction`:临时 alpine/git 容器推修复分支 `ai-fix/<project>/<runShort>`(凭证 `-e` 注入,用完即毁)。
+- `SubmitAction`:临时 alpine/git 容器推修复分支 `fix/<runId>`(凭证 `http.extraHeader` 注入,用完即毁)。
 - 调 Gitea API 开 PR(目标=源分支),启用"合并后自动删除源分支"。
-- 用各 issue 的 ai_report 拼 markdown 评论(含 `/issues?open=`、`/coding_rules?open=` 链接)。
+- 用各 issue 的 commit_message 拼 markdown 评论(含 `/issues?open=`、`/coding_rules?open=` 链接)。
 - 失败/取消/PR 关闭:主动删除修复分支(不留垃圾)。
 
 ## 能力
@@ -17,4 +17,4 @@
 ## 影响范围
 
 - `SubmitAction`:替换 Mock。
-- `GiteaProperties`(origin/token/bot)。
+- `GiteaProperties`(publicOrigin/token/bot)。

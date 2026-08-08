@@ -1,6 +1,6 @@
 ## 为什么
 
-真实修复需在隔离环境进行(隔离 AI + 提供构建环境),但 **git 凭证绝不能进 AI 容器**(防 prompt injection 偷取)。因此容器只承担"claude 改文件 + maven/sonar 构建",git 操作(含凭证)全部由后端通过临时 alpine/git 容器在 named volume 上完成(决策 9/12)。
+真实修复需在隔离环境进行(隔离 AI + 提供构建环境),但 **git 凭证绝不能进 AI 容器**(防 prompt injection 偷取)。因此容器只承担"claude 改文件 + maven/sonar 构建",git 操作(含凭证)全部由后端通过临时 alpine/git 容器在 named volume 上完成(决策 4/9)。
 
 ## 变更内容
 

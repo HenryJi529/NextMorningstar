@@ -31,4 +31,4 @@
 
 - [x] 5.1 mock 模式下,手动触发的 run 从 `PENDING` 跑到 `CLEANED`。
 - [x] 5.2 接口能正确查询 run 状态、issue 列表,并能取消运行中的 run。
-- [ ] 5.3 项目启用后 bot 能 clone 该仓库;禁用后 bot 无权访问。(依赖阶段 2 `code-sync-restore` 的真实 clone,排期 8/6 实现后验证——阶段 0 形式上暂卡此项)
+- [x] 5.3 项目启用后 bot 能 clone 该仓库;禁用后 bot 无权访问。(✅ 8/7 随 SyncAction 全链路冒烟验证通过)

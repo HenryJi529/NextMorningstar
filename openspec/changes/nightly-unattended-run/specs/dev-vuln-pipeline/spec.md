@@ -12,8 +12,8 @@
 
 ### 需求:夜间窗口截止
 
-#### 场景:07:00 硬停
+#### 场景:06:00 硬停
 
-- **WHEN** 到达 `schedule.window-end`(默认 07:00)
-- **THEN** 对在跑的 run 触发 cancel(走取消流程,删 ai-fix 分支)
+- **WHEN** 到达 `schedule.cleanup-cron`(06:00)
+- **THEN** 对在跑的 run 触发 cancel(走取消流程,删修复分支)
 - **AND** 未启动的 run 标记 `SKIPPED`,明夜重新触发

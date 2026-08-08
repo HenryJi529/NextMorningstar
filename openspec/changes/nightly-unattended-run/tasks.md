@@ -7,7 +7,7 @@
 
 - [ ] 2.1 夜间定时(21:00)触发,按 `runtime.concurrency`(默认 2)并发执行。
 - [ ] 2.2 单 run 失败不影响其他;池满时排队。
-- [ ] 2.3 `window-end`(07:00)对在跑的 run 触发 cancel(走取消流程 + 删 ai-fix 分支),未启动的标 `SKIPPED`。
+- [ ] 2.3 `cleanup-cron`(06:00)对在跑的 run 触发 cancel(走取消流程 + 删修复分支),未启动的标 `SKIPPED`。
 
 ## 3. 边界
 

@@ -1,6 +1,6 @@
 ## 1. PR 提交
 
-- [ ] 1.1 临时 alpine/git 容器推修复分支 `ai-fix/<runShort>`(凭证 `-e` 注入,用完即毁)。
+- [ ] 1.1 临时 alpine/git 容器推修复分支 `fix/<runId>`(凭证 `http.extraHeader` 注入,用完即毁)。
 - [ ] 1.2 调 Gitea API 开 PR(目标=源分支,启用合并后删源分支)。
 
 ## 2. 诊断评论

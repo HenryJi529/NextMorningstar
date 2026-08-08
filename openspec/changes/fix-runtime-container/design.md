@@ -1,6 +1,6 @@
 ## 上下文
 
-修复流程中,容器承担 claude 改文件 + maven/sonar 构建;git 操作(含凭证)由后端通过临时 alpine/git 容器在 named volume 完成(见决策 12),凭证不进容器。多仓库并发靠容器隔离。
+修复流程中,容器承担 claude 改文件 + maven/sonar 构建;git 操作(含凭证)由后端通过临时 alpine/git 容器在 named volume 完成(见决策 4、决策 9),凭证不进容器。多仓库并发靠容器隔离。
 
 ## 目标 / 非目标
 
@@ -26,7 +26,7 @@ git clone/commit/push 由后端通过 `docker run --rm -v morningstar_dev_repo_<
 开发者本地 Apple Silicon(arm64)、部署服务器 amd64。sonar-scanner 官方按架构分包(`linux-x64`/`linux-aarch64`),无统一包、官方 Docker 镜像仅 amd64。Dockerfile 用 BuildKit 自动注入的 `TARGETARCH` 选包(`amd64→x64`/`arm64→aarch64`),两边**原生构建**,不依赖 Rosetta——arm64 容器跑 x64 二进制会触发 `rosetta error: failed to open elf at /lib64/ld-linux-x86-64.so.2` → SIGTRAP(exit 133)。
 
 ### 决策 6:容器操作走命令行(ProcessBuilder + docker CLI)
-`StartAction`/`CleanAction` 的 docker 操作走 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`),不引 docker-java 库——与决策 12 的命令行 git 同套,共用 `util/ProcessUtil`(执行 + 捕获 stdout + 异常,8/6 已实现,6 单测)。命令即文档、调试直观、零新依赖。前提:后端进程能访问 docker(开发期 Mac 宿主机有 docker CLI ✅;生产后端容器化部署需挂 docker.sock,8/14 前不处理)。
+`StartAction`/`CleanAction` 的 docker 操作走 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`),不引 docker-java 库——与决策 4 的命令行 git 同套,共用 `util/ProcessUtil`(执行 + 捕获 stdout + 异常,8/6 已实现,6 单测)。命令即文档、调试直观、零新依赖。前提:后端进程能访问 docker(开发期 Mac 宿主机有 docker CLI ✅;生产后端容器化部署需挂 docker.sock,8/14 前不处理)。
 
 **ProcessUtil 实现要点(8/6 对话定稿):**
 - `run(String...)`:执行命令,完整命令打 INFO 日志;返回 stdout——**仅剥末尾换行(`\R+$`),其余空白原样保留**(容器 ID 直接可用,调用方无需 trim;带格式输出不被误伤)。
@@ -122,3 +122,35 @@ alpine/git 容器以 root 运行,在 volume 上创建的文件属主 root:root;s
 - **Dockerfile**:多阶段构建,从 `docker:cli` 镜像 COPY `docker` 二进制到 `eclipse-temurin:17-jre`。`docker` CLI 是 Go 纯静态链接(~25MB),无系统依赖,比 apt repo 方式干净。
 - **docker-compose**:springboot 服务挂载 `/var/run/docker.sock:/var/run/docker.sock`。当前 Dockerfile 无 `USER` 指令,容器以 root 运行,访问 docker.sock 无权限问题。
 - **网络**:sandbox 容器用真实域名访问 Gitea/SonarQube,不与 docker-compose 网络绑定(当前 demo 部署在一起,但后续可能拆分为独立部署——域名保持通用性)。
+
+### 决策 18: 不做逐 commit 保留与强制 SUBMIT(8/8 定)
+
+曾考虑 VerifyAction 失败时精准 `reset --hard <最早失败 commit^>` 保留好 commit、重试耗尽后强制 SUBMIT 已有成果。评估后拒绝，三组理由：
+
+**一、AI 修复能力高 → 整轮回退是保险非常态。** 实测 deepseek 最新模型对常见 sonar issue 修复质量高，整轮回退触发概率低。重试上限是兜底，不是日常流程。
+
+**二、pipeline 视觉对称 → 架构美感即汇报价值。** Scan（扫出所有问题）和 Verify（验证所有修复）左右对称，都走 SonarScanner，Fix 居中。流水线一眼看懂：扫 → 修 → 验。相比之下，issue 级分支方案打乱了这个对称感——发现步骤（Scan 一次查出 N 个 issue）比验证步骤（每个 issue 各做一次 mvn + sonar）还轻，直觉上就不对。
+
+**三、分支方案悖论 → 架构异味。** 每个 issue 独立 verify 需要 `mvn compile + sonar-scanner`（~30s–2min），Scan 也是 `mvn compile + sonar-scanner`（~30s–2min）。一个发现 N 个问题，一个验证 1 个问题——两者同代价。发现比验证还便宜，这是反直觉的。
+
+**四、`maxFixesPerRun` 即复杂度调杆。** 整轮回退不意味着永远一次修 10 个。同一套简单状态机，调参即可覆盖全部行为范围：
+
+```yaml
+maxFixesPerRun: 10   # 批量模式，吞吐高，一个失败带崩全部
+maxFixesPerRun: 3    # 中等批次，平衡风险和效率
+maxFixesPerRun: 1    # 等效 issue 级隔离，状态机零改动
+```
+
+如果 AI 修复能力不如预期，降低窗口即可——不必改状态机、不必加分支逻辑。调参不用动架构。
+
+**复杂度（原计划）:**
+- VerifyAction 膨胀：从纯判定变为定位最早失败 + 执行 reset + chown
+- RestoreAction 分裂：要双路径（verify 失败只清理不切分支，cancel 完整还原）
+- RestoredTrigger 四分支：要区分 fix/verify 失败来源，分别走不同事件
+- FixAction 要乱序：失败 issue 排到队尾防卡死
+
+**底线防线:**
+- dev-plan 决策 14（失败 issue 跨 run 记忆）：本轮修不了的 issue 下轮自动排除，不重复浪费
+- 重试上限（`maxAttempts`）：防无限循环，3 次到顶即停
+
+**结论:** 整轮回退不是简化妥协，是正确设计。状态机保持简单——整轮回退、整轮重试、上限截断。

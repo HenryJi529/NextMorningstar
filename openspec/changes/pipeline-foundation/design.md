@@ -18,7 +18,7 @@
 ## 决策
 
 ### 决策 1:`dev_issue` 数据模型（14 字段）
-新增 `dev_issue` 承载"一漏洞一记录、一漏洞一 commit"。SonarQube 来源字段统一加 `sonar_` 前缀：`sonar_project_key`、`sonar_issue_key`、`sonar_rule_key`、`sonar_severity`、`sonar_type`、`sonar_message`、`sonar_effort`。`sonar_project_key` 归于 issue 减少跨 run 汇总的联表查询。`status` 枚举 SELECTED→FIXED/FAILED→ACCEPTED/REJECTED，代码手动设置。`commit_message` 替代原 `ai_report`。`attempt_no` 移除（不需记录重试次数）。唯一约束 `uk_run_issue (run_id, sonar_issue_key)`。
+新增 `dev_issue` 承载"一漏洞一记录、一漏洞一 commit"。SonarQube 来源字段统一加 `sonar_` 前缀：`sonar_project_key`、`sonar_issue_key`、`sonar_rule_key`、`sonar_severity`、`sonar_type`、`sonar_message`、`sonar_effort`。`sonar_project_key` 归于 issue 减少跨 run 汇总的联表查询。`status` 枚举 SELECTED→FIXED→VERIFIED/FAILED→ACCEPTED/REJECTED，代码手动设置。`commit_message` 替代原 `ai_report`。`attempt_no` 移除（不需记录重试次数）。唯一约束 `uk_run_issue (run_id, sonar_issue_key)`。
 
 ### 决策 2:并发度 = 2
 Fix 阶段是模型对话 I/O,CPU 空闲,多 run 可并行;Scan/Verify 才 CPU 密集且短。并发度 2 在 2 核机器上一夜 ~10h 窗口可跑 ~16-20 仓库。
@@ -64,5 +64,5 @@ collaborator 是**仓库级**(owner/repo)的，不挂在 project 记录上。若
 - **`state`**:流水线阶段,状态机驱动,用于所有业务查询和状态判断(如 `notIn(PENDING, CLEANED, FAILED)` 判断活跃 run)。
 - **`status`**:整体结果,观测用(RUNNING/SUCCEEDED/FAILED/CANCELING/CANCELED)。Cancel 流程通过 `status=CANCELING` 标记取消意图,6 个 Trigger 检查 `cancelTracker` 后走 CLEAN。
 
-**动机**:流水线阶段(17 态)与用户关心的结果(5 态)粒度不同,分离后查询用 `state`(精确),用户展示用 `status`(简洁)。
+**动机**:流水线阶段(18 态)与用户关心的结果(5 态)粒度不同,分离后查询用 `state`(精确),用户展示用 `status`(简洁)。
 PENDING 状态 run 尚未启动，不在任何 Trigger 的取消检查路径上。因此在 `StateMachineService.requestCancel` 中拒绝 PENDING 的取消请求(避免残留 CANCELING 状态标记)，改为 `cancelOvernightRuns` 中直接 `updateById` 设置 `status=CANCELED`。

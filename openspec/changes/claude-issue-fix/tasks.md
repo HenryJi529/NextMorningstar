@@ -6,8 +6,8 @@
 ## 2. 提交与回写
 
 - [ ] 2.1 平台 `git add -A && git commit`(一漏洞一 commit,规范 message)。
-- [ ] 2.2 回写 `dev_issue`(commit_sha/ai_report/status=`COMMITTED`)。
-- [ ] 2.3 claude 基于 sonar 数据 + `resources/dev/ai-report-template.md` 生成中文 `ai_report`,回写 `dev_issue`。
+- [ ] 2.2 回写 `dev_issue`(commit_sha/commit_message/status=`FIXED`)。
+- [ ] 2.3 claude 基于 sonar 数据 + `resources/dev/ai-report-template.md` 生成中文 `commit_message`,回写 `dev_issue`。
 
 ## 3. 超时与取消
 
