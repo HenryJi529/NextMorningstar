@@ -32,26 +32,67 @@
 
 ---
 
-## 三、Sonar 裁判闭环：扫描与验证镜像对称
+## 三、双通道发现 + 两道防线验证
 
-pipeline 的结构视觉感很强——这不是偶然。
+### 3.1 ScanAction：双通道并行扫描
 
 ```
- START → SYNC → [Scan] → [Fix] → [Verify] → SUBMIT → CLEAN
-                  │        │        │
-                  └─ 出题 ─┴─ 做题 ─┴─ 阅卷 ┘
-                  发现 N 个    逐个修复    重扫判定
+ScanAction:
+  mvn compile
+  ├─ SonarQube 通道: scanner → API 拉 issue → 调 /api/rules/show 拿规则描述 → 记录基线
+  └─ AI Discovery: Claude 自由探索项目 → 输出结构化 JSON
+  → 合并去重 → 统一入库
 ```
 
-**Scan：** `mvn compile → sonar-scanner → API 拉取 OPEN issue`，Sonar 是"出题人"。
+**SonarQube 做已知模式识别**（空指针、SQL 注入、资源泄漏等规则化问题），**Claude 做语义理解**（上帝类、竞态条件、N+1 查询等规则引擎抓不到的）。两者互补，不是替代。
 
-**Verify：** `mvn compile → sonar-scanner → API 查询 issue 状态`，Sonar 是"阅卷人"。
+AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（21 种 AiIssueType 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
 
-左右镜像，同一种工具，不同角色。不需要 AI 自评修复质量——全是客观数据。这个闭环是汇报中最容易被记住的结构。
+### 3.2 FixAction：统一 prompt，不依赖 MCP
+
+ScanAction 阶段已把全部诊断信息存入 issue 字段。FixAction 对所有 issue 使用同一 prompt 模板——Claude 从 `title`/`codeSnippet`/`metadata` 获取上下文即修。不区分来源，不调 MCP，不查外部 API。
+
+### 3.3 VerifyAction：两道防线
+
+```
+VerifyAction:
+  ① SonarQube 重扫 → 客观判定（关没关 + 回归没）
+  ② Claude review  → 语义验证（修对了没）
+  两道都过 → VERIFIED
+```
+
+第一道是硬数字（BLOCKER 从 N 变 0），第二道是语义判定（读 fix diff + 原始诊断）。SonarQube 做客观门槛，Claude 做智能审查——不是"自己出题自己判"，而是各司其职。
+
+### 3.4 SonarQube 对用户透明
+
+issue 入库后不再区分来源。PR 评论统一格式：title + 三维 severity + description + suggestion + codeSnippet。用户看不到 SonarQube 原始 API 数据，只看到结构化的中文诊断报告。
 
 ---
 
-## 四、18 态状态机：一条主链、一个回退环、一个终态
+## 四、数据模型：Source 区分器 + 三维 Severity
+
+`dev_issue` 承载所有问题记录，无论来自 SonarQube 还是 AI Discovery：
+
+```sql
+source                   VARCHAR(16)   -- SONAR / AI
+metadata                 JSON           -- SonarMetadata 或 AiMetadata（@JsonTypeInfo 多态）
+title                    VARCHAR(1024)
+reliability_severity     VARCHAR(16)    -- BUG(缺陷)
+security_severity        VARCHAR(16)    -- VULNERABILITY(安全漏洞)
+maintainability_severity VARCHAR(16)    -- CODE_SMELL(代码异味)
+```
+
+**source 区分器**：`@JsonTypeInfo(property = "@source")`，和 `ActionResult` 同模式——JSON 列内嵌多态子类（`SonarMetadata` 含 issueKey/ruleKey，`AiMetadata` 含 type 分类）。
+
+**三维 severity 独立**：SonarQube 的三质量维度（Reliability/Security/Maintainability）各自独立评分。一个 issue 可以同时是 BLOCKER 级别的安全漏洞和 MEDIUM 级别的代码异味——这不是反规范化，是正确建模。
+
+**AiIssueType 分类体系**：21 种 AI 可识别的代码问题类型，分六大类（架构/逻辑/安全/可维护/性能/并发）+ OTHER 兜底。每个类型带中文描述，既是 AI prompt 里的分类指引，也是 PR 评论里的用户可读标签。
+
+**不做的事**：不加唯一约束——ScanAction 插入前删除本 run 旧数据，业务逻辑保证不重复。不设 `rule_key` 顶层列——对 AI Discovery 没用，对 SonarQube 存 metadata 里即可。
+
+---
+
+## 五、18 态状态机：一条主链、一个回退环、一个终态
 
 每两个状态形成一个 Action 的执行区间（`...ING → ...ED`），Trigger 自动驱动：
 
@@ -70,15 +111,15 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 **曾考虑 issue 级独立状态机但否决。** 每个 issue 独立跑 `FIXING → VERIFYING → RESTORING → FIXING` 看似优雅，但引入两个根本问题：
 
 1. **嵌套状态机。** run 级状态机下再挂 N 个 issue 级状态机——编排复杂度翻倍，Trigger 要同时监听两层事件。
-2. **`maxFixesPerRun=1` 等效替代。** 状态机不改，把每批修复数降到 1，行为上完全等价于 issue 级隔离，但架构上不引入额外状态层。
+2. **`maxSonarIssuesPerRun=1` + `maxAiIssuesPerRun=1` 等效替代。** 状态机不改，把每批修复数降到 1，行为上完全等价于 issue 级隔离，但架构上不引入额外状态层。
 
 **结论：** issue 级状态机不是"后面对齐再做"，而是评估后明确拒绝的方向。同一套简单状态机靠调参覆盖全部行为范围。
 
 ---
 
-## 五、不浪费 AI 算力的正确方式：三层防线而非扭曲状态机
+## 六、不浪费 AI 算力的正确方式：三层防线而非扭曲状态机
 
-### 5.1 一度想做的方案（评估后明确拒绝）
+### 6.1 一度想做的方案（评估后明确拒绝）
 
 曾考虑 **逐 commit 精准保留**：Verify 失败时 `git reset --hard <最早失败 commit^>` 保留修好的 commit → 只重修失败的 issue → 重试耗尽后强制 SUBMIT 已有成果。这个方向会引入链式复杂度：
 
@@ -87,25 +128,25 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 - RestoredTrigger 四分支：需判断失败来源 × 重试次数
 - FixAction 乱序：失败 issue 排到队尾以避免永远卡在同一个 issue
 
-**结论：** 逐 commit 保留不是"后面对齐再做"，而是评估后明确拒绝。理由有三：状态机从编排引擎退化为业务决策引擎；节省的是夜间 AI 时间（不稀缺）；防线由决策 14（跨 run 记忆）和 `maxFixesPerRun` 窗口承担。
+**结论：** 逐 commit 保留不是"后面对齐再做"，而是评估后明确拒绝。理由有三：状态机从编排引擎退化为业务决策引擎；节省的是夜间 AI 时间（不稀缺）；防线由决策 14（跨 run 记忆）和 `maxIssuesPerRun` 窗口承担。
 
-### 5.2 替代方案：三层防线，不改状态机
+### 6.2 替代方案：三层防线，不改状态机
 
 | 层 | 机制 | 作用 |
 |---|---|---|
-| 1 | AI 修复能力验证 | 8/2 预研三步全过（连通/MCP 查 issue/真修复），修复质量可靠 |
-| 2 | `maxFixesPerRun` 窗口 | 能力下降时降低每批修复数——同一状态机，调参即可 |
+| 1 | AI 修复能力验证 | 8/2 预研三步全过，修复质量可靠 |
+| 2 | `maxIssuesPerRun` 窗口 | 能力下降时降低每批修复数——同一状态机，调参即可 |
 | 3 | 决策 14（跨 run 记忆） | 本轮修不了的 issue 下轮自动排除，不重复占用重试次数 |
 
-**核心洞察：** `maxFixesPerRun` 是复杂度调杆。设为 10 是批量模式（吞吐高），设为 1 等效 issue 级隔离——状态机零改动。调参不用动架构。
+**核心洞察：** `maxSonarIssuesPerRun` + `maxAiIssuesPerRun` 是复杂度调杆。设为 10+5 是典型模式，都设为 1 等效 issue 级隔离——状态机零改动。调参不用动架构。
 
-### 5.3 分支方案悖论
+### 6.3 分支方案悖论
 
 每个 issue 独立验证需要 `mvn compile + sonar-scanner`，整个 Scan 也是 `mvn compile + sonar-scanner`。一个发现 N 个问题，一个验证 1 个问题——两者同代价。发现比验证还便宜，这是反直觉的架构异味。整轮回退恰好避开了这个悖论。
 
 ---
 
-## 六、命名确定性：不把 Docker 状态存入数据库
+## 七、命名确定性：不把 Docker 状态存入数据库
 
 容器名 `morningstar_dev_sandbox_<runId>` 和 volume 名 `morningstar_dev_repo_<projectId>` 均由 ID 确定性推导。数据库中不存 `container_id`——DB 是冗余副本，Docker daemon 才是真实数据源，两者会漂移。能推导就不存。
 
@@ -113,7 +154,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 七、Gitea 双视角地址
+## 八、Gitea 双视角地址
 
 同一 Gitea 实例，不同消费者看不同的地址：
 
@@ -126,7 +167,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 八、故障隔离：CleanAction 的破环逻辑
+## 九、故障隔离：CleanAction 的破环逻辑
 
 `FailedTrigger` 中有一个反直觉的判断：FAILED 状态如果来自 CLEANING 阶段，不再发 CLEAN 事件。**否则 CLEAN 失败 → FAILED → 自动再发 CLEAN → 再失败 → ... 无限循环刷 `action_attempt` 表。**
 
@@ -134,7 +175,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 九、演进路径：MVP 刻意放过的
+## 十、演进路径：MVP 刻意放过的
 
 | MVP 不做 | 理由 |
 |---|---|
@@ -148,9 +189,13 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | 决策 | 位置 | 摘要 |
 |---|---|---|
 | 安全模型（三层防御） | dev-plan 决策 12-13 | git 凭证不进 AI 容器，prompt injection 偷不到写权限 |
-| Sonar 裁判闭环 | dev-plan 决策 2 | 既出题又阅卷，全客观判定 |
+| 双通道发现 | sonar-issue-scan proposal | SonarQube 规则引擎 + Claude 语义审查，互补非替代 |
+| 统一修复 prompt | claude-issue-fix design 决策 1 | 不依赖 MCP，ScanAction 已存储全部诊断信息 |
+| 两道防线验证 | sonar-rescan-verify design 决策 1 | SonarQube 客观门槛 + Claude 语义判定 |
+| Source 区分器 + 三维 severity | pipeline-foundation design 决策 1 | JSON 多态 metadata，B/S/M 三维独立 |
+| SonarQube 对用户透明 | gitea-pr-submit design 决策 2 | PR 评论统一格式，不区分来源 |
 | 整轮回退 vs 精准保留 | fix-runtime-container 决策 18 | 四组论据论证整轮回退是正确设计 |
-| `maxFixesPerRun` 复杂度调杆 | fix-runtime-container 决策 18 §四 | 调参不动架构 |
+| `maxIssuesPerRun` 复杂度调杆 | fix-runtime-container 决策 18 §四 | Sonar/AI 分别配置，调参不动架构 |
 | 失败 issue 跨 run 记忆 | dev-plan 决策 14 | 防每夜重复尝试修不好的 issue |
 | 命名确定性 | dev-plan 决策 18 | 不把 Docker 状态存 DB，能推导就不存 |
 | 状态机编排隔离 | fix-runtime-container 决策 16 | RestoredTrigger 是唯一分支点 |

@@ -29,13 +29,13 @@ public class Project {
 
     private String branchName;
 
-    private String sonarProjectKey;
-
     private String description;
 
     private Boolean enabled;
 
-    private Integer maxFixesPerRun;
+    private Integer maxSonarIssuesPerRun;
+
+    private Integer maxAiIssuesPerRun;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

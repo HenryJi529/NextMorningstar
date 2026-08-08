@@ -185,17 +185,17 @@ create table if not exists pic_config
 
 create table if not exists dev_project
 (
-    id                binary(16),
-    admin_id          binary(16)   not null,
-    name              varchar(128) not null,
-    link              varchar(256) not null,
-    branch_name       varchar(64)  not null,
-    sonar_project_key varchar(128),
-    description       text,
-    enabled           boolean      not null default true,
-    max_fixes_per_run int,
-    create_time       datetime,
-    update_time       datetime,
+    id                       binary(16),
+    admin_id                 binary(16)   not null,
+    name                     varchar(128) not null,
+    link                     varchar(256) not null,
+    branch_name              varchar(64)  not null,
+    description              text,
+    enabled                  boolean      not null default true,
+    max_sonar_issues_per_run int,
+    max_ai_issues_per_run    int,
+    create_time              datetime,
+    update_time              datetime,
     unique key uk_dev_project_link (link),
     primary key (id)
 ) comment '研发项目表';
@@ -227,22 +227,21 @@ create table if not exists dev_action_attempt
 
 create table if not exists dev_issue
 (
-    id                int auto_increment,
-    run_id            binary(16)    not null,
-    sonar_project_key varchar(128)  not null,
-    sonar_issue_key   varchar(128)  not null,
-    sonar_rule_key    varchar(128)  not null,
-    sonar_severity    varchar(16)   not null,
-    sonar_type        varchar(16)   not null,
-    sonar_message     varchar(1024) not null,
-    sonar_effort      varchar(16),
-    status            varchar(16)   not null,
-    commit_sha        varchar(64),
-    commit_message    text,
-    create_time       datetime,
-    update_time       datetime,
-    primary key (id),
-    unique key uk_dev_run_issue (run_id, sonar_issue_key)
+    id                       int auto_increment,
+    run_id                   binary(16)    not null,
+    source                   varchar(16)   not null,
+    metadata                 json,
+    title                    varchar(1024) not null,
+    reliability_severity     varchar(16),
+    security_severity        varchar(16),
+    maintainability_severity varchar(16),
+    effort                   varchar(16),
+    status                   varchar(16)   not null,
+    commit_sha               varchar(64),
+    commit_message           text,
+    create_time              datetime,
+    update_time              datetime,
+    primary key (id)
 ) comment '研发问题表';
 
 set FOREIGN_KEY_CHECKS = 1;

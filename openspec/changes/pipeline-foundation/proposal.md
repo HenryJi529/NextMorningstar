@@ -4,10 +4,10 @@ AI 漏洞修复流水线的状态机骨架(状态/事件/编排 Trigger/重试/�
 
 ## 变更内容
 
-- 新增 `dev_issue` 表(14 字段,`sonar_` 前缀统一)与 `Issue` PO(含 `Severity`/`Type`/`Status` 枚举)/`IssueMapper`。
-- `dev_project` 加 `admin_id`/`name`/`sonar_project_key`/`enabled`;`Project` PO 同步更新。
+- 新增 `dev_issue` 表与 `Issue` PO（后重构为 source 区分器 + 三维 severity + JSON metadata）。
+- `dev_project` 加 `admin_id`/`name`/`enabled`/`max_sonar_issues_per_run`/`max_ai_issues_per_run`;`Project` PO 同步更新。`sonarProjectKey` 不存表——`owner:repo` 随时从 `link` 解析。
 - 新增 `ProjectService`/`RunService` 接口与实现,所有方法带 `adminId` 权限校验。
-- 新增 `CreateProjectRequestVo`/`UpdateProjectRequestVo`(link/sonarProjectKey 不可变)。
+- 新增 `CreateProjectRequestVo`/`UpdateProjectRequestVo`(link 不可变)。创建项目时 `maxSonarIssuesPerRun`/`maxAiIssuesPerRun` 未指定则取全局默认值写入 DB——之后全局变更不影响已有项目。
 - `ResponseCode` 新增 `DEV_PROJECT_NOT_FOUND`/`DEV_PROJECT_ACCESS_DENIED`/`DEV_RUN_NOT_FOUND`/`DEV_RUN_ACCESS_DENIED`。
 - `AbstractAction` 不额外加时间字段 — `createTime`/`updateTime` 已满足。
 - `dev_run` 不加 `finished_at` — `update_time` 即可(与决策 6 一致)。

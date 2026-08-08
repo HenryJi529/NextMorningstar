@@ -5,6 +5,7 @@ import com.morningstar.dev.dao.mapper.ProjectMapper;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.pojo.vo.UpdateProjectRequestVo;
+import com.morningstar.dev.properties.MaxIssuesPerRunProperties;
 import com.morningstar.dev.service.ProjectService;
 import com.morningstar.dev.util.GiteaUtil;
 import com.morningstar.infra.exception.BaseException;
@@ -15,6 +16,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -23,6 +25,7 @@ import java.util.UUID;
 public class ProjectServiceImpl implements ProjectService {
     private final ProjectMapper projectMapper;
     private final GiteaUtil giteaUtil;
+    private final MaxIssuesPerRunProperties maxIssuesPerRunProperties;
 
     @Override
     public Project createProject(CreateProjectRequestVo vo) {
@@ -35,7 +38,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .link(giteaUtil.formatRepoLink(vo.getLink()))
                 .branchName(vo.getBranchName())
                 .description(vo.getDescription())
-                .maxFixesPerRun(vo.getMaxFixesPerRun())
+                .maxSonarIssuesPerRun(Optional.ofNullable(vo.getMaxSonarIssuesPerRun()).orElse(maxIssuesPerRunProperties.getSonar()))
+                .maxAiIssuesPerRun(Optional.ofNullable(vo.getMaxAiIssuesPerRun()).orElse(maxIssuesPerRunProperties.getAi()))
                 .enabled(true)
                 .build();
 
@@ -70,7 +74,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .name(vo.getName())
                 .branchName(vo.getBranchName())
                 .description(vo.getDescription())
-                .maxFixesPerRun(vo.getMaxFixesPerRun())
+                .maxSonarIssuesPerRun(Optional.ofNullable(vo.getMaxSonarIssuesPerRun()).orElse(maxIssuesPerRunProperties.getSonar()))
+                .maxAiIssuesPerRun(Optional.ofNullable(vo.getMaxAiIssuesPerRun()).orElse(maxIssuesPerRunProperties.getAi()))
                 .enabled(vo.getEnabled())
                 .build());
 

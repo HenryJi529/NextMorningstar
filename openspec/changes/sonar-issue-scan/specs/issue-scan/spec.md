@@ -12,7 +12,7 @@
 
 - **WHEN** 运行进入扫描阶段
 - **THEN** 对工作区代码编译并扫描,将 OPEN issue 按 severity 落库到 `dev_issue`
-- **AND** 数量截断到 `maxFixesPerRun`
+- **AND** 数量按 `maxSonarIssuesPerRun` 截断
 
 #### 场景:排除密钥类规则
 

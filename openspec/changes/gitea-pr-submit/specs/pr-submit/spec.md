@@ -11,7 +11,7 @@
 #### 场景:汇总修复开 PR
 
 - **WHEN** 运行完成所有已 `VERIFIED` 修复
-- **THEN** 推修复分支并向源分支开 PR,附含 AI 诊断与 sonar 链接的评论
+- **THEN** 推修复分支并向源分支开 PR，附统一格式诊断评论（title + 三维 severity + description + suggestion + codeSnippet）
 
 #### 场景:合并后清理
 

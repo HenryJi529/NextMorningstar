@@ -81,7 +81,7 @@
 | 5 | **优先级** | 本版**不加**,定时任务直接遍历 `enabled` project |
 | 6 | **commit 归临时容器 git** | claude 只改文件;后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器 `add -A && commit`(纯本地操作,不需凭证),保证"一漏洞一 commit" + 规范 message,可控 |
 | 7 | **claude 认证** | 容器内 `/home/bot/.claude/settings.json` 配 **deepseek(国产模型)** 连接,不用 claude 登录态 |
-| 8 | **claude 修复模式** | **claude 通过 sonarqube MCP 自己查 issue+rule 再修复**,平台只喂 issueId + 捕获输出 + commit |
+| 8 | **claude 修复模式** | **统一 prompt，读 issue 字段即修**（title/codeSnippet/metadata），不依赖 MCP；ScanAction 已存储全部诊断信息 |
 | 9 | **密钥规则排除** ⭐ | ScanAction 加规则黑名单,默认排除凭据类(`java:S2068` / `secrets:*`);Security Hotspots 走独立 API,`/api/issues/search` 天然不返回 → 大部分明文密钥问题自动挡掉(公司内网明文密钥合规) |
 | 10 | **volume 持久化** | volume 命名 `morningstar_dev_repo_<projectId>` 绑定项目(非 run),SyncAction 首次 clone 后续 `fetch + switch -C + clean -fdx` 增量更新;CleanAction 只删容器不删 volume,仅项目删除时才清理(决策一起更新) |
 | 11 | **代码托管平台** | 演示(8/14)用 **Gitea**(已就绪);生产内网用 **GitLab**,留待内网部署阶段独立实现。**不做抽象层**(YAGNI)——届时目标单一,直接把 Gitea 调用替换为 GitLab;真到两套长期并存再抽接口 |
@@ -116,12 +116,12 @@ PENDING
              (MVP 不处理子模块:clone 无 `--recursive`,增量无 `submodule update`,SyncResult 无 `hasSubModule`)
  → SCAN       容器内 mvn -q compile(产 target/classes)→ sonar-scanner
               → 后端调 /api/issues/search 拉 OPEN issue(按 severity 排序,过规则黑名单)
-              → 落 dev_issue 表,截断到 maxFixesPerRun
- → FIX ⭐     逐 issue:容器内 claude+MCP 查 issue/rule 并改文件(named volume)
-              → 后端 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git add -A && commit -m "fix(<ruleKey>): <msg>"`   # 临时容器,一漏洞一 commit
- → VERIFY     容器内 mvn -q compile → sonar-scanner 重扫 → 后端查全部 issue 状态
+              → 落 dev_issue 表,按 maxIssuesPerRun 截断
+ → FIX ⭐     逐 issue:容器内 claude 读 issue 字段修复(named volume)
+              → 后端 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git add -A && commit`   # 临时容器,一漏洞一 commit
+ → VERIFY     ①SonarQube 重扫（关闭+回归检测）→ ②Claude review（语义验证）
               → 全 CLOSED=全 VERIFIED;存在 OPEN → 全 FAILED → RestoreAction 整轮回退(完整 7 步回到 origin)
- → SUBMIT     后端 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git push` 修复分支 → 调 Gitea API 开 PR(auto-delete)+ 评论贴【AI诊断+sonar链接】
+ → SUBMIT     后端 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git push` 修复分支 → 调 Gitea API 开 PR(auto-delete)+ 统一格式诊断评论
  → CLEAN      docker rm -f(不删 volume,保留项目缓存,决策 10)
 ```
 
@@ -141,22 +141,21 @@ PENDING
 
 > 🔴 **Day-1 spike(阶段 1)**:容器内跑通 `claude -p "..."`(deepseek + sonarqube MCP),且后端能通过临时容器 git clone 到 named volume、AI 容器内可见。全流程前提。
 
-### 4.2 claude + MCP 修复模式(FixAction 核心)
+### 4.2 统一 prompt 修复模式（FixAction 核心）
 
-平台不再解析 issue 详情、不拼复杂 prompt。claude 在容器内(named volume)改文件,后端控制 commit:
+平台不依赖 MCP——ScanAction 已把 SonarQube rule 描述和 AI 诊断全存进 issue 字段。FixAction 统一 prompt，Claude 读 issue 即修，后端控制 commit：
 ```bash
-# 1. 容器内 claude 自己查 rule、定位、修复(只打印 rule key)
-RULE=$(docker exec <c> claude -p --dangerously-skip-permissions \
-  "使用 sonarqube mcp 的 search_sonar_issues_in_projects 查看 issue <id>,再通过 show_rule 查看对应 rule,仔细阅读后修复。请勿重新格式化其他部分,修复完成后仅打印 rule key,不要加任何描述文字。")
+# 1. 容器内 claude 读 issue 字段修复
+docker exec <c> claude -p --dangerously-skip-permissions \
+  "修复以下问题——标题: <title>，诊断: <metadata.description>，建议: <metadata.suggestion>，文件: <metadata.filePath>，代码片段: <codeSnippet>。请修复并输出 commit message。"
 
 # 2. 后端通过临时容器 git 控制 commit(一漏洞一 commit,纯本地不需凭证)
-#    (代码在 named volume 中,后端通过 docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git ... 访问)
 docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git \
   -c http.extraHeader="Authorization: token ..." \
   -C /workspace/repo add -A
 docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git \
   -c http.extraHeader="Authorization: token ..." \
-  -C /workspace/repo commit -m "fix(<RULE>): <issue消息>"
+  -C /workspace/repo commit -m "<commit_message>"
 ```
 - 单 issue 超时:`claude ... --max-turns N` + 整 run wall-clock(复用 CancelTracker)
 - deepseek 最新模型修复效果好,预计不用调 prompt(用户已验证)
@@ -199,7 +198,7 @@ curl -s -u "<token>:" "http://<sonar>/api/issues/search?issues=<issueKey>" | jq 
 |---|---|---|---|
 | Gitea **admin token** | 后端,用完即弃 | 加/删 collaborator | 高,但瞬间 |
 | Gitea **bot token**(git) | 后端内存(yml) | git clone/push(临时 alpine/git 容器 `-e` 注入) | 高 → 用完即毁 |
-| Sonar token | **容器内(env 注入)** | sonar-scanner + claude MCP | 中(非代码权限) |
+| Sonar token | **容器内(env 注入)** | sonar-scanner | 中(非代码权限) |
 | deepseek key | **容器内(env 注入)** | claude 调模型 | 中(可独立轮换) |
 
 **三层防御:**
@@ -220,30 +219,31 @@ curl -s -u "<token>:" "http://<sonar>/api/issues/search?issues=<issueKey>" | jq 
 ```sql
 create table if not exists dev_issue
 (
-    id                int auto_increment,
-    run_id            binary(16)    not null,
-    sonar_project_key varchar(128)  not null comment 'sonar 项目键(冗余,避免跨 run 汇总联表)',
-    sonar_issue_key   varchar(128)  not null comment 'sonar issue UUID(喂给 claude)',
-    sonar_rule_key    varchar(128)  not null comment 'java:S2259',
-    sonar_severity    varchar(16)   not null comment 'BLOCKER/CRITICAL/MAJOR/MINOR/INFO',
-    sonar_type        varchar(16)   not null comment 'BUG/VULNERABILITY/CODE_SMELL',
-    sonar_message     varchar(1024) not null comment 'issue 描述',
-    sonar_effort      varchar(16)            comment '修复耗时估算,如 30min',
-    status            varchar(16)   not null comment 'SELECTED/FIXED/VERIFIED/FAILED/ACCEPTED/REJECTED',
-    commit_sha        varchar(64)            comment '修复 commit',
-    commit_message    text                   comment 'commit message(替代 ai_report)',
-    create_time       datetime,
-    update_time       datetime,
-    primary key (id),
-    unique key uk_run_issue (run_id, sonar_issue_key)
+    id                       int auto_increment,
+    run_id                   binary(16)    not null,
+    source                   varchar(16)   not null comment 'SONAR/AI',
+    metadata                 json comment 'SonarMetadata 或 AiMetadata(@source 区分)',
+    title                    varchar(1024) not null,
+    reliability_severity     varchar(16) comment 'BUG(缺陷)',
+    security_severity        varchar(16) comment 'VULNERABILITY(安全漏洞)',
+    maintainability_severity varchar(16) comment 'CODE_SMELL(代码异味)',
+    effort                   varchar(16) comment '修复耗时估算',
+    status                   varchar(16)   not null comment 'SELECTED/FIXED/VERIFIED/FAILED/ACCEPTED/REJECTED',
+    commit_sha               varchar(64) comment '修复 commit',
+    commit_message           text comment 'commit message',
+    create_time              datetime,
+    update_time              datetime,
+    primary key (id)
 ) comment '研发问题表';
 ```
 
-> 字段统一加 `sonar_` 前缀；`sonar_project_key` 冗余到 issue 减少跨 run 汇总的联表查询；`commit_message` 替代原 `ai_report`(commit message 即诊断载体)；`attempt_no` 移除(不需记录重试次数)。
+> source 区分器 + metadata JSON（内嵌 SonarMetadata/AiMetadata 多态）；三维 severity 独立表达 BUG/VULNERABILITY/CODE_SMELL；无唯一约束——ScanAction 插入前删旧重写。
 
 ### 5.2 现有表现状(阶段 0 完工)
 
-- `dev_project`:11 字段 — `id`/`admin_id`/`name`/`link`/`branch_name`/`sonar_project_key`/`description`/`enabled`/`max_fixes_per_run`/`create_time`/`update_time`。
+- `dev_project`:11 字段 — `id`/`admin_id`/`name`/`link`/`branch_name`/`description`/`enabled`/`max_sonar_issues_per_run`/`max_ai_issues_per_run`/`create_time`/`update_time`。
+- `sonarProjectKey`：**不存表**——`owner:repo` 随时从 `link` 解析，不冗余存储。ScanAction 需要时从 link 推导。
+- `max_sonar_issues_per_run`/`max_ai_issues_per_run`：**创建时写入 DB**——前端未指定则取全局 `max-issues-per-run` 默认值写入，之后全局变更不影响已有项目。ScanAction 直接读 project 字段，不 fallback。
 - `dev_run`:8 字段 — `id`/`project_id`/`state`(State 枚举)/`status`(Run.Status 枚举)/`container_id`(已弃用,容器名由 runId 推导,决策 18)/`pr_id`/`create_time`/`update_time`。不加 `finished_at`(`update_time` 即可,pipeline-foundation 决策 6)。
 - `dev_action_attempt`:7 字段 — `id`/`run_id`/`action_type`/`attempt_no`/`status`/`result`(JSON)/`create_time`/`update_time`。不加 `start_time`/`end_time`(`create_time`/`update_time` 即可,pipeline-foundation 决策 6)。
 
@@ -267,7 +267,7 @@ morningstar.app.dev:
     max-fixes-per-run: 10           # 也可放 project 级覆盖
     issue-time-limit-seconds: 300   # 单 issue claude 超时
     run-time-limit-seconds: 3600    # 整 run wall-clock
-    severity-whitelist: [BLOCKER, CRITICAL, HIGH]
+    severity-whitelist: [BLOCKER, HIGH, MEDIUM]
     rule-blacklist:                 # ⭐ 密钥/凭据类默认排除
       - java:S2068
       - common-java:S2068
@@ -326,43 +326,55 @@ morningstar.app.dev:
 - [x] `RestoreAction`:✅ 落地(8/7,实测通过:untracked/修改/分支提交全部可还原)。通过临时 alpine/git 容器(镜像写死)操作 volume。①`reset --hard HEAD`:丢弃 fix 分支上已跟踪文件的修改(FixAction 有 commit,不能用 `checkout .`)②`clean -fdx`:删除 untracked 文件和目录③`switch <originalBranch>`:切回配置的原始分支④`rev-parse --verify fix/<runId>` 探测 → `branch -D fix/<runId>`:删除本地修复分支⑤`reset --hard origin/<originalBranch>`:重置到 fetch 状态,兜底保证工作区干净⑥`rev-parse HEAD`:取证 commitSha 进 `RestoreResult`⑦`docker exec --user root chown -R bot:bot`:属主修正。**纯本地操作,不依赖远端**(无 `--add-host`/`http.extraHeader`/`GiteaProperties`)。外层 catch → FAILED 结果(不裸抛)。`RestoredTrigger` 重试/取消决策(决策 24):`FixingStateTransition`/`VerifyingStateTransition` 简化为无条件进 RESTORING,决策集中在 `RestoredTrigger`;取消检查嵌入重试条件,`StartedStateTransition` 补充 CLEAN 事件
 - **验收**:✅ 首次 clone、增量更新、换分支 全链路通过
 
-### 阶段 3 · 漏洞扫描(~3h)— *8/7*
-- [ ] `ScanAction`:`mvn -q compile` → `sonar-scanner` → 调 `/api/issues/search`
-- [ ] severity 排序 + 规则黑名单过滤(密钥排除)+ 截断 `maxFixesPerRun`
-- [ ] 落 `dev_issue` 表
-- **验收**:真实仓库拉出 N 条 issue 进表
+### 阶段 3 · DB 迁移 + Issue PO 重构(~2h)— *8/8*
+- [ ] `dev_issue` 加 source/source_issue_key/rule_key/severity/type/title/effort/metadata 列
+- [ ] 迁移脚本 `V2__ai_discovery.sql`，唯一约束 `(run_id, source, source_issue_key)`
+- [ ] `Issue.java` 加 source 区分器 + 统一字段，Type 枚举不变（BUG/VULNERABILITY/CODE_SMELL）
+- **验收**:旧 sonar_* 列保留兼容，新列可读写
 
-### 阶段 4 · 漏洞修复 ⭐(~8h)— *8/7–8/8*
-- [ ] `FixAction`:遍历 `dev_issue`,逐个 claude+MCP 修复(见 4.2)
-- [ ] 平台 `git commit`(一漏洞一 commit),回写 `commit_sha` + `commit_message`
+### 阶段 4 · ScanAction 双通道 ⭐(~10h)— *8/9*
+- [ ] HTTP 客户端（RestTemplate）调 SonarQube API
+- [ ] SonarQube 通道:`docker exec` 跑 scanner → `/api/issues/search`(翻页取全量) → 取 issue+rule 的 `impacts` 数组映射三维 severity → batch insert
+- [ ] SonarQube 通道:每个 issue 调 `/api/rules/show?key=<ruleKey>` 拿规则描述，存进 metadata
+- [ ] `ScanResult` 加 `issueKeys`（基线快照，供 VerifyAction 回归检测）+ `sonarIssueNum`/`aiIssueNum`
+- [ ] `AiDiscoveryProperties` 配置类 + yml（enable 开关）
+- [ ] AI Discovery 通道:Claude 自由探索项目 → 输出结构化 JSON → map to Issue
+- [ ] 合并去重（文件+行号重叠优先留 SonarQube）→ 规则黑名单 → severity 排序 → 跨 run 排除 FAILED → 按 `maxSonarIssuesPerRun`/`maxAiIssuesPerRun` 分别截断
+- **验收**:双通道各有产出，issue 真实入库，ScanResult 存有基线快照
+
+### 阶段 5 · FixAction 统一路径 ⭐(~10h)— *8/10*
+- [ ] 统一 prompt:读 issue 字段（title/codeSnippet/metadata）→ Claude 修复，不区分 source
+- [ ] 不依赖 MCP——规则描述和诊断信息已在 ScanAction 阶段存入 metadata
+- [ ] 平台 git commit（一漏洞一 commit），回写 `commit_sha` + `commit_message`
 - [ ] 单 issue / 整 run 超时
-- **验收**:demo 仓库某空指针,容器内 claude 真能修掉并产出一个 commit
+- **验收**:两种 source 的 issue 都能修掉并产出 commit
 
-### 阶段 5 · 验证(~2h)— *8/9*
-- [ ] `VerifyAction`:`mvn -q compile` → `sonar-scanner` 重扫 → 查全部 issue 状态
-- [ ] 全 CLOSED → 全 VERIFIED;存在 OPEN → 全 FAILED → RestoreAction 整轮回退
-- **验收**:故意改坏,Verify 抓到并触发 RestoreAction 完整还原
+### 阶段 6 · VerifyAction 两道防线 ⭐(~10h)— *8/11*
+- [ ] **第一道**:SonarQube 重扫 → 查 SELECTED issue 是否全 CLOSED + 对比 `ScanResult.issueKeys` 基线判断回归
+- [ ] **第二道**:Claude review（读 fix diff + 原始 issue 信息）→ 语义判定修改是否正确
+- [ ] 任一 issue 未关闭 / 有回归 / AI 判定 FAILED → 整轮 RESTORING
+- **验收**:故意改坏，两道防线各自能抓到
 
-### 阶段 6 · PR 提交(~4h)— *8/9*
-- [ ] 调研 Gitea API:建分支 / 推 commit / 开 PR / 发评论
-- [ ] `SubmitAction`:后端通过临时 alpine/git 容器推修复分支(`docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git push`) → 调 Gitea API 开 PR → 用 4.4 模板写评论
-- **验收**:Gitea 出现带 AI 诊断 + sonar 链接的 PR
+### 阶段 7 · SubmitAction 统一格式 PR ⭐(~10h)— *8/12*
+- [ ] 后端通过临时 alpine/git 容器推修复分支 → 调 Gitea API 开 PR
+- [ ] 统一格式 PR 评论：每条 issue 展示 title + 三维 severity + description + suggestion + codeSnippet，SonarQube 对用户透明
+- **验收**:Gitea 出现含统一格式诊断报告的 PR
 - 🎉 **端到端闭环跑通**
 
-### 阶段 7 · 前端(配置页 + 大屏)(~8h)— *8/10–8/11*
+### 阶段 8 · 前端(~10h)— *8/13*
 - [ ] 复用 `frontend/` + system 模块认证
 - [ ] 配置页:仓库/分支/启停 CRUD + 手动触发 + 手动停止
-- [ ] 大屏:run 实时状态机流转(SSE/WS)、修复成功率、节省人月(20min/bug)、高频缺陷 Top
-- **MVP**:大屏先保 3 核心指标,高频缺陷图表有时间再做
+- [ ] 仪表盘:run 实时状态机流转（SSE/WS）、修复成功率、节省人月
+- [ ] 大屏:高频缺陷 Top（有时间再做）
 
-### 阶段 8 · 联调 + 演示案例 + 无人值守(~6h)— *8/12–8/13*
-- [ ] 造 demo 仓库:埋 5–8 个 sonar 真问题(空指针/资源泄漏/废弃 API/SQL 拼接)
-- [ ] 用 NextMorningstar backend 自己跑一轮(真实价值演示)
+### 阶段 9 · 联调 + demo 真跑(~10h)— *8/14*
+- [ ] 造 demo 仓库:埋 sonar 真问题 + 设计缺陷（供 AI Discovery 发挥）
+- [ ] 用 NextMorningstar backend 自己跑一轮（真实价值演示）
 - [ ] 跑通夜间定时真实触发
 - [ ] 修边界:并发、超时、取消、单 run 挂不影响其他
 
-### 阶段 9 · 交付素材(~5h)— *8/14*
-- [ ] 作品录屏(端到端全过程 + 大屏)
+### 阶段 10 · 交付素材(~10h)— *8/15*
+- [ ] 作品录屏（端到端全过程 + 大屏）
 - [ ] 演示 PPT + 详细介绍材料
 
 ---
@@ -377,13 +389,14 @@ morningstar.app.dev:
 | 8/5 | 三 | 4h ✅ | — | 设计决策超额完成:非 root bot + named volume + volume 持久化 + git 归临时容器 |
 | 8/6 | 四 | 4h ✅ | 1 收尾 + 2 git | ✅ ProcessUtil + StartAction/CleanAction 落地(命名确定性、失败转 FAILED、clean 幂等、FailedTrigger 破环);SyncAction 设计中 |
 | 8/7 | 五 | 4h ✅ | 2 收尾 + 7 前端设计 | ✅ SyncAction 全链路冒烟通过(首次/增量/换分支)+ git config 身份配置;✅ RestoreAction 实测通过 + RestoredTrigger 重试收敛;✅ 前端 UI 设计(WorkBuddy+OpenDesign 生成仪表盘+详情页,Vue3+AntDesign 对齐现有技术栈)|
-| 8/8 | 六 | 10h ⭐ | 3 scan + 4 fix 双杀 | ScanAction:`mvn compile`→`sonar-scanner`→落`dev_issue`;FixAction:逐 issue claude+MCP 修复 + git commit |
-| 8/9 | 日 | 10h ⭐ | 5 verify + 6 submit + 联调 | **Gitea PR → 闭环跑通** 🎉 |
-| 8/10 | 一 | 4h | 7 前端 | 配置页 + 大屏起步 |
-| 8/11 | 二 | 4h | 7 收尾 | 大屏完成 |
-| 8/12 | 三 | 4h | 8 联调 | demo 仓库 + 本项目真跑 |
-| 8/13 | 四 | 4h | 8 + buffer | 无人值守 + 修 bug |
-| 8/14 | 五 | 5h | 9 | 录屏 + PPT + 材料 |
+| 8/8 | 六 | 8h | 决策收尾 + DB 迁移 | ✅ 决策 18/编号核查/凭证统一/架构报告； DB 迁移 + Issue PO 重构（source 区分器） |
+| 8/9 | 日 | 10h ⭐ | ScanAction 双通道 | HTTP 客户端 + scanner + API + AI Discovery + 合并去重 → Issue 真实入库 |
+| 8/10 | 一 | 10h ⭐ | FixAction 统一 prompt | 读 issue 字段 → Claude 修复 → git commit |
+| 8/11 | 二 | 10h ⭐ | VerifyAction 两道防线 | ①SonarQube 重扫 ②Claude review → 全量判定 |
+| 8/12 | 三 | 10h ⭐ | SubmitAction 统一格式 PR | 推分支 + 开 PR + 统一格式诊断评论 |
+| 8/13 | 四 | 10h | 前端 | 配置页 + 仪表盘 + 大屏（穿插复用 API 等待时间） |
+| 8/14 | 五 | 10h | 联调 + demo 真跑 | demo 仓库端到端 → **Gitea PR 闭环跑通** 🎉 |
+| 8/15 | 六 | 10h | 交付素材 | 录屏 + PPT + 材料 |
 
 ### 8/2 缓冲日建议(可选,不写平台代码,只做风险前置) — ✅ 8/2 已完成,三步全通过
 
@@ -402,7 +415,7 @@ claude --dangerously-skip-permissions --print "使用 sonarqube mcp 查看 issue
 
 ## 九、MVP 切割线(落后时按序砍)
 
-1. vue/python 的 verify → 跳过(MVP 只 Java `mvn compile`)
+1. vue 的 verify → 跳过(MVP 只 Java `mvn compile`)
 2. "自己跑 sonar-scanner 推分析" → 用 SonarServer 已有分析结果
 3. 大屏高频缺陷图表 → 只保 成功率/节省人月/状态流转
 4. demo 仓库 → 只埋 3–5 个 Java 问题

@@ -1,6 +1,6 @@
 ## 1. 配置页
 
-- [ ] 1.1 项目 CRUD(仓库/分支/enabled/max_fixes_per_run)。
+- [ ] 1.1 项目 CRUD(仓库/分支/enabled/max_sonar_issues_per_run/max_ai_issues_per_run)。
 - [ ] 1.2 手动触发 run、手动停止。
 
 ## 2. 大屏

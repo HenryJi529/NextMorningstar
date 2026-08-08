@@ -11,6 +11,9 @@ morningstar:
       excerpt-max-sentence-num: 40
       excerpt-max-visual-length: 300
     dev:
+      max-issues-per-run:
+        sonar: 8
+        ai: 2
       gitea:
         bot-username: HaibaraAi369
         bot-email: jeep.jipu@outlook.com

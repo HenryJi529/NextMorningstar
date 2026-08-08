@@ -22,8 +22,11 @@ public class UpdateProjectRequestVo {
     @Schema(description = "项目描述")
     private String description;
 
-    @Schema(description = "单次最大修复数")
-    private Integer maxFixesPerRun;
+    @Schema(description = "单次最大Sonar问题数")
+    private Integer maxSonarIssuesPerRun;
+
+    @Schema(description = "单次最大AI问题数")
+    private Integer maxAiIssuesPerRun;
 
     @Schema(description = "是否启用")
     private Boolean enabled;

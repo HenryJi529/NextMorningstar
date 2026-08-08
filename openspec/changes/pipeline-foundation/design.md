@@ -17,8 +17,16 @@
 
 ## 决策
 
-### 决策 1:`dev_issue` 数据模型（14 字段）
-新增 `dev_issue` 承载"一漏洞一记录、一漏洞一 commit"。SonarQube 来源字段统一加 `sonar_` 前缀：`sonar_project_key`、`sonar_issue_key`、`sonar_rule_key`、`sonar_severity`、`sonar_type`、`sonar_message`、`sonar_effort`。`sonar_project_key` 归于 issue 减少跨 run 汇总的联表查询。`status` 枚举 SELECTED→FIXED→VERIFIED/FAILED→ACCEPTED/REJECTED，代码手动设置。`commit_message` 替代原 `ai_report`。`attempt_no` 移除（不需记录重试次数）。唯一约束 `uk_run_issue (run_id, sonar_issue_key)`。
+### 决策 1:`dev_issue` 数据模型（source 区分器 + 三维 severity）
+
+`dev_issue` 承载"一漏洞一记录、一漏洞一 commit"。采用 source 区分器 + 统一字段 + JSON 元数据：
+
+- **source**（SONAR/AI）：区分扫描通道
+- **metadata**（JSON）：SonarMetadata（issueKey/ruleKey）或 AiMetadata（type），通过 `@JsonTypeInfo(property = "@source")` 多态序列化
+- **三维 severity**：`reliability_severity`/`security_severity`/`maintainability_severity`，独立表达 BUG/VULNERABILITY/CODE_SMELL（一个 issue 可同时有多个维度）
+- `title`/`effort` 统一字段
+
+`status` 枚举 SELECTED→FIXED→VERIFIED/FAILED→ACCEPTED/REJECTED。`commit_message` 替代原 `ai_report`。`attempt_no` 移除。无唯一约束——ScanAction 插入前删旧、业务逻辑保证不重复。
 
 ### 决策 2:并发度 = 2
 Fix 阶段是模型对话 I/O,CPU 空闲,多 run 可并行;Scan/Verify 才 CPU 密集且短。并发度 2 在 2 核机器上一夜 ~10h 窗口可跑 ~16-20 仓库。
@@ -36,7 +44,7 @@ Fix 阶段是模型对话 I/O,CPU 空闲,多 run 可并行;Scan/Verify 才 CPU �
 `dev_project` 加 `admin_id`(FK→`sys_user.id`)。所有 Project/Run 操作需传 `adminId` 做权限校验。`CreateProjectRequestVo.adminId` 由 Controller 从 SecurityContext 取当前用户填入（`hidden=true`）。`listByAdminId` 替代 `listAll`。
 
 ### 决策 5:不可变字段
-`link`(仓库链接)和 `sonarProjectKey` 创建后不可改——前者改了需要重新 clone,后者是 sonar 项目标识不应变更。`UpdateProjectRequestVo` 仅含 name/branchName/description/maxFixesPerRun。
+`link`(仓库链接)创建后不可改——改了需要重新 clone。`UpdateProjectRequestVo` 仅含 name/branchName/description/maxSonarIssuesPerRun/maxAiIssuesPerRun/enabled。
 
 ### 决策 6:不冗余时间字段
 `dev_run` 不加 `finished_at`(`updateTime` 即可)。`dev_action_attempt` 不加 `start_time`/`end_time`(`createTime`/`updateTime` 即可)。FillDataHandler 自动处理,与业务逻辑解耦。

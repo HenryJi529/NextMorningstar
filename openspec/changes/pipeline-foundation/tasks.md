@@ -1,12 +1,12 @@
 ## 1. 数据模型
 
-- [x] 1.1 `create.sql` 新增 `dev_issue` 表(14 字段,`sonar_` 前缀统一);`dev_project` 加 `admin_id`/`enabled`/`name`/`sonar_project_key`;`dev_run` 不加 `finished_at`(update_time 即可)。
+- [x] 1.1 `create.sql` 新增 `dev_issue` 表（后重构为 source 区分器 + 三维 severity）;`dev_project` 加 `admin_id`/`enabled`/`name`;`dev_run` 不加 `finished_at`(update_time 即可)。
 - [x] 1.2 新增 `Issue` PO(with `Severity`/`Type`/`Status` 枚举)与 `IssueMapper`;`Project` PO 加 `adminId`。
 - [x] 1.3 `AbstractAction` 不额外加 `start_time`/`end_time` — `createTime`/`updateTime` 已满足(与 Run 同理,不冗余)。
 
 ## 2. 接口入口
 
-- [x] 2.1 `ProjectService` 接口与 `ProjectServiceImpl` 实现:CRUD + `adminId` 权限校验。VO:`CreateProjectRequestVo`(name/link/branchName/description/maxFixesPerRun/adminId)、`UpdateProjectRequestVo`(仅 name/branchName/description/maxFixesPerRun 可改;link/sonarProjectKey 不可变)。
+- [x] 2.1 `ProjectService` 接口与 `ProjectServiceImpl` 实现:CRUD + `adminId` 权限校验。VO:`CreateProjectRequestVo`(name/link/branchName/description/maxSonarIssuesPerRun/maxAiIssuesPerRun/adminId)、`UpdateProjectRequestVo`(仅 name/branchName/description/maxSonarIssuesPerRun/maxAiIssuesPerRun/enabled 可改;link 不可变)。
 - [x] 2.2 `RunService` 接口与 `RunServiceImpl` 实现:`createRun`(无需权限，供调度器使用)/`triggerRun`(含 adminId 权限校验，供 Controller 使用)/`getRun`/`cancelRun`。
 - [x] 2.3 `ProjectController` + `RunController` REST 接口。
 - [x] 2.4 `ResponseCode` 新增 `DEV_PROJECT_NOT_FOUND`/`DEV_PROJECT_ACCESS_DENIED`/`DEV_RUN_NOT_FOUND`/`DEV_RUN_ACCESS_DENIED`。

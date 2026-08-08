@@ -5,7 +5,7 @@
 ## 变更内容
 
 - 复用 `frontend/` 与 system 模块认证。
-- 配置页:项目 CRUD(仓库/分支/enabled/max_fixes_per_run)、手动触发 run、手动停止。
+- 配置页:项目 CRUD(仓库/分支/enabled/max_sonar_issues_per_run/max_ai_issues_per_run)、手动触发 run、手动停止。
 - 大屏:run 实时状态机流转(SSE/WS)、修复成功率、节省人月(每 bug 20min)、高频缺陷 Top。
 
 ## 能力

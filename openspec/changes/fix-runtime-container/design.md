@@ -133,12 +133,14 @@ alpine/git 容器以 root 运行,在 volume 上创建的文件属主 root:root;s
 
 **三、分支方案悖论 → 架构异味。** 每个 issue 独立 verify 需要 `mvn compile + sonar-scanner`（~30s–2min），Scan 也是 `mvn compile + sonar-scanner`（~30s–2min）。一个发现 N 个问题，一个验证 1 个问题——两者同代价。发现比验证还便宜，这是反直觉的。
 
-**四、`maxFixesPerRun` 即复杂度调杆。** 整轮回退不意味着永远一次修 10 个。同一套简单状态机，调参即可覆盖全部行为范围：
+**四、`maxIssuesPerRun`（Sonar + AI 分别配置）即复杂度调杆。** 整轮回退不意味着永远一次修 10 个。同一套简单状态机，调参即可覆盖全部行为范围：
 
 ```yaml
-maxFixesPerRun: 10   # 批量模式，吞吐高，一个失败带崩全部
-maxFixesPerRun: 3    # 中等批次，平衡风险和效率
-maxFixesPerRun: 1    # 等效 issue 级隔离，状态机零改动
+max-issues-per-run:
+  sonar: 10   # 批量模式，吞吐高
+  ai: 5       # AI 通道补强，少而精
+# 极端保守：
+#   sonar: 1, ai: 1  → 等效 issue 级隔离，状态机零改动
 ```
 
 如果 AI 修复能力不如预期，降低窗口即可——不必改状态机、不必加分支逻辑。调参不用动架构。
