@@ -31,7 +31,7 @@ public class Issue {
     private Severity securitySeverity; // SECURITY(安全漏洞)
     private Severity maintainabilitySeverity; // MAINTAINABILITY(代码异味)
 
-    private String effort; // 修复耗时估算,如 30min
+    private Integer effortInMinutes; // 修复耗时估算,单位为分钟
 
     private Status status;
 

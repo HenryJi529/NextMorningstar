@@ -37,12 +37,12 @@ public class GiteaUtil {
 
     public String formatRepoLink(String rawLink) {
         RepoIdentity repoIdentity = parseRepoIdentity(rawLink);
-        return String.format("%s/%s/%s", giteaProperties.getPublicOrigin(), repoIdentity.getOwnerName(), repoIdentity.getRepoName());
+        return String.format("%s/%s/%s", giteaProperties.getBackendOrigin(), repoIdentity.getOwnerName(), repoIdentity.getRepoName());
     }
 
     private String collaboratorUrl(String ownerName, String repoName) {
         return String.format("%s/api/v1/repos/%s/%s/collaborators/%s",
-                giteaProperties.getPublicOrigin(), ownerName, repoName, giteaProperties.getBotUsername());
+                giteaProperties.getBackendOrigin(), ownerName, repoName, giteaProperties.getBotUsername());
     }
 
     private HttpHeaders authHeaders() {

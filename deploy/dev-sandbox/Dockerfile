@@ -54,6 +54,9 @@ RUN case "${TARGETARCH}" in \
     && rm /tmp/scanner.zip \
     && sonar-scanner --version
 
+# ===== Maven =====
+COPY --chown=bot:bot dev-sandbox/config/maven/settings.xml /workspace/maven-settings.xml
+
 # ===== 启动脚本 =====
 USER bot
 

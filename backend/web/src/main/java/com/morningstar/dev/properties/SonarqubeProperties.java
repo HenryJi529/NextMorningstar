@@ -9,5 +9,6 @@ import org.springframework.stereotype.Component;
 @Data
 public class SonarqubeProperties {
     private String token;
-    private String origin;
+    private String backendOrigin;
+    private String containerOrigin;
 }

@@ -31,11 +31,11 @@ public class CleanedTrigger implements Trigger {
             stateMachineService.clearCancelingFlag(event.getRunId());
             return;
         }
-        
+
         ActionAttempt latestScanAttempt = actionAttemptMapper.selectLatestActionAttempt(event.getRunId(), Action.Type.SCAN);
         if (latestScanAttempt != null && latestScanAttempt.getStatus() == ActionStatus.SUCCEEDED) {
             ScanResult latestScanResult = (ScanResult) latestScanAttempt.getResult();
-            if (latestScanResult.getIssueNum() == 0) {
+            if (latestScanResult.getSonarIssueNum() + latestScanResult.getAiIssueNum() == 0) {
                 // NOTE: 扫描完成且没发现问题，直接成功
                 runMapper.updateById(Run.builder().id(event.getRunId()).status(Run.Status.SUCCEEDED).build());
                 return;

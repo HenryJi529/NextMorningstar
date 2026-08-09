@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "morningstar.app.dev.gitea")
 @Data
 public class GiteaProperties {
-    private String publicOrigin;
+    private String backendOrigin;
 
     private String containerOrigin;
 

@@ -38,13 +38,22 @@
 
 ```
 ScanAction:
-  mvn compile
-  ├─ SonarQube 通道: scanner → API 拉 issue → 调 /api/rules/show 拿规则描述 → 记录基线
-  └─ AI Discovery: Claude 自由探索项目 → 输出结构化 JSON
-  → 合并去重 → 统一入库
+  ├─ Maven 构建: find pom.xml → mvn -q compile（阿里云镜像，|| true best-effort）
+  ├─ SonarQube 通道: sonar-scanner → RestClient 翻页拉 OPEN issue → /api/rules/show 拿规则描述
+  │   └─ impacts 数组 → 三维 severity → 记录基线(sonarIssueKeys) → 随机打乱截断
+  └─ AI Discovery: heredoc 写 prompt 文件 → claude --print "$(cat prompt.txt)"
+      └─ 括号深度计数提取 JSON → AiIssue 反序列化 → 随机打乱截断
+  → 双通道统一入库(issueMapper.insert)
 ```
 
 **SonarQube 做已知模式识别**（空指针、SQL 注入、资源泄漏等规则化问题），**Claude 做语义理解**（上帝类、竞态条件、N+1 查询等规则引擎抓不到的）。两者互补，不是替代。
+
+**关键技术点**：
+- `sonar.java.binaries` 用 `find` 动态拼接逗号分隔的 `target/classes` 目录列表，不用通配 `**/target/classes`（sonar-scanner 不认）
+- Maven 阿里云镜像通过 Dockerfile COPY `settings.xml` → `~/.m2/`，构建时写入
+- AI 输出不依赖模型自觉输出纯 JSON——括号深度计数器 `[{` 匹配到 `]` 提取，无视前后文字
+- AI prompt 从 `AiMetadata.Type` 枚举自动生成类型列表，从 `Issue.Severity` 生成取值列表，永不过期
+- 选择策略：随机打乱 → 截断，不做 severity 排序（避免每轮都是同一批老问题）、不做去重（双通道问题类型不同）、不做跨 run 排除（先验证修复能力）
 
 AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（21 种 AiIssueType 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
 
@@ -195,8 +204,11 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | Source 区分器 + 三维 severity | pipeline-foundation design 决策 1 | JSON 多态 metadata，B/S/M 三维独立 |
 | SonarQube 对用户透明 | gitea-pr-submit design 决策 2 | PR 评论统一格式，不区分来源 |
 | 整轮回退 vs 精准保留 | fix-runtime-container 决策 18 | 四组论据论证整轮回退是正确设计 |
-| `maxIssuesPerRun` 复杂度调杆 | fix-runtime-container 决策 18 §四 | Sonar/AI 分别配置，调参不动架构 |
-| 失败 issue 跨 run 记忆 | dev-plan 决策 14 | 防每夜重复尝试修不好的 issue |
+| `maxIssuesPerRun` 复杂度调杆 | dev-plan 决策 28 | Sonar/AI 分别配置，随机打乱截断，调参不动架构 |
+| ~~失败 issue 跨 run 记忆~~ | dev-plan 决策 14 → 28 | 永不做——先验证修复能力，不应回避困难 |
+| ScanAction 选择策略 | dev-plan 决策 28 | 随机打乱→截断，不做去重/黑名单/跨run/severity排序 |
+| AI JSON 输出解析 | dev-plan 决策 29 | 括号深度计数 + prompt 要求 `\"` 转义，不依赖模型输出格式 |
+| Maven 阿里云镜像 | dev-plan 决策 30 | Dockerfile COPY settings.xml，构建时写入 |
 | 命名确定性 | dev-plan 决策 18 | 不把 Docker 状态存 DB，能推导就不存 |
 | 状态机编排隔离 | fix-runtime-container 决策 16 | RestoredTrigger 是唯一分支点 |
 | Gitea 双视角地址 | dev-plan 决策 19 | 容器内外看不同 URL |

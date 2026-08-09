@@ -1,4 +1,4 @@
-# NextMorningstar · AI 漏洞修复流水线 — 开发计划
+# NextMorningstar · AI 代码质量优化平台 — 开发计划
 
 > **概念**:程序员下班,AI 上班 —— 夜间无感清洗技术债,早上看 PR 决定是否合并。
 >
@@ -76,18 +76,18 @@
 |---|---|---|
 | 1 | **容器策略** | 预构建 `morningstar-dev-sandbox` 镜像(jdk+maven+node+python+**claude CLI**+sonar-scanner + 配置模板 settings.json/mcp.json 占位符打进镜像,**不装 git**),每 run 起一个独立容器,**只跑 claude 改文件 + maven/sonar 构建**。代码用 **named volume**(fix-runtime-container 决策 9)互通,git 由后端执行(决策 13)。容器以非 root bot 用户运行(fix-runtime-container 决策 8),隔离并发 |
 | 2 | **verify 本质** | **不是"编译通过",而是"sonar 重扫后 issue 消失"**。Java build 只为产 `target/classes` 喂给 scanner。sonar 既出题又阅卷 |
-| 3 | **scan 方式** | 用 `sonar-scanner` 自己扫(已验证参数:`sonar.java.binaries` / `skipUnresolvedTypeChecks` / 多模块逗号分隔) |
+| 3 | **scan 方式** | 用 `sonar-scanner` 自己扫。`sonar.java.binaries` 通过 `find ... -type d -name classes` 动态拼接逗号分隔路径（8/10 实测通配 `**/target/classes` sonar-scanner 不认）。`sonarqube.containerOrigin` 与 `backendOrigin` 分离（与 Gitea 双视角同模式）。Maven 阿里云镜像通过 Dockerfile COPY `settings.xml` 到 `~/.m2/`。mvn compile 末尾 `\|\| true` best-effort |
 | 4 | **新增 `dev_issue` 表** | 一漏洞一记录、一漏洞一 commit 的载体。Fix→Verify→Submit 串联的关键,**必加** |
 | 5 | **优先级** | 本版**不加**,定时任务直接遍历 `enabled` project |
 | 6 | **commit 归临时容器 git** | claude 只改文件;后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器 `add -A && commit`(纯本地操作,不需凭证),保证"一漏洞一 commit" + 规范 message,可控 |
 | 7 | **claude 认证** | 容器内 `/home/bot/.claude/settings.json` 配 **deepseek(国产模型)** 连接,不用 claude 登录态 |
 | 8 | **claude 修复模式** | **统一 prompt，读 issue 字段即修**（title/codeSnippet/metadata），不依赖 MCP；ScanAction 已存储全部诊断信息 |
-| 9 | **密钥规则排除** ⭐ | ScanAction 加规则黑名单,默认排除凭据类(`java:S2068` / `secrets:*`);Security Hotspots 走独立 API,`/api/issues/search` 天然不返回 → 大部分明文密钥问题自动挡掉(公司内网明文密钥合规) |
+| 9 | ~~密钥规则排除~~ → 决策 28 | 不做规则黑名单——随机选择天然分散风险，凭据类 issue 不会每轮反复出现 |
 | 10 | **volume 持久化** | volume 命名 `morningstar_dev_repo_<projectId>` 绑定项目(非 run),SyncAction 首次 clone 后续 `fetch + switch -C + clean -fdx` 增量更新;CleanAction 只删容器不删 volume,仅项目删除时才清理(决策一起更新) |
 | 11 | **代码托管平台** | 演示(8/14)用 **Gitea**(已就绪);生产内网用 **GitLab**,留待内网部署阶段独立实现。**不做抽象层**(YAGNI)——届时目标单一,直接把 Gitea 调用替换为 GitLab;真到两套长期并存再抽接口 |
 | 12 | **仓库授权(双 token)** ⭐ | **bot token(`repo write`)通过 git `http.extraHeader` 传入临时 alpine/git 容器**(日常 git 凭证,不落盘);**admin token 仅"加 collaborator"瞬间用、用完即弃**。项目经理启用项目时自动给 bot 加 write、禁用移除。凭证仅存在临时容器内、用完即毁 → 爆炸半径最小 |
 | 13 | **git 归临时容器** ⭐ | git clone/commit/push/reset 由后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器执行(**镜像名写死**,不进配置),用完即毁。clone/fetch URL 一律**无凭证形式**,token 走 `-c http.extraHeader` 当次生效,**不落 volume 里 `.git/config`**。代码互通靠 named volume(fix-runtime-container 决策 9)。**prompt injection 偷不到 git 凭证**。MVP 不处理子模块(clone 无 `--recursive`,决策 22) |
-| 14 | **失败 issue 跨 run 记忆** | scan 时排除"近期 FAILED"的 issue(查 `dev_issue` 历史 status=FAILED 且近期),避免每夜反复重试同一个修不好的 issue,提升无人值守效率 |
+| 14 | ~~失败 issue 跨 run 记忆~~ → 决策 28 | 不做跨 run 排除——当前阶段应先验证修复能力而非回避困难 issue |
 | 15 | **资源池 + 夜间窗口** ⭐ | 并发度可配(`schedule.max-concurrency`,**默认 2**——Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;Scan/Verify 才 CPU 密集且短)。夜间 21:00 自动创建 PENDING run,次日 **6:00 清晨清理**:`cancelOvernightRuns` 取消所有非终态活跃 run(PENDING 直接标 CANCELED,其余走 `requestCancel`)。另每 5min 超时检测(60min 无响应)+ 每 30s 分发调度 |
 | 16 | **AI 诊断报告(commit message)** | 由 claude 基于 SonarQube 接口数据(rule/issue 详情)用**中文**生成单 issue 诊断,格式按 `resources/dev/ai-report-template.md`(用户提供);平台读模板 + 喂 sonar 数据给 claude → 输出存 `dev_issue.commit_message` → PR 评论汇总。客观数据 + AI 中文改写,避免直接用英文 rule 描述 |
 | 17 | **容器操作走命令行 docker** ⭐ | `StartAction`/`CleanAction`/git 操作均用 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`/`docker run --rm alpine/git`),不引 docker-java 库,共用 `util/ProcessUtil`(8/6 已实现:stderr 独立线程防死锁、stdout 仅剥末尾换行、静态嵌套异常带完整 stderr、6 单测)。后端纯编排,不碰文件系统 |
@@ -100,6 +100,10 @@
 | 24 | **FIX/VERIFY 重试收敛到 RestoredTrigger**(8/7 定) | `FixingStateTransition`、`VerifyingStateTransition` 无条件 `FIX_FAILED`/`VERIFY_FAILED → RESTORING`,不再注入 `ActionAttemptMapper`/`MaxAttemptsProperties`/`CancelTracker`。所有重试决策收敛到 `RestoredTrigger`:通过 `latestFix`/`latestVerify` 时间戳判断最新失败来源,按对应重试上限(`fix`/`verify`)决定续修(`Event.FIX`)或放弃(`FIX_FAILED`/`VERIFY_FAILED → FAILED`)。取消检查(`cancelTracker.contains()`)嵌入重试条件,取消时自动走对应失败事件。`RestoredStateTransition` 新增 `FIX_FAILED`/`VERIFY_FAILED → FAILED` |
 | 25 | **git commit 身份配置**(8/7 定) | 后续 FixAction commit 需要 `user.name`/`user.email`,否则 git 报 "Committer identity unknown"。SyncAction 在 clone/fetch 之后设 repo 级 `git config`(落 volume `.git/config`,后续临时容器可读):`user.name` 取 `GiteaProperties.botUsername`、`user.email` 取 `GiteaProperties.botEmail`(8/7 `GiteaProperties` 新增字段)。每次 sync 都重写,不依赖上次值——bot 身份变更下次跑即生效。不设 `--global`(容器临时),不拼进 clone URL(不走 volume) |
 | 26 | **后端容器化 + docker.sock**(8/7 定) | 生产后端运行在容器内,需操控宿主机 Docker daemon(起/停 sandbox 和临时 alpine/git 容器)。**Dockerfile**:多阶段构建,从 `docker:cli` 镜像 COPY `docker` 二进制(`~25MB`,Go 纯静态、零系统依赖)到 `eclipse-temurin:17-jre`,比 apt repo 干净。**docker-compose**:springboot 服务挂载 `/var/run/docker.sock:/var/run/docker.sock`(默认 root 运行,无权限问题)。网络保持域名直连(sandbox 容器用真实域名访问 Gitea/SonarQube,不与 docker-compose 网络绑定——demo 部署在一起,但后续可能拆分) |
+| 27 | **`sonar.java.binaries` 动态 find**(8/10 定) | `find /workspace/repo -type d -name classes -path */target/*` 显式拼接逗号分隔目录列表，不用 `**/target/classes` 通配——sonar-scanner 不认该语法，报 `No files nor directories matching`；多模块无 `target/classes` 时传空字符串，Java 分析器自动降级为纯 AST |
+| 28 | **ScanAction 选择策略**(8/10 定) | **随机打乱 → 截断**。不做 severity 排序（避免每轮总是选同一批最严重的老问题，PR reviewer 疲劳）、不做规则黑名单（随机分散风险）、不做去重（双通道问题类型不同，重叠概率极低）、永不做跨 run 排除 FAILED（先验证修复能力，不应回避困难） |
+| 29 | **AI JSON 输出解析**(8/10 定) | **括号深度计数器**提取 JSON 数组——找 `[{` 起始，`[` `]` 深度计数确定结束位置，无视 Claude 输出前后的解释文字和 Markdown 标记。AI prompt 要求 JSON 内字符串的双引号统一转义 `\"`（包括 description/codeSnippet）。Claude 输出异常时 catch `JsonProcessingException` 返回空数组而非整体 FAILED（8/10 后改为整体 FAILED——暴露问题） |
+| 30 | **Maven 阿里云镜像**(8/10 定) | Dockerfile COPY `dev-sandbox/config/maven/settings.xml` 到 `/workspace/maven-settings.xml`，mvn compile 时通过 `-s /workspace/maven-settings.xml` 显式指定 |
 
 ---
 
@@ -114,9 +118,10 @@ PENDING
              → git 命令统一带 `-c safe.directory=/workspace/repo`;末尾 `docker exec --user root chown -R bot:bot`
              → 取证 `rev-parse HEAD` 进 `SyncResult(gitUrl/branchName/commitSha)`;失败外层 catch 转 FAILED,不裸抛
              (MVP 不处理子模块:clone 无 `--recursive`,增量无 `submodule update`,SyncResult 无 `hasSubModule`)
- → SCAN       容器内 mvn -q compile(产 target/classes)→ sonar-scanner
-              → 后端调 /api/issues/search 拉 OPEN issue(按 severity 排序,过规则黑名单)
-              → 落 dev_issue 表,按 maxIssuesPerRun 截断
+ → SCAN       容器内 find pom.xml + mvn -q compile → sonar-scanner
+              → 后端调 /api/issues/search 拉 OPEN issue → 调 /api/rules/show 拿描述 → 随机打乱截断
+              → 容器内 claude --print 自由探索 → 解析 JSON
+              → 双通道 issue 落 dev_issue 表
  → FIX ⭐     逐 issue:容器内 claude 读 issue 字段修复(named volume)
               → 后端 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git add -A && commit`   # 临时容器,一漏洞一 commit
  → VERIFY     ①SonarQube 重扫（关闭+回归检测）→ ②Claude review（语义验证）
@@ -263,15 +268,9 @@ morningstar.app.dev:
     fix: 2
     verify: 1
     # start/sync/submit/clean/restore ...
-  fix:
-    max-fixes-per-run: 10           # 也可放 project 级覆盖
-    issue-time-limit-seconds: 300   # 单 issue claude 超时
-    run-time-limit-seconds: 3600    # 整 run wall-clock
-    severity-whitelist: [BLOCKER, HIGH, MEDIUM]
-    rule-blacklist:                 # ⭐ 密钥/凭据类默认排除
-      - java:S2068
-      - common-java:S2068
-      - secrets:*
+  max-issues-per-run:
+    sonar: 8
+    ai: 2
   sandbox:
     image: morningstar-dev-sandbox:latest
     container-name-prefix: morningstar_dev_sandbox_
@@ -332,15 +331,15 @@ morningstar.app.dev:
 - [ ] `Issue.java` 加 source 区分器 + 统一字段，Type 枚举不变（BUG/VULNERABILITY/CODE_SMELL）
 - **验收**:旧 sonar_* 列保留兼容，新列可读写
 
-### 阶段 4 · ScanAction 双通道 ⭐(~10h)— *8/9*
-- [ ] HTTP 客户端（RestTemplate）调 SonarQube API
-- [ ] SonarQube 通道:`docker exec` 跑 scanner → `/api/issues/search`(翻页取全量) → 取 issue+rule 的 `impacts` 数组映射三维 severity → batch insert
-- [ ] SonarQube 通道:每个 issue 调 `/api/rules/show?key=<ruleKey>` 拿规则描述，存进 metadata
-- [ ] `ScanResult` 加 `issueKeys`（基线快照，供 VerifyAction 回归检测）+ `sonarIssueNum`/`aiIssueNum`
-- [ ] `AiDiscoveryProperties` 配置类 + yml（enable 开关）
-- [ ] AI Discovery 通道:Claude 自由探索项目 → 输出结构化 JSON → map to Issue
-- [ ] 合并去重（文件+行号重叠优先留 SonarQube）→ 规则黑名单 → severity 排序 → 跨 run 排除 FAILED → 按 `maxSonarIssuesPerRun`/`maxAiIssuesPerRun` 分别截断
-- **验收**:双通道各有产出，issue 真实入库，ScanResult 存有基线快照
+### 阶段 4 · ScanAction 双通道 ⭐(~10h)— *8/9* ✅ 全部完成
+
+- [x] RestClient（`SonarUtil`）调 SonarQube API（翻页取全量 + `/api/rules/show` 拿规则描述）
+- [x] SonarQube 通道:`docker exec` 跑 scanner → 拉 OPEN issue → `impacts` 数组映射三维 severity → `convertSonarIssueToIssue`
+- [x] AI Discovery 通道:Claude heredoc 写 prompt 文件 + `--print` 自由探索 → `AiIssue` Jackson 反序列化 → `convertAiIssueToIssue`
+- [x] `ScanResult` 加 `sonarIssueKeys`（基线快照）+ `sonarIssueNum`/`aiIssueNum`
+- [x] 随机打乱后按 `maxSonarIssuesPerRun`/`maxAiIssuesPerRun` 截断，不做去重/黑名单/跨 run 排除
+- [x] SonarIssue → Issue 映射（`description`, `suggestion`, `filePath`, `codeSnippet` via sed, `effortInMinutes`）
+- [x] 联调端到端验证：双通道各有产出，issue 真实入库 ✅
 
 ### 阶段 5 · FixAction 统一路径 ⭐(~10h)— *8/10*
 - [ ] 统一 prompt:读 issue 字段（title/codeSnippet/metadata）→ Claude 修复，不区分 source
@@ -389,9 +388,9 @@ morningstar.app.dev:
 | 8/5 | 三 | 4h ✅ | — | 设计决策超额完成:非 root bot + named volume + volume 持久化 + git 归临时容器 |
 | 8/6 | 四 | 4h ✅ | 1 收尾 + 2 git | ✅ ProcessUtil + StartAction/CleanAction 落地(命名确定性、失败转 FAILED、clean 幂等、FailedTrigger 破环);SyncAction 设计中 |
 | 8/7 | 五 | 4h ✅ | 2 收尾 + 7 前端设计 | ✅ SyncAction 全链路冒烟通过(首次/增量/换分支)+ git config 身份配置;✅ RestoreAction 实测通过 + RestoredTrigger 重试收敛;✅ 前端 UI 设计(WorkBuddy+OpenDesign 生成仪表盘+详情页,Vue3+AntDesign 对齐现有技术栈)|
-| 8/8 | 六 | 8h | 决策收尾 + DB 迁移 | ✅ 决策 18/编号核查/凭证统一/架构报告； DB 迁移 + Issue PO 重构（source 区分器） |
-| 8/9 | 日 | 10h ⭐ | ScanAction 双通道 | HTTP 客户端 + scanner + API + AI Discovery + 合并去重 → Issue 真实入库 |
-| 8/10 | 一 | 10h ⭐ | FixAction 统一 prompt | 读 issue 字段 → Claude 修复 → git commit |
+| 8/8 | 六 | 8h ✅ | 决策收尾 + DB 迁移 | ✅ 决策 18/编号核查/凭证统一/架构报告； DB 迁移 + Issue PO 重构（source 区分器） |
+| 8/9 | 日 | 10h ⭐ ✅ | ScanAction 双通道 | ✅ SonarQube 通道 + AI Discovery 双通道完成，Issue 落库 |
+| 8/10 | 一 | 10h ⭐ | FixAction 统一 prompt + 联调 | 读 issue 字段 → Claude 修复 → git commit → 端到端验证 |
 | 8/11 | 二 | 10h ⭐ | VerifyAction 两道防线 | ①SonarQube 重扫 ②Claude review → 全量判定 |
 | 8/12 | 三 | 10h ⭐ | SubmitAction 统一格式 PR | 推分支 + 开 PR + 统一格式诊断评论 |
 | 8/13 | 四 | 10h | 前端 | 配置页 + 仪表盘 + 大屏（穿插复用 API 等待时间） |
