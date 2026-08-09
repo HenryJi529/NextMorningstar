@@ -53,7 +53,7 @@
         <webp-imageio.version>0.10.2</webp-imageio.version>
         <openpdf.version>3.0.0</openpdf.version>
         <mapstruct.version>1.6.3</mapstruct.version>
-        <springai.verson>1.1.6</springai.verson>
+        <springai.verson>1.1.8</springai.verson>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <javassist.version>3.31.0-GA</javassist.version>
         <archunit.version>1.4.2</archunit.version>
@@ -230,19 +230,16 @@
                 <version>${mapstruct.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-starter-model-deepseek</artifactId>
-                <version>${springai.verson}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.javassist</groupId>
-                <artifactId>javassist</artifactId>
-                <version>${javassist.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>com.tngtech.archunit</groupId>
                 <artifactId>archunit-junit5</artifactId>
                 <version>${archunit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${springai.verson}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
