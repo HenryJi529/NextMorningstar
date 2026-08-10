@@ -37,7 +37,7 @@ public class Issue {
 
     private String commitSha;
 
-    private String commitMessage;
+    private CommitMessage commitMessage;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
@@ -63,11 +63,19 @@ public class Issue {
 
     public enum Status {
         SELECTED,
-        FIXED,
-        VERIFIED,
-        FAILED,
+        FIXED, // 修复成功
+        VERIFIED, // 验证成功
         ACCEPTED,
         REJECTED
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CommitMessage {
+        private String subject; // 本次修复一句话总结（→ commit 第一行）
+        private String body; // 修复思路与具体改动（→ commit 正文）
     }
 
     @Data

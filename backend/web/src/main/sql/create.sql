@@ -238,7 +238,7 @@ create table if not exists dev_issue
     effort_in_minutes        int,
     status                   varchar(16)   not null,
     commit_sha               varchar(64),
-    commit_message           text,
+    commit_message           json,
     create_time              datetime,
     update_time              datetime,
     primary key (id)

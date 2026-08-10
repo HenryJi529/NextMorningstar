@@ -1,8 +1,11 @@
 package com.morningstar.dev.statemachine.action;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.morningstar.dev.dao.mapper.ActionAttemptMapper;
+import com.morningstar.dev.dao.mapper.IssueMapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
 import com.morningstar.dev.dao.mapper.RunMapper;
+import com.morningstar.dev.pojo.po.Issue;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.properties.SandboxProperties;
@@ -25,18 +28,20 @@ public class RestoreAction extends AbstractAction {
     private final RunMapper runMapper;
     private final ProjectMapper projectMapper;
     private final SandboxProperties sandboxProperties;
+    private final IssueMapper issueMapper;
 
     public RestoreAction(StateMachineService stateMachineService,
                          ActionAttemptMapper actionAttemptMapper,
                          ProcessUtil processUtil,
                          RunMapper runMapper,
                          ProjectMapper projectMapper,
-                         SandboxProperties sandboxProperties) {
+                         SandboxProperties sandboxProperties, IssueMapper issueMapper) {
         super(stateMachineService, actionAttemptMapper, Event.RESTORE_SUCCEEDED, Event.RESTORE_FAILED);
         this.processUtil = processUtil;
         this.runMapper = runMapper;
         this.projectMapper = projectMapper;
         this.sandboxProperties = sandboxProperties;
+        this.issueMapper = issueMapper;
     }
 
     @Override
@@ -54,6 +59,15 @@ public class RestoreAction extends AbstractAction {
         String fixBranchName = "fix/" + runId;
 
         try {
+            // 还原 issues
+            issueMapper.update(null,
+                    new LambdaUpdateWrapper<Issue>()
+                            .eq(Issue::getRunId, runId)
+                            .in(Issue::getStatus, Issue.Status.FIXED, Issue.Status.VERIFIED)
+                            .set(Issue::getStatus, Issue.Status.SELECTED)
+                            .set(Issue::getCommitSha, null)
+                            .set(Issue::getCommitMessage, null));
+
             // 丢弃 fix 分支上已跟踪文件的修改
             processUtil.run(
                     "docker", "run", "--rm",
