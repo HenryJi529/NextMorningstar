@@ -1,4 +1,4 @@
-# NextMorningstar · AI 漏洞修复流水线 — 架构精彩设计报告
+# NextMorningstar · AI 代码质量优化平台 — 架构精彩设计报告
 
 > **目标:** 梳理值得在汇报中重点展示的设计决策与架构取舍。每一条都有"为什么"和"弃了什么"。
 
@@ -60,6 +60,10 @@ AI Discovery 产出的问题自带诊断——`description`（为什么是问题
 ### 3.2 FixAction：统一 prompt，不依赖 MCP
 
 ScanAction 阶段已把全部诊断信息存入 issue 字段。FixAction 对所有 issue 使用同一 prompt 模板——Claude 从 `title`/`codeSnippet`/`metadata` 获取上下文即修。不区分来源，不调 MCP，不查外部 API。
+
+**commit_message 只让 AI 做它该做的。** Claude 修复后吐 `{subject, body}` 两字段 JSON——subject 一句话总结、body 修复思路，后端拼成 `subject\n\nbody` 交 git commit。曾考虑让 AI 同时输出 `verification`（自述怎么验证）和 `risk`（修复风险），都砍掉：验证是 VerifyAction 的职责，AI 自述验证不可靠又越权（活没干完就 preemptive 描述怎么验收）；risk 同理——同一模型刚改完代码就评自己的风险，没有信息增量。模板内嵌代码（text block），不引用外部模板文件，少一个运行时依赖。
+
+**失败要能诊断卡在哪。** `FixResult` 不记单一 `fixedIssueNum`，而是按 source 双计数 `fixedSonarIssueNum`/`fixedAiIssueNum`——失败时一眼看出修了几个、卡在 SonarQube 通道还是 AI 通道。任一 issue 失败即整轮 `FIX_FAILED`，不做逐 commit 精准保留（理由见第六节）。
 
 ### 3.3 VerifyAction：两道防线
 
@@ -124,6 +128,10 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 **结论：** issue 级状态机不是"后面对齐再做"，而是评估后明确拒绝的方向。同一套简单状态机靠调参覆盖全部行为范围。
 
+**issue 状态机也因此精简到三态。** 既然整轮回退、不做 issue 级状态机，issue 的 `Status` 就只剩 `SELECTED → FIXED → VERIFIED` 的流转——任一阶段失败（fix 或 verify）都整轮回 `SELECTED`，不标 `FAILED`。fail-fast 下 `FAILED` 永无写入点（失败抛异常、不落状态），是死状态，直接从枚举删除。`ACCEPTED`/`REJECTED` 预留给 SUBMIT 后的人工终态。少一个永远不会出现的状态，枚举即文档——读代码的人不会困惑"这个状态什么时候出现"。
+
+**PR 结果也走字段，不进状态机。** run 提交 PR 后到 `CLEANED` 终态，但 PR 还在 Gitea 等人评审——合并或拒绝是几小时甚至几天后的事。这个"迟到的观测"不塞进状态机（`CLEANED` 是终态，后面再加 `MERGED`/`REJECTED` 会污染终态语义），而是用 `Run.prStatus` 字段（OPEN/MERGED/CLOSED）记录，定时任务轮询 Gitea API 回写；issue 的 `ACCEPTED`/`REJECTED` 终态也在此落定。观测归观测、流程归流程——状态机只管"下一步干什么"，不管"外部世界后来怎么了"。
+
 ---
 
 ## 六、不浪费 AI 算力的正确方式：三层防线而非扭曲状态机
@@ -137,7 +145,9 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 - RestoredTrigger 四分支：需判断失败来源 × 重试次数
 - FixAction 乱序：失败 issue 排到队尾以避免永远卡在同一个 issue
 
-**结论：** 逐 commit 保留不是"后面对齐再做"，而是评估后明确拒绝。理由有三：状态机从编排引擎退化为业务决策引擎；节省的是夜间 AI 时间（不稀缺）；防线由决策 14（跨 run 记忆）和 `maxIssuesPerRun` 窗口承担。
+**但复杂度还是次要的——根本原因是回归。** 精准保留会跨轮拼接修复集：已保留的成功修复（上一轮）和这轮重修失败 issue 的修复，在不同基线、不同上下文产生，可能互相踩踏——重修 issue B 的改动覆盖或破坏上一轮 issue A 已修好的代码（同文件/同模块的 issue 尤甚），凭空引入新回归。全量回退则保证每个 PR 的修复集是**原子的**：每一轮从干净 `origin` 重新修所有 issue，所有修复在同一轮、同一基线、同一上下文产生，彼此协调一致，不存在"跨轮拼凑"的缝隙。宁可重修已修好的 issue 浪费算力，也不拼凑跨轮修复冒回归风险——夜间 AI 时间不稀缺，一个带回归的 PR 合进主干，代价远大于重修。
+
+**结论：** 逐 commit 保留不是"后面对齐再做"，而是评估后明确拒绝。**核心理由是质量**：全量回退保证修复集原子性、回归比例更低（跨轮拼凑的修复会互相踩踏）；其次是复杂度（状态机从编排引擎退化为业务决策引擎）和效率认知（节省的是夜间 AI 时间，不稀缺）；防线由决策 14（跨 run 记忆）和 `maxIssuesPerRun` 窗口承担。
 
 ### 6.2 替代方案：三层防线，不改状态机
 
@@ -159,7 +169,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 容器名 `morningstar_dev_sandbox_<runId>` 和 volume 名 `morningstar_dev_repo_<projectId>` 均由 ID 确定性推导。数据库中不存 `container_id`——DB 是冗余副本，Docker daemon 才是真实数据源，两者会漂移。能推导就不存。
 
-**与之配套的失败语义：** Action 失败统一 catch `ProcessExecutionException` 返回 FAILED 结果，不裸抛。裸抛意味着 `AbstractAction` 无兜底，attempt 停在 RUNNING、run 卡在中间态占并发槽——只能等 60 分钟超时兜底。
+**与之配套的失败语义：** Action 失败统一 catch `ProcessExecutionException` 返回 FAILED 结果，不裸抛。裸抛意味着 `AbstractAction` 无兜底，attempt 停在 RUNNING、run 卡在中间态占并发槽——只能等 120 分钟超时兜底。
 
 ---
 
@@ -200,6 +210,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | 安全模型（三层防御） | dev-plan 决策 12-13 | git 凭证不进 AI 容器，prompt injection 偷不到写权限 |
 | 双通道发现 | sonar-issue-scan proposal | SonarQube 规则引擎 + Claude 语义审查，互补非替代 |
 | 统一修复 prompt | claude-issue-fix design 决策 1 | 不依赖 MCP，ScanAction 已存储全部诊断信息 |
+| commit_message {subject,body} 克制 | claude-issue-fix design 决策 4 | 只让 AI 描述修复，不自述验证/风险（越权且无信息增量）|
 | 两道防线验证 | sonar-rescan-verify design 决策 1 | SonarQube 客观门槛 + Claude 语义判定 |
 | Source 区分器 + 三维 severity | pipeline-foundation design 决策 1 | JSON 多态 metadata，B/S/M 三维独立 |
 | SonarQube 对用户透明 | gitea-pr-submit design 决策 2 | PR 评论统一格式，不区分来源 |
@@ -211,6 +222,8 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | Maven 阿里云镜像 | dev-plan 决策 30 | Dockerfile COPY settings.xml，构建时写入 |
 | 命名确定性 | dev-plan 决策 18 | 不把 Docker 状态存 DB，能推导就不存 |
 | 状态机编排隔离 | fix-runtime-container 决策 16 | RestoredTrigger 是唯一分支点 |
+| issue 状态三态精简 | dev-plan 决策 31 | 删 FAILED 死状态，fail-fast 整轮回退，枚举即文档 |
+| PR 结果用 prStatus 不进状态机 | dev-plan 决策 34 | 观测归观测、流程归流程，CLEANED 终态不污染 |
 | Gitea 双视角地址 | dev-plan 决策 19 | 容器内外看不同 URL |
 | CleanAction 破环 | dev-plan 决策 18 | 防止 CLEAN 失败→无限循环 |
 | 双 token 最小权限 | dev-plan 决策 12 | admin 和 bot 分离，爆炸半径最小 |

@@ -16,6 +16,6 @@
 #### 场景:存在修复无效
 
 - **WHEN** 重扫后存在 issue 仍为 OPEN
-- **THEN** 标记所有 issue 为 `FAILED`
-- **AND** 状态机发 `VERIFY_FAILED` → RESTORING → RestoreAction 完整 7 步还原到 `origin/<branch>`（丢弃全部 fix commit）
+- **THEN** 状态机发 `VERIFY_FAILED` → RESTORING → RestoreAction 整轮回退
+- **AND** issue 回 `SELECTED`（**不标 FAILED**，决策 31），RestoreAction 完整 7 步还原到 `origin/<branch>`（丢弃全部 fix commit）
 - **AND** 还原完成后 RestoredTrigger 判定重试或放弃（见 fix-runtime-container 决策 16）

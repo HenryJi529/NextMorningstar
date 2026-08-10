@@ -12,7 +12,7 @@
 - 回归检测：对比 `ScanResult.issueKeys` 基线，新出现的 issue 视为回归。
 - Claude review：读 fix diff + issue 字段，判定 PASSED/FAILED。
 - 两道都通过 → 所有 issue `status=VERIFIED`。
-- 任一失败 → 所有 issue `status=FAILED` → 状态机驱动 RestoreAction 完整还原。
+- 任一失败 → 整轮 `VERIFY_FAILED` → RestoreAction 整轮回退（issue 回 `SELECTED`，**不标 FAILED**，决策 31）。
 - MVP 不做逐 commit 保留（理由见 fix-runtime-container 决策 18）。
 
 ## 能力

@@ -6,9 +6,11 @@
 
 - `FixAction`:遍历 `dev_issue`(status=`SELECTED`),逐个 `docker exec claude --dangerously-skip-permissions --print "..."` 修复。
 - 统一 prompt:读 issue 字段（title/codeSnippet/metadata.description/metadata.suggestion/metadata.filePath），不区分 source。
-- 临时 alpine/git 容器 `add -A && commit`(一漏洞一 commit,纯本地不需凭证),回写 `commit_sha`/status。
-- **commit_message**:Claude 基于 issue 字段用**中文**按 `resources/dev/ai-report-template.md` 模板生成诊断,回写 `dev_issue.commit_message`(供 PR 评论)。
-- 单 issue(`--max-turns`)与整 run(wall-clock)超时;复用 CancelTracker。
+- 切修复分支 `switch -C fix/<runId>`，逐 issue：claude 改文件 → 临时 alpine/git 容器 `add -A && commit`(一漏洞一 commit,纯本地不需凭证) → `rev-parse HEAD` 取 commitSha。
+- **commit_message**:Claude 按内嵌 text block 模板输出 JSON `{subject, body}`（中文），后端括号深度提取 + 反序列化 → 拼 `subject\n\nbody` 给 `git commit -m`，结构化对象回写 `dev_issue.commit_message`（供 PR 评论）。**不引用外部模板文件**。
+- 回写 `dev_issue`(commitSha/commitMessage/status=`FIXED`)，按 source 累加 `FixResult.fixedSonarIssueNum`/`fixedAiIssueNum`。
+- 任一 issue 修复失败 → `FixResult(FAILED)` → RestoreAction 整轮回退（git 7 步 + issue 状态还原，见 RestoreAction 决策）。
+- **不做 per-action 超时**：复用全局 `CronTask`（`run-timeout-minutes` + 每 5min 检测）。
 
 ## 能力
 
@@ -18,4 +20,6 @@
 ## 影响范围
 
 - `FixAction`:替换 Mock。
-- `dev_issue` 状态/commit/报告回写。
+- `RestoreAction`:新增 issue 状态还原（FIXED/VERIFIED → SELECTED，清 commit 字段）。
+- `dev_issue`:`commit_message` 列改存 `{subject, body}` 结构（CommitMessageTypeHandler）；`Status` 枚举删 `FAILED`。
+- `FixResult`:双计数 `fixedSonarIssueNum`/`fixedAiIssueNum`。

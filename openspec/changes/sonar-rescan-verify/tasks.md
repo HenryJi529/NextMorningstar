@@ -12,7 +12,7 @@
 ## 3. 结果处理
 
 - [ ] 3.1 两道都通过 → 所有 issue `status=VERIFIED`。
-- [ ] 3.2 任一失败 → 所有 issue `status=FAILED` → 状态机发 `VERIFY_FAILED` → RestoreAction 整轮回退。
+- [ ] 3.2 任一失败 → 整轮 `VERIFY_FAILED` → RestoreAction 整轮回退（issue 回 `SELECTED`，**不标 FAILED**，决策 31）。
 
 ## 4. 验证
 

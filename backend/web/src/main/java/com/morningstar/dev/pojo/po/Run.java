@@ -26,10 +26,12 @@ public class Run {
 
     private State state;
 
-    private Integer prId;
-
     // NOTE: 观测变量
     private Status status;
+
+    private Integer prId;
+
+    private PrStatus prStatus;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
@@ -43,5 +45,11 @@ public class Run {
         FAILED,
         CANCELING,
         CANCELED,
+    }
+
+    public enum PrStatus {
+        OPEN,
+        CLOSED,
+        MERGED,
     }
 }

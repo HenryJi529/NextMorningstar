@@ -14,7 +14,7 @@ FixAction 一轮批量修复多个 issue。VerifyAction 需要两道防线验证
 **第一道（SonarQube 客观判定）:**
 - sonar-scanner 重扫 → 查本 run SELECTED issue 是否全 CLOSED
 - 对比 `ScanResult.issueKeys` 基线 → 判断是否有新 issue（回归）
-- 任一未关闭 / 有回归 → FAILED + RESTORING
+- 任一未关闭 / 有回归 → 整轮 `VERIFY_FAILED` → RESTORING（issue 不标 FAILED，回 `SELECTED`，决策 31）
 
 **第二道（Claude 语义验证）:**
 - 读 fix diff + 原始 issue 信息（title/codeSnippet/metadata）

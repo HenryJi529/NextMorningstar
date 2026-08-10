@@ -207,6 +207,7 @@ create table if not exists dev_run
     state       varchar(64) not null,
     status      varchar(64) not null,
     pr_id       int,
+    pr_status   varchar(16),
     create_time datetime,
     update_time datetime,
     primary key (id)

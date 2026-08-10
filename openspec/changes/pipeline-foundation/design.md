@@ -26,7 +26,7 @@
 - **三维 severity**：`reliability_severity`/`security_severity`/`maintainability_severity`，独立表达 BUG/VULNERABILITY/CODE_SMELL（一个 issue 可同时有多个维度）
 - `title`/`effort` 统一字段
 
-`status` 枚举 SELECTED→FIXED→VERIFIED/FAILED→ACCEPTED/REJECTED。`commit_message` 替代原 `ai_report`。`attempt_no` 移除。无唯一约束——ScanAction 插入前删旧、业务逻辑保证不重复。
+`status` 枚举 SELECTED→FIXED→VERIFIED→ACCEPTED/REJECTED（决策 31 删 FAILED：fail-fast 下失败整轮回 SELECTED，不标 FAILED）。`commit_message` 替代原 `ai_report`。`attempt_no` 移除。无唯一约束——ScanAction 插入前删旧、业务逻辑保证不重复。
 
 ### 决策 2:并发度 = 2
 Fix 阶段是模型对话 I/O,CPU 空闲,多 run 可并行;Scan/Verify 才 CPU 密集且短。并发度 2 在 2 核机器上一夜 ~10h 窗口可跑 ~16-20 仓库。
