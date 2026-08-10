@@ -46,7 +46,7 @@ public class RunServiceImpl implements RunService {
         if (!dbProject.getAdminId().equals(adminId)) {
             throw new BaseException(ResponseCode.DEV_PROJECT_ACCESS_DENIED, projectId);
         }
-        
+
         Run run = createRun(projectId);
         stateMachineService.sendEvent(run.getId(), Event.START);
         return runMapper.selectById(run.getId());

@@ -162,7 +162,7 @@ docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git \
   -c safe.directory=/workspace/repo -C /workspace/repo add -A
 docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git \
   -c safe.directory=/workspace/repo -C /workspace/repo commit -m "subject\n\nbody"
-# 4. rev-parse HEAD 取 commitSha → docker exec --user root chown -R bot:bot 属主修正
+# 4. rev-parse HEAD 取 commitSha（无 chown——FixAction 的 git 操作不重写工作区，属主始终 bot，见 claude-issue-fix design 决策 10）
 # 5. 回写 dev_issue(commitSha/commitMessage/status=FIXED)，按 source 累加 FixResult 双计数
 ```
 - **不做 per-issue 超时**：复用全局 CronTask(120min + 每 5min 检测)；catch 兜 ProcessExecutionException + JsonProcessingException（决策 32）
@@ -328,11 +328,10 @@ morningstar.app.dev:
 - [x] `RestoreAction`:✅ 落地(8/7,实测通过:untracked/修改/分支提交全部可还原)。通过临时 alpine/git 容器(镜像写死)操作 volume。①`reset --hard HEAD`:丢弃 fix 分支上已跟踪文件的修改(FixAction 有 commit,不能用 `checkout .`)②`clean -fdx`:删除 untracked 文件和目录③`switch <originalBranch>`:切回配置的原始分支④`rev-parse --verify fix/<runId>` 探测 → `branch -D fix/<runId>`:删除本地修复分支⑤`reset --hard origin/<originalBranch>`:重置到 fetch 状态,兜底保证工作区干净⑥`rev-parse HEAD`:取证 commitSha 进 `RestoreResult`⑦`docker exec --user root chown -R bot:bot`:属主修正。**纯本地操作,不依赖远端**(无 `--add-host`/`http.extraHeader`/`GiteaProperties`)。外层 catch → FAILED 结果(不裸抛)。`RestoredTrigger` 重试/取消决策(决策 24):`FixingStateTransition`/`VerifyingStateTransition` 简化为无条件进 RESTORING,决策集中在 `RestoredTrigger`;取消检查嵌入重试条件,`StartedStateTransition` 补充 CLEAN 事件
 - **验收**:✅ 首次 clone、增量更新、换分支 全链路通过
 
-### 阶段 3 · DB 迁移 + Issue PO 重构(~2h)— *8/8*
-- [ ] `dev_issue` 加 source/source_issue_key/rule_key/severity/type/title/effort/metadata 列
-- [ ] 迁移脚本 `V2__ai_discovery.sql`，唯一约束 `(run_id, source, source_issue_key)`
-- [ ] `Issue.java` 加 source 区分器 + 统一字段，Type 枚举不变（BUG/VULNERABILITY/CODE_SMELL）
-- **验收**:旧 sonar_* 列保留兼容，新列可读写
+### 阶段 3 · DB 迁移 + Issue PO 重构(~2h)— *8/8* ✅ 已完成
+- [x] `dev_issue` 迁移为 source 区分器 + JSON metadata（多态：SonarMetadata/AiMetadata）+ 三维 severity + title/effort
+- [x] `Issue.java` 重构：source 区分器 + 统一字段，三维 severity（reliability/security/maintainability），无唯一约束（ScanAction 插入前删旧）
+- **验收**:双通道 issue 落库正常
 
 ### 阶段 4 · ScanAction 双通道 ⭐(~10h)— *8/9* ✅ 全部完成
 
@@ -344,13 +343,14 @@ morningstar.app.dev:
 - [x] SonarIssue → Issue 映射（`description`, `suggestion`, `filePath`, `codeSnippet` via sed, `effortInMinutes`）
 - [x] 联调端到端验证：双通道各有产出，issue 真实入库 ✅
 
-### 阶段 5 · FixAction 统一路径 ⭐(~10h)— *8/10*
+### 阶段 5 · FixAction 统一路径 ⭐(~10h)— *8/10* ✅ 全部完成
 - [x] 基础设施:FixResult 双计数 / Issue.CommitMessage {subject,body} + CommitMessageTypeHandler / Issue.Status 删 FAILED / FixAction 骨架(5 依赖,删 ProjectMapper)
 - [x] RestoreAction 补 issue 状态还原（FIXED/VERIFIED → SELECTED，清 commit 字段）
-- [ ] 切修复分支 `switch -C fix/<runId>` → 遍历 SELECTED issue → 统一 prompt(内嵌 text block)读字段修复，不区分 source、不依赖 MCP
-- [ ] 平台 git commit（一漏洞一 commit），回写 `commit_sha` + `commit_message`(JSON {subject,body}) + status=FIXED
+- [x] 切修复分支 `switch -C fix/<runId>` → 遍历 SELECTED issue → 统一 prompt(内嵌 text block)读字段修复，不区分 source、不依赖 MCP
+- [x] 平台 git commit（一漏洞一 commit，两个 `-m`），回写 `commit_sha` + `commit_message`(JSON {subject,body}) + status=FIXED
+- [x] JsonTypeHandler null 修复（`getNullableResult` 判空）
 - ~~单 issue / 整 run 超时~~（砍掉，复用全局 CronTask，决策 32）
-- **验收**:两种 source 的 issue 都能修掉并产出 commit
+- **验收**:两种 source 的 issue 都能修掉并产出 commit ✅
 
 ### 阶段 6 · VerifyAction 两道防线 ⭐(~10h)— *8/11*
 - [ ] **第一道**:SonarQube 重扫 → 查 SELECTED issue 是否全 CLOSED + 对比 `ScanResult.issueKeys` 基线判断回归
@@ -395,7 +395,7 @@ morningstar.app.dev:
 | 8/7 | 五 | 4h ✅ | 2 收尾 + 7 前端设计 | ✅ SyncAction 全链路冒烟通过(首次/增量/换分支)+ git config 身份配置;✅ RestoreAction 实测通过 + RestoredTrigger 重试收敛;✅ 前端 UI 设计(WorkBuddy+OpenDesign 生成仪表盘+详情页,Vue3+AntDesign 对齐现有技术栈)|
 | 8/8 | 六 | 8h ✅ | 决策收尾 + DB 迁移 | ✅ 决策 18/编号核查/凭证统一/架构报告； DB 迁移 + Issue PO 重构（source 区分器） |
 | 8/9 | 日 | 10h ⭐ ✅ | ScanAction 双通道 | ✅ SonarQube 通道 + AI Discovery 双通道完成，Issue 落库 |
-| 8/10 | 一 | 10h ⭐ | FixAction 统一 prompt + 联调 | 决策(状态机简化删 FAILED/双计数/砍 per-action 超时/commit_message {subject,body} 弃外部模板)+ 基础设施(FixResult/CommitMessage/TypeHandler/骨架/RestoreAction issue 还原);C2-D7 核心循环进行中 |
+| 8/10 | 一 | 10h ⭐ ✅ | FixAction 统一 prompt + 联调 | 决策(状态机简化删 FAILED/双计数/砍 per-action 超时/commit_message {subject,body} 弃外部模板)+ 基础设施(FixResult/CommitMessage/TypeHandler/骨架/RestoreAction issue 还原);C2-D7 核心循环全部完成 ✅ |
 | 8/11 | 二 | 10h ⭐ | VerifyAction 两道防线 | ①SonarQube 重扫 ②Claude review → 全量判定 |
 | 8/12 | 三 | 10h ⭐ | SubmitAction + PR 状态反馈 | 推分支 + 开 PR + 统一评论 + PR 结果轮询(ACCEPTED/REJECTED) |
 | 8/13 | 四 | 10h | 前端 | 配置页 + 仪表盘 + 大屏（穿插复用 API 等待时间） |

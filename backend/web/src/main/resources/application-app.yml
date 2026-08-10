@@ -14,6 +14,8 @@ morningstar:
       max-issues-per-run:
         sonar: 8
         ai: 2
+      git:
+        fix-branch-prefix: "fix/"
       gitea:
         bot-username: HaibaraAi369
         bot-email: jeep.jipu@outlook.com

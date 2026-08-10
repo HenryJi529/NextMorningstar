@@ -22,7 +22,7 @@
 
 - [x] 4.1 `nightlyCreateRuns`:21:00 扫描 `enabled` 项目，对有活跃 run 的项目跳过，其余创建 PENDING run。
 - [x] 4.2 `dispatchPendingRuns`:每 30s 查 PENDING run，按并发槽位数(默认 2)捞取并入队(START)。
-- [x] 4.3 `cancelTimeoutRuns`:每 5min 查超过 60min 无响应的 run，触发取消(24h 时间窗口防止全表扫描)。
+- [x] 4.3 `cancelTimeoutRuns`:每 5min 查超过 120min 无响应的 run，触发取消(24h 时间窗口防止全表扫描)。
 - [x] 4.4 `cancelOvernightRuns`:次日 6:00 取消所有非终态活跃 run(PENDING 直接标 CANCELED，其余走 requestCancel)。
 - [x] 4.5 配置 `application-app.yml`:`schedule.create-cron`/`dispatch-cron`/`timeout-cron`/`cleanup-cron`/`run-timeout-minutes`/`max-concurrency`。
 - [x] 4.6 `StartedTrigger` 加 `isCancelingRun` 检查：取消时走 CLEAN 而非 SYNC(与 Synced/Scanned/Fixed/Verified/Cleaned 六个 trigger 一致)。

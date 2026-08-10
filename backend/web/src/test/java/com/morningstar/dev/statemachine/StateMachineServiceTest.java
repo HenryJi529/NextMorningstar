@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.UUID;
@@ -25,6 +26,9 @@ class StateMachineServiceTest {
     private final RunService runService;
     private final ProjectMapper projectMapper;
     private Run run;
+
+    @Value("${morningstar.app.dev.schedule.run-timeout-minutes}")
+    private Integer timeout;
 
     @BeforeEach
     void setUp() {
@@ -54,7 +58,7 @@ class StateMachineServiceTest {
     @SuppressWarnings({"squid:S2699", "java:S2925"})
     void testNormal() throws InterruptedException {
         stateMachineService.sendEvent(run.getId(), Event.START);
-        Thread.sleep(1000000);
+        Thread.sleep((long) timeout * 60 * 1000);
     }
 
     @Test
@@ -64,6 +68,6 @@ class StateMachineServiceTest {
         Thread.sleep(10000);
         stateMachineService.requestCancel(run.getId());
 
-        Thread.sleep(1000000);
+        Thread.sleep((long) timeout * 60 * 1000);
     }
 }

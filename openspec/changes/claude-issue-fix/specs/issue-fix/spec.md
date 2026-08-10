@@ -11,10 +11,10 @@
 #### 场景:修复单个漏洞
 
 - **WHEN** 修复阶段处理一个 `SELECTED` issue
-- **THEN** AI 阅读其 rule 后修改代码,平台为该修复产生一个独立 commit
-- **AND** 回写该 issue 的 commit、诊断报告与状态
+- **THEN** AI 基于 issue 字段（title/codeSnippet/metadata）修改代码，平台为该修复产生一个独立 commit
+- **AND** 回写该 issue 的 commitSha、commitMessage（JSON {subject, body}）与 status=FIXED
 
-#### 场景:超时或取消
+#### 场景:修复失败
 
-- **WHEN** 单 issue 或整 run 超时,或收到取消
-- **THEN** 在安全点终止,已提交的修复保留,未完成的标记失败
+- **WHEN** 任一 issue 的 AI 输出 JSON 解析失败（JsonProcessingException）或 git 操作失败（ProcessExecutionException）
+- **THEN** 整轮 FIX_FAILED → RestoreAction 整轮回退（git 7 步 + issue 回 SELECTED），不做逐 issue 部分保留

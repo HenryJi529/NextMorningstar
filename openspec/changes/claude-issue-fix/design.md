@@ -49,3 +49,7 @@ RestoreAction 的 `clean -fdx` 不改 `-fd`。重试回 FIXING 不走 SCAN，`ta
 ### 决策 9: catch 只兜 ProcessExecutionException（+ FixAction 的 JsonProcessingException）（8/10 定）
 
 不补 `DataAccessException`（issue 还原 DB 失败概率极低），让全局 CronTask 兜底。维持 ScanAction 既有风格。
+
+### 决策 10: FixAction 不需要 chown（8/10 定）
+
+FixAction 的全部 git 操作都**不重写工作区文件**：`switch -C fix/<runId>` 创建新分支（基于当前 HEAD，内容相同，git 不 checkout）、`add -A`/`commit` 只写 `.git`。因此工作区源文件始终是 claude（bot）写的 bot 属主，整个 action 进出都不需要 `chown`。chown 是 SyncAction/RestoreAction 的事——它们的 `reset --hard`/`clean`/`switch` 会重写工作区为 root 属主，末尾必须 chown 还 bot。FixAction 夹在中间：进来时工作区已是 bot（上一个 sync/restore chown 过），自己又不重写，所以省掉 chown（`.git` 元数据变 root 无所谓——claude 只改源文件不碰 `.git`，git 操作都 root 跑）。

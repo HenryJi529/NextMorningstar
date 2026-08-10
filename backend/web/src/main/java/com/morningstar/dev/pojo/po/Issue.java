@@ -74,8 +74,8 @@ public class Issue {
     @AllArgsConstructor
     @Builder
     public static class CommitMessage {
-        private String subject; // 本次修复一句话总结（→ commit 第一行）
-        private String body; // 修复思路与具体改动（→ commit 正文）
+        private String subject;
+        private String body;
     }
 
     @Data

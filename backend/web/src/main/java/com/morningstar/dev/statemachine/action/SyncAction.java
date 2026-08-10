@@ -131,7 +131,7 @@ public class SyncAction extends AbstractAction {
                     "-c", "safe.directory=/workspace/repo",
                     "-C", "/workspace/repo",
                     "config", "user.email", giteaProperties.getBotEmail());
-            
+
             // 获取最新的 commit sha
             String commitSha = processUtil.run(
                     "docker", "run", "--rm",
