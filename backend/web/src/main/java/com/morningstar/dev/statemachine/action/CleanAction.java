@@ -1,7 +1,8 @@
 package com.morningstar.dev.statemachine.action;
 
 import com.morningstar.dev.dao.mapper.ActionAttemptMapper;
-import com.morningstar.dev.properties.SandboxProperties;
+import com.morningstar.dev.dao.mapper.RunMapper;
+import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.statemachine.AbstractAction;
 import com.morningstar.dev.statemachine.Action;
 import com.morningstar.dev.statemachine.Event;
@@ -18,12 +19,14 @@ import java.util.UUID;
 @Slf4j
 public class CleanAction extends AbstractAction {
     private final ProcessUtil processUtil;
-    private final SandboxProperties sandboxProperties;
+    private final CommonSteps commonSteps;
+    private final RunMapper runMapper;
 
-    public CleanAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper, ProcessUtil processUtil, SandboxProperties sandboxProperties) {
+    public CleanAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper, ProcessUtil processUtil, CommonSteps commonSteps, RunMapper runMapper) {
         super(stateMachineService, actionAttemptMapper, Event.CLEAN_SUCCEEDED, Event.CLEAN_FAILED);
         this.processUtil = processUtil;
-        this.sandboxProperties = sandboxProperties;
+        this.commonSteps = commonSteps;
+        this.runMapper = runMapper;
     }
 
     @Override
@@ -33,7 +36,10 @@ public class CleanAction extends AbstractAction {
 
     @Override
     protected CleanResult doExecute(UUID runId) {
-        String containerName = sandboxProperties.getContainerNamePrefix() + runId;
+        Run run = runMapper.selectById(runId);
+        String containerName = commonSteps.getContainerName(run);
+
+        // 删除 Docker 容器
         try {
             processUtil.run("docker", "container", "rm", "-f", containerName);
         } catch (ProcessUtil.ProcessExecutionException e) {

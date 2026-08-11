@@ -12,6 +12,7 @@ import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -71,6 +72,45 @@ public class SonarUtil {
         return response.getIssues().get(0);
     }
 
+    public void deleteSonarProjectByKey(String projectKey) {
+        restClient.post()
+                .uri(sonarqubeProperties.getBackendOrigin() + "/api/projects/delete?project={projectKey}", projectKey)
+                .headers(h -> h.setBasicAuth(sonarqubeProperties.getToken(), ""))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    @SuppressWarnings("BusyWait")
+    public void waitForCeTask(String ceTaskId) {
+        long deadline = System.currentTimeMillis() + 5 * 60_000L; // 超时 5min
+        while (true) {
+            CeTaskResponse response = restClient.get()
+                    .uri(sonarqubeProperties.getBackendOrigin() +
+                            "/api/ce/task?id={id}", ceTaskId)
+                    .headers(h -> h.setBasicAuth(sonarqubeProperties.getToken(),
+                            ""))
+                    .retrieve()
+                    .body(CeTaskResponse.class);
+            CeTask.Status status = Objects.requireNonNull(response).getTask().getStatus();
+            if (status == CeTask.Status.SUCCESS) {
+                return;
+            }
+            if (status == CeTask.Status.FAILED || status ==
+                    CeTask.Status.CANCELED) {
+                throw new IllegalStateException("SonarQube CE 任务失败: " + status);
+            }
+            if (System.currentTimeMillis() >= deadline) {
+                throw new IllegalStateException("SonarQube CE 任务超时: " + ceTaskId);
+            }
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("等待 SonarQube CE 任务被中断", e);
+            }
+        }
+    }
+
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SonarIssueResponse {
@@ -82,6 +122,23 @@ public class SonarUtil {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SonarRuleResponse {
         private SonarRule rule;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CeTaskResponse {
+        private CeTask task;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CeTask {
+        private String id;
+        private Status status;
+
+        public enum Status {
+            PENDING, IN_PROGRESS, SUCCESS, FAILED, CANCELED
+        }
     }
 
     @Data

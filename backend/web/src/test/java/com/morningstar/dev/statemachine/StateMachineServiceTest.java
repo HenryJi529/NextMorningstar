@@ -44,8 +44,6 @@ class StateMachineServiceTest {
                             .link(repoLink)
                             .branchName("master")
                             .description("test-description")
-                            .maxSonarIssuesPerRun(10)
-                            .maxAiIssuesPerRun(2)
                             .adminId(UUID.randomUUID())
                             .build()
             );

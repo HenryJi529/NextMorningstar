@@ -40,26 +40,26 @@
 ScanAction:
   ├─ Maven 构建: find pom.xml → mvn -q compile（阿里云镜像，|| true best-effort）
   ├─ SonarQube 通道: sonar-scanner → RestClient 翻页拉 OPEN issue → /api/rules/show 拿规则描述
-  │   └─ impacts 数组 → 三维 severity → 记录基线(sonarIssueKeys) → 随机打乱截断
-  └─ AI Discovery: heredoc 写 prompt 文件 → claude --print "$(cat prompt.txt)"
-      └─ 括号深度计数提取 JSON → AiIssue 反序列化 → 随机打乱截断
+  │   └─ impacts 数组 → 三维 severity → InScopeSeverities.sonar 过滤 → 随机打乱截断
+  └─ AI Discovery: heredoc 写 prompt + schema 文件 → claude --print --output-format json --json-schema
+      └─ structured_output 提取 → AiIssue 反序列化 → InScopeSeverities.ai 过滤 → 随机打乱截断
   → 双通道统一入库(issueMapper.insert)
 ```
 
 **SonarQube 做已知模式识别**（空指针、SQL 注入、资源泄漏等规则化问题），**Claude 做语义理解**（上帝类、竞态条件、N+1 查询等规则引擎抓不到的）。两者互补，不是替代。
 
 **关键技术点**：
-- `sonar.java.binaries` 用 `find` 动态拼接逗号分隔的 `target/classes` 目录列表，不用通配 `**/target/classes`（sonar-scanner 不认）
-- Maven 阿里云镜像通过 Dockerfile COPY `settings.xml` → `~/.m2/`，构建时写入
-- AI 输出不依赖模型自觉输出纯 JSON——括号深度计数器 `[{` 匹配到 `]` 提取，无视前后文字
+- `sonar.java.binaries` 设为 `**/target/classes`（单模块项目使用通配即可）
+- Maven 阿里云镜像通过 Dockerfile COPY `settings.xml` → `/workspace/maven-settings.xml`，构建时通过 `-s` 指定
+- AI 输出使用 `claude --json-schema` + `--output-format json` structured output，后端从 `structured_output` 字段反序列化，不依赖模型格式自觉
 - AI prompt 从 `AiMetadata.Type` 枚举自动生成类型列表，从 `Issue.Severity` 生成取值列表，永不过期
 - 选择策略：随机打乱 → 截断，不做 severity 排序（避免每轮都是同一批老问题）、不做去重（双通道问题类型不同）、不做跨 run 排除（先验证修复能力）
 
 AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（21 种 AiIssueType 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
 
-### 3.2 FixAction：统一 prompt，不依赖 MCP
+### 3.2 FixAction：统一 prompt + MCP 自查
 
-ScanAction 阶段已把全部诊断信息存入 issue 字段。FixAction 对所有 issue 使用同一 prompt 模板——Claude 从 `title`/`codeSnippet`/`metadata` 获取上下文即修。不区分来源，不调 MCP，不查外部 API。
+ScanAction 阶段已把全部诊断信息存入 issue 字段。FixAction 对所有 issue 使用同一 prompt 模板——Claude 从 `title`/`codeSnippet`/`metadata` 获取上下文即修，修复完成后调用 sonarqube MCP 的 `analyze_code_snippet` 自查修改文件，确保不引入新 issue。
 
 **commit_message 只让 AI 做它该做的。** Claude 修复后吐 `{subject, body}` 两字段 JSON——subject 一句话总结、body 修复思路，后端拼成 `subject\n\nbody` 交 git commit。曾考虑让 AI 同时输出 `verification`（自述怎么验证）和 `risk`（修复风险），都砍掉：验证是 VerifyAction 的职责，AI 自述验证不可靠又越权（活没干完就 preemptive 描述怎么验收）；risk 同理——同一模型刚改完代码就评自己的风险，没有信息增量。模板内嵌代码（text block），不引用外部模板文件，少一个运行时依赖。
 
@@ -69,12 +69,16 @@ ScanAction 阶段已把全部诊断信息存入 issue 字段。FixAction 对所�
 
 ```
 VerifyAction:
-  ① SonarQube 重扫 → 客观判定（关没关 + 回归没）
-  ② Claude review  → 语义验证（修对了没）
+  ① SonarQube 重扫 → 客观判定（修的 issue 全 CLOSED + 无回归）
+  ② Claude review  → 语义验证（思路对不对 + 实现到不到位）
   两道都过 → VERIFIED
 ```
 
-第一道是硬数字（BLOCKER 从 N 变 0），第二道是语义判定（读 fix diff + 原始诊断）。SonarQube 做客观门槛，Claude 做智能审查——不是"自己出题自己判"，而是各司其职。
+第一道是硬数字（数量对比检测回归：重扫 issue 数 > 原扫描数 - 已修复数 → 存在回归），第二道是语义判定。**SonarQube 做客观门槛，Claude 做语义评审**——不是"自己出题自己判"，而是各司其职。
+
+**第二道不喂 diff，让 Claude 自己读代码。** 容器内 claude code CLI（working dir `/workspace/repo`）本就能 `cat` 文件，喂 diff 是冗余。改用 FixAction 留下的 `commitMessage`（`{subject,body}`）承载"修复思路"，第二道两维度判定：① commitMessage 描述的思路逻辑上能否解决原问题 ② 当前代码是否按该思路正确修改且真正消除问题。逐条 review + fail-fast 短路，任一判 `{"verified":false}` 整轮回退。
+
+**输出最小 JSON，砍 reason。** Claude 只回 `{"verified":true/false}`——失败即整轮回退（issue 回 SELECTED）+ 下轮自动排除，无人看 reason；调试看 `log.info(rawOutput)`。砍 reason 省 token、降复杂度，失败 message 用固定文案。
 
 ### 3.4 SonarQube 对用户透明
 
@@ -169,7 +173,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 容器名 `morningstar_dev_sandbox_<runId>` 和 volume 名 `morningstar_dev_repo_<projectId>` 均由 ID 确定性推导。数据库中不存 `container_id`——DB 是冗余副本，Docker daemon 才是真实数据源，两者会漂移。能推导就不存。
 
-**与之配套的失败语义：** Action 失败统一 catch `ProcessExecutionException` 返回 FAILED 结果，不裸抛。裸抛意味着 `AbstractAction` 无兜底，attempt 停在 RUNNING、run 卡在中间态占并发槽——只能等 120 分钟超时兜底。
+**与之配套的失败语义：** Action 失败统一 catch `ProcessExecutionException` 返回 FAILED 结果（带语义 message）。即便不主动 catch，`AbstractAction` 全局兜底（dev-plan 决策 37，`execute()` 包 `catch(Exception)`）也会把异常转 FAILED——但那时 message 只剩 `e.toString()`、可读性差，故各 Action 仍主动 catch 已知异常带语义。
 
 ---
 
@@ -209,16 +213,17 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 |---|---|---|
 | 安全模型（三层防御） | dev-plan 决策 12-13 | git 凭证不进 AI 容器，prompt injection 偷不到写权限 |
 | 双通道发现 | sonar-issue-scan proposal | SonarQube 规则引擎 + Claude 语义审查，互补非替代 |
-| 统一修复 prompt | claude-issue-fix design 决策 1 | 不依赖 MCP，ScanAction 已存储全部诊断信息 |
+| 统一修复 prompt + MCP 自查 | claude-issue-fix design 决策 1 | ScanAction 已存储全部诊断信息，修复后 MCP `analyze_code_snippet` 兜底 |
 | commit_message {subject,body} 克制 | claude-issue-fix design 决策 4 | 只让 AI 描述修复，不自述验证/风险（越权且无信息增量）|
 | 两道防线验证 | sonar-rescan-verify design 决策 1 | SonarQube 客观门槛 + Claude 语义判定 |
+| VerifyAction 不喂 diff + 砍 reason | sonar-rescan-verify design 决策 3/4 | Claude 自己读代码 + commitMessage 判思路，输出最小 `{verified}` |
 | Source 区分器 + 三维 severity | pipeline-foundation design 决策 1 | JSON 多态 metadata，B/S/M 三维独立 |
 | SonarQube 对用户透明 | gitea-pr-submit design 决策 2 | PR 评论统一格式，不区分来源 |
 | 整轮回退 vs 精准保留 | fix-runtime-container 决策 18 | 四组论据论证整轮回退是正确设计 |
 | `maxIssuesPerRun` 复杂度调杆 | dev-plan 决策 28 | Sonar/AI 分别配置，随机打乱截断，调参不动架构 |
 | ~~失败 issue 跨 run 记忆~~ | dev-plan 决策 14 → 28 | 永不做——先验证修复能力，不应回避困难 |
 | ScanAction 选择策略 | dev-plan 决策 28 | 随机打乱→截断，不做去重/黑名单/跨run/severity排序 |
-| AI JSON 输出解析 | dev-plan 决策 29 | 括号深度计数 + prompt 要求 `\"` 转义，不依赖模型输出格式 |
+| AI JSON 输出解析 | dev-plan 决策 29 | `--json-schema` + `--output-format json` structured output，后端解析 `structured_output` |
 | Maven 阿里云镜像 | dev-plan 决策 30 | Dockerfile COPY settings.xml，构建时写入 |
 | 命名确定性 | dev-plan 决策 18 | 不把 Docker 状态存 DB，能推导就不存 |
 | 状态机编排隔离 | fix-runtime-container 决策 16 | RestoredTrigger 是唯一分支点 |

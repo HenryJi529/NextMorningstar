@@ -2,14 +2,12 @@ package com.morningstar.dev.statemachine.action;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.morningstar.dev.dao.mapper.ActionAttemptMapper;
 import com.morningstar.dev.dao.mapper.IssueMapper;
 import com.morningstar.dev.dao.mapper.RunMapper;
 import com.morningstar.dev.pojo.po.Issue;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.properties.GitProperties;
-import com.morningstar.dev.properties.SandboxProperties;
 import com.morningstar.dev.statemachine.AbstractAction;
 import com.morningstar.dev.statemachine.Event;
 import com.morningstar.dev.statemachine.StateMachineService;
@@ -25,21 +23,19 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class FixAction extends AbstractAction {
-    private final SandboxProperties sandboxProperties;
     private final RunMapper runMapper;
     private final IssueMapper issueMapper;
     private final ProcessUtil processUtil;
-    private final ObjectMapper objectMapper;
     private final GitProperties gitProperties;
+    private final CommonSteps commonSteps;
 
-    public FixAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper, SandboxProperties sandboxProperties, RunMapper runMapper, IssueMapper issueMapper, ProcessUtil processUtil, ObjectMapper objectMapper, GitProperties gitProperties) {
+    public FixAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper, RunMapper runMapper, IssueMapper issueMapper, ProcessUtil processUtil, GitProperties gitProperties, CommonSteps commonSteps) {
         super(stateMachineService, actionAttemptMapper, Event.FIX_SUCCEEDED, Event.FIX_FAILED);
-        this.sandboxProperties = sandboxProperties;
         this.runMapper = runMapper;
         this.issueMapper = issueMapper;
         this.processUtil = processUtil;
-        this.objectMapper = objectMapper;
         this.gitProperties = gitProperties;
+        this.commonSteps = commonSteps;
     }
 
     @Override
@@ -51,8 +47,7 @@ public class FixAction extends AbstractAction {
     protected FixResult doExecute(UUID runId) {
         // 解析信息
         Run run = runMapper.selectById(runId);
-        String containerName = sandboxProperties.getContainerNamePrefix() + run.getId();
-        String volumeName = sandboxProperties.getVolumeNamePrefix() + run.getProjectId();
+        String volumeName = commonSteps.getVolumeName(run);
         String fixBranchName = gitProperties.getFixBranchPrefix() + runId;
 
         int fixedSonarIssueNum = 0;
@@ -76,55 +71,48 @@ public class FixAction extends AbstractAction {
             );
 
             for (Issue issue : issues) {
-                // 构建提示词
-                String prompt = buildFixPrompt(issue);
-
-                // 提示词写入文件
-                String script = "cat > /tmp/ai_fix_prompt.txt << 'EOF_PROMPT'\n"
-                        + prompt + "\nEOF_PROMPT";
-                processUtil.run("docker", "exec", containerName, "bash", "-c", script);
-
-                // 运行修复命令
-                String rawOutput = processUtil.run(
-                        "docker", "exec",
-                        "-w", "/workspace/repo",
-                        containerName,
-                        "bash", "-c",
-                        "claude --dangerously-skip-permissions --print \"$(cat /tmp/ai_fix_prompt.txt)\"");
-                log.info("AI修复原始输出: {}", rawOutput);
-
-                // 解析输出
-                Issue.CommitMessage commitMessage = objectMapper.readValue(
-                        purifyLLMOutput(rawOutput),
+                Issue.CommitMessage commitMessage = commonSteps.runClaude(
+                        CommonSteps.ClaudeInput.builder()
+                                .intent(CommonSteps.ClaudeInput.Intent.FIX)
+                                .prompt(buildFixPrompt(issue))
+                                .build(),
+                        run,
                         Issue.CommitMessage.class
                 );
 
-                // 添加并提交修改
-                processUtil.run(
+
+                // 判断是否有改动
+                String gitStatus = processUtil.run(
                         "docker", "run", "--rm",
                         "-v", volumeName + ":/workspace/repo",
                         "alpine/git",
                         "-c", "safe.directory=/workspace/repo",
                         "-C", "/workspace/repo",
-                        "add", "-A");
-                processUtil.run(
-                        "docker", "run", "--rm",
-                        "-v", volumeName + ":/workspace/repo",
-                        "alpine/git",
-                        "-c", "safe.directory=/workspace/repo",
-                        "-C", "/workspace/repo",
-                        "commit",
-                        "-m", commitMessage.getSubject(),
-                        "-m", commitMessage.getBody());
+                        "status", "--porcelain");
+                if (!gitStatus.isBlank()) {
+                    // 添加并提交修改
+                    processUtil.run(
+                            "docker", "run", "--rm",
+                            "-v", volumeName + ":/workspace/repo",
+                            "alpine/git",
+                            "-c", "safe.directory=/workspace/repo",
+                            "-C", "/workspace/repo",
+                            "add", "-A");
+                    processUtil.run(
+                            "docker", "run", "--rm",
+                            "-v", volumeName + ":/workspace/repo",
+                            "alpine/git",
+                            "-c", "safe.directory=/workspace/repo",
+                            "-C", "/workspace/repo",
+                            "commit",
+                            "-m", commitMessage.getSubject(),
+                            "-m", commitMessage.getBody());
+                } else {
+                    log.info("issue {} 本轮无改动,跳过 commit(疑似被前序修复连带解决)", issue.getId());
+                }
 
                 // 获取最新的commit sha
-                String commitSha = processUtil.run(
-                        "docker", "run", "--rm",
-                        "-v", volumeName + ":/workspace/repo",
-                        "alpine/git",
-                        "-c", "safe.directory=/workspace/repo",
-                        "-C", "/workspace/repo",
-                        "rev-parse", "HEAD");
+                String commitSha = commonSteps.getHeadCommitSha(run);
 
                 // 更新issue
                 issue.setCommitMessage(commitMessage);
@@ -171,6 +159,7 @@ public class FixAction extends AbstractAction {
                 - 直接修改文件完成修复，不要只给出修改建议。
                 - 只修改与该问题直接相关的代码，不要重构无关部分、不要创建无关文件。
                 - 尽力修复，即使问题复杂也不要放弃。
+                - 修复过程中，调用 sonarqube mcp 的 analyze_code_snippet 检查你所修改的每个文件，如有新增 issue，继续修正直到干净。
                 
                 ## 输出规则
                 - 只输出以下格式JSON，不要任何额外文字或说明，不要用 Markdown 代码块，直接输出 JSON 本身。
@@ -192,14 +181,4 @@ public class FixAction extends AbstractAction {
                 issue.getMetadata().getSuggestion(),
                 issue.getMetadata().getCodeSnippet());
     }
-
-    private String purifyLLMOutput(String rawOutput) {
-        int start = rawOutput.indexOf('{');
-        int end = rawOutput.lastIndexOf('}');
-        if (start == -1 || end == -1 || start >= end) {
-            return ""; // 触发JSON解析失败
-        }
-        return rawOutput.substring(start, end + 1).trim();
-    }
-
 }

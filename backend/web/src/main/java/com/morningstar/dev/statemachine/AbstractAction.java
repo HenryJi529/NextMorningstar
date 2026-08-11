@@ -38,7 +38,16 @@ public abstract class AbstractAction implements Action {
                 .build();
         actionAttemptMapper.insert(currentActionAttempt);
         log.info("[{}] {} 正在执行...", runId, getType());
-        ActionResult actionResult = doExecute(runId);
+        ActionResult actionResult;
+        try {
+            actionResult = doExecute(runId);
+        } catch (Exception e) {
+            log.error("[{}] {} 执行异常 ⚠️", runId, getType(), e);
+            actionResult = ActionResult.builder()
+                    .status(ActionResult.Status.FAILED)
+                    .message(e.toString())
+                    .build();
+        }
         currentActionAttempt.setResult(actionResult);
         if (actionResult.getStatus() == ActionResult.Status.SUCCEEDED) {
             currentActionAttempt.setStatus(ActionStatus.SUCCEEDED);

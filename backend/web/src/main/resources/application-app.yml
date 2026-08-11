@@ -11,9 +11,9 @@ morningstar:
       excerpt-max-sentence-num: 40
       excerpt-max-visual-length: 300
     dev:
-      max-issues-per-run:
-        sonar: 8
-        ai: 2
+      in-scope-severities:
+        sonar: [ BLOCKER, HIGH, MEDIUM ]
+        ai: [ BLOCKER, HIGH, MEDIUM, LOW ]
       git:
         fix-branch-prefix: "fix/"
       gitea:

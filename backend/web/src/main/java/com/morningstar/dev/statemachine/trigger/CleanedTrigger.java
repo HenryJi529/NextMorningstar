@@ -35,7 +35,7 @@ public class CleanedTrigger implements Trigger {
         ActionAttempt latestScanAttempt = actionAttemptMapper.selectLatestActionAttempt(event.getRunId(), Action.Type.SCAN);
         if (latestScanAttempt != null && latestScanAttempt.getStatus() == ActionStatus.SUCCEEDED) {
             ScanResult latestScanResult = (ScanResult) latestScanAttempt.getResult();
-            if (latestScanResult.getSonarIssueNum() + latestScanResult.getAiIssueNum() == 0) {
+            if (latestScanResult.getScannedSonarIssueNum() + latestScanResult.getScannedAiIssueNum() == 0) {
                 // NOTE: 扫描完成且没发现问题，直接成功
                 runMapper.updateById(Run.builder().id(event.getRunId()).status(Run.Status.SUCCEEDED).build());
                 return;

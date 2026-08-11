@@ -1,17 +1,17 @@
 ## 上下文
 
-修复时 Claude 不需要再通过 MCP 查外部知识库——ScanAction 阶段已把 SonarQube rule 描述和 AI 诊断全存进 `dev_issue` 的 `metadata` JSON 和顶层字段（`title`/`codeSnippet`/三列 severity）。FixAction 只读 issue 字段，不分 source。
+修复时 Claude 基于 ScanAction 阶段已存储的诊断信息直接修改代码。FixAction 只读 issue 字段，不分 source。修复完成后调用 sonarqube MCP `analyze_code_snippet` 自查，确保不引入新 issue。
 
 ## 目标 / 非目标
 
-**目标:** Claude 读 issue 字段即修，统一 prompt；平台控制 commit；一漏洞一 commit。
-**非目标:** 不让 AI 自行 commit(平台控制,保证规范与可回滚)；不依赖 MCP 或外部 API；不做 per-action 超时(复用全局 CronTask)；不做跨 run 排除 FAILED。
+**目标:** Claude 读 issue 字段即修，统一 prompt；修复后 MCP 自查；平台控制 commit；一漏洞一 commit。
+**非目标:** 不让 AI 自行 commit(平台控制,保证规范与可回滚)；不做 per-action 超时(复用全局 CronTask)；不做跨 run 排除 FAILED。
 
 ## 决策
 
-### 决策 1: 统一 prompt，读 issue 字段即修
+### 决策 1: 统一 prompt + MCP 自查，读 issue 字段即修
 
-FixAction 对所有 issue 使用同一 prompt 模板，Claude 从 `title`/`codeSnippet`/`metadata` 中获取完整诊断上下文（description/suggestion/filePath），不需要 MCP 或外部 API。ScanAction 已在写入阶段存好了所有必要信息。
+FixAction 对所有 issue 使用同一 prompt 模板，Claude 从 `title`/`codeSnippet`/`metadata` 中获取完整诊断上下文（description/suggestion/filePath）。修复完成后要求 Claude 调用 sonarqube MCP 的 `analyze_code_snippet` 自查修改文件，确保不引入新 issue。
 
 ### 决策 2: commit 归临时 alpine/git 容器
 
@@ -28,7 +28,7 @@ Claude 基于 issue 字段用**中文**生成 commit message，结构 `{subject,
 - `subject`：本次修复一句话总结（→ commit 第一行）
 - `body`：修复思路与具体改动（→ commit 正文）
 
-**只两个字段**（8/10 定）：去掉 `verification`（验证是 VerifyAction 的职责，AI 自述验证不可靠且 preemptive）、去掉 `risk`（同理）。AI 按内嵌 text block 模板输出 JSON `{subject, body}`，后端括号深度提取 `{...}` + `objectMapper` 反序列化成 `Issue.CommitMessage`，再拼 `subject\n\nbody` 交 `git commit -m`。**不引用外部模板文件**（`ai-report-template.md` 弃用，模板内嵌在 FixAction 代码里）。
+**只两个字段**（8/10 定,8/12 更新）：去掉 `verification`（验证是 VerifyAction 的职责，AI 自述验证不可靠且 preemptive）、去掉 `risk`（同理）。AI 通过 `--json-schema` + `--output-format json` 输出结构化 `{subject, body}`，后端从 `structured_output` 拆封 → `objectMapper` 反序列化成 `Issue.CommitMessage`，再拼 `subject\n\nbody` 交 `git commit -m`。**不引用外部模板文件**（`ai-report-template.md` 弃用，模板内嵌在 FixAction 代码里）。
 
 ### 决策 5: RestoreAction 管全部回退（git + issue）（8/10 定）
 

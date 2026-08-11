@@ -1,6 +1,5 @@
 package com.morningstar.dev.statemachine.result;
 
-
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -10,7 +9,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class ScanResult extends ActionResult {
-    private Integer scannedSonarIssueNum;
-    private Integer scannedAiIssueNum;
+public class VerifyResult extends ActionResult {
+    private Integer verifiedSonarIssueNum;
+    private Integer verifiedAiIssueNum;
 }

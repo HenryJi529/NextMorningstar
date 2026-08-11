@@ -19,6 +19,7 @@ import lombok.experimental.SuperBuilder;
         @JsonSubTypes.Type(value = SyncResult.class, name = Action.Type.SYNC_NAME),
         @JsonSubTypes.Type(value = ScanResult.class, name = Action.Type.SCAN_NAME),
         @JsonSubTypes.Type(value = FixResult.class, name = Action.Type.FIX_NAME),
+        @JsonSubTypes.Type(value = VerifyResult.class, name = Action.Type.VERIFY_NAME),
         @JsonSubTypes.Type(value = RestoreResult.class, name = Action.Type.RESTORE_NAME),
         @JsonSubTypes.Type(value = CleanResult.class, name = Action.Type.CLEAN_NAME),
 })

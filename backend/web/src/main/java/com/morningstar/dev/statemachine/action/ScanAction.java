@@ -1,25 +1,23 @@
 package com.morningstar.dev.statemachine.action;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.morningstar.dev.dao.mapper.ActionAttemptMapper;
 import com.morningstar.dev.dao.mapper.IssueMapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
 import com.morningstar.dev.dao.mapper.RunMapper;
 import com.morningstar.dev.pojo.bo.AiIssue;
-import com.morningstar.dev.pojo.bo.RepoIdentity;
+import com.morningstar.dev.pojo.bo.StructuredAiScanOutput;
 import com.morningstar.dev.pojo.po.Issue;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
-import com.morningstar.dev.properties.SandboxProperties;
-import com.morningstar.dev.properties.SonarqubeProperties;
+import com.morningstar.dev.properties.InScopeSeverities;
 import com.morningstar.dev.statemachine.AbstractAction;
 import com.morningstar.dev.statemachine.Action;
 import com.morningstar.dev.statemachine.Event;
 import com.morningstar.dev.statemachine.StateMachineService;
 import com.morningstar.dev.statemachine.result.ActionResult;
 import com.morningstar.dev.statemachine.result.ScanResult;
-import com.morningstar.dev.util.GiteaUtil;
 import com.morningstar.dev.util.ProcessUtil;
 import com.morningstar.dev.util.SonarUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -36,24 +34,20 @@ public class ScanAction extends AbstractAction {
     private final ProcessUtil processUtil;
     private final RunMapper runMapper;
     private final ProjectMapper projectMapper;
-    private final SandboxProperties sandboxProperties;
-    private final GiteaUtil giteaUtil;
-    private final SonarqubeProperties sonarqubeProperties;
     private final SonarUtil sonarUtil;
-    private final ObjectMapper objectMapper;
     private final IssueMapper issueMapper;
+    private final InScopeSeverities inScopeSeverities;
+    private final CommonSteps commonSteps;
 
-    public ScanAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper, ProcessUtil processUtil, RunMapper runMapper, ProjectMapper projectMapper, SandboxProperties sandboxProperties, GiteaUtil giteaUtil, SonarqubeProperties sonarqubeProperties, SonarUtil sonarUtil, ObjectMapper objectMapper, IssueMapper issueMapper) {
+    public ScanAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper, ProcessUtil processUtil, RunMapper runMapper, ProjectMapper projectMapper, SonarUtil sonarUtil, IssueMapper issueMapper, InScopeSeverities inScopeSeverities, CommonSteps commonSteps) {
         super(stateMachineService, actionAttemptMapper, Event.SCAN_SUCCEEDED, Event.SCAN_FAILED);
         this.processUtil = processUtil;
         this.runMapper = runMapper;
         this.projectMapper = projectMapper;
-        this.sandboxProperties = sandboxProperties;
-        this.giteaUtil = giteaUtil;
-        this.sonarqubeProperties = sonarqubeProperties;
         this.sonarUtil = sonarUtil;
-        this.objectMapper = objectMapper;
         this.issueMapper = issueMapper;
+        this.inScopeSeverities = inScopeSeverities;
+        this.commonSteps = commonSteps;
     }
 
     @Override
@@ -66,59 +60,37 @@ public class ScanAction extends AbstractAction {
         // 解析信息
         Run run = runMapper.selectById(runId);
         Project project = projectMapper.selectById(run.getProjectId());
-        String containerName = sandboxProperties.getContainerNamePrefix() + run.getId();
-        RepoIdentity repoIdentity = giteaUtil.parseRepoIdentity(project.getLink());
+        String containerName = commonSteps.getContainerName(run);
 
         try {
+            // 清除旧 issue
+            issueMapper.delete(new LambdaQueryWrapper<Issue>().eq(Issue::getRunId, runId));
+
             // Maven 构建
-            processUtil.run(
-                    "docker", "exec", containerName, "bash", "-c",
-                    "p=$(find /workspace/repo -name pom.xml | head -1) && [ \"$p\" ] && mvn -s /workspace/maven-settings.xml -q compile -f \"$p\" || true"
-            );
+            commonSteps.mavenBuild(run);
 
             // Sonar 扫描
-            String sonarProjectKey = repoIdentity.getOwnerName() + ":" + repoIdentity.getRepoName();
-            String sonarProjectName = project.getName();
-
-            processUtil.run(
-                    "docker", "exec", "-w", "/workspace/repo", containerName,
-                    "sonar-scanner",
-                    "-Dsonar.projectKey=" + sonarProjectKey,
-                    "-Dsonar.projectName=" + sonarProjectName,
-                    "-Dsonar.sources=.",
-                    "-Dsonar.java.binaries=**/target/classes",
-                    "-Dsonar.exclusions=**/target/**/*.jar,**/node_modules/**",
-                    "-Dsonar.scm.disabled=true",
-                    "-Dsonar.working.directory=/tmp/.scannerwork",
-                    "-Dsonar.host.url=" + sonarqubeProperties.getContainerOrigin(),
-                    "-Dsonar.token=" + sonarqubeProperties.getToken()
-            );
-            List<SonarUtil.SonarIssue> sonarIssues = sonarUtil.getAllOpenSonarIssuesByProjectKey(sonarProjectKey);
-            List<String> sonarIssueKeys = sonarIssues.stream().map(SonarUtil.SonarIssue::getKey).collect(Collectors.toList());
+            List<SonarUtil.SonarIssue> sonarIssues = commonSteps.sonarScan(run, project);
             if (!sonarIssues.isEmpty()) {
                 log.info("Sonar Issue典型对象: {}", sonarIssues.get(0));
             }
 
             // AI 扫描
-            String prompt = buildAiScanPrompt();
-            String script = "cat > /tmp/ai_scan_prompt.txt << 'EOF_PROMPT'\n"
-                    + prompt + "\nEOF_PROMPT";
-            processUtil.run("docker", "exec", containerName, "bash", "-c", script);
+            List<AiIssue> aiIssues = commonSteps.runClaude(
+                    CommonSteps.ClaudeInput
+                            .builder()
+                            .intent(CommonSteps.ClaudeInput.Intent.SCAN)
+                            .prompt(buildAiScanPrompt())
+                            .build(),
+                    run,
+                    StructuredAiScanOutput.class
+            ).getIssues().stream().filter(aiIssue -> {
+                List<Issue.Severity> scope = inScopeSeverities.getAi();
+                return scope.contains(aiIssue.getMaintainabilitySeverity()) || scope.contains(aiIssue.getSecuritySeverity()) || scope.contains(aiIssue.getReliabilitySeverity());
+            }).toList();
 
-            String rawOutput = processUtil.run(
-                    "docker", "exec",
-                    "-w", "/workspace/repo",
-                    containerName,
-                    "bash", "-c",
-                    "claude --dangerously-skip-permissions --print \"$(cat /tmp/ai_scan_prompt.txt)\"");
-            log.info("AI扫描原始输出: {}", rawOutput);
-
-            AiIssue[] aiIssues = objectMapper.readValue(
-                    purifyLLMOutput(rawOutput),
-                    AiIssue[].class
-            );
-            if (aiIssues.length > 0) {
-                log.info("AI Issue典型对象: {}", aiIssues[0]);
+            if (!aiIssues.isEmpty()) {
+                log.info("AI Issue典型对象: {}", aiIssues.get(0));
             }
 
             // 选择 Sonar 和 AI 生成的 Issue, 转换并落表
@@ -131,9 +103,9 @@ public class ScanAction extends AbstractAction {
             }
 
             issues.addAll(selectedSonarIssues.stream().map(sonarIssue -> convertSonarIssueToIssue(sonarIssue, containerName, runId)).toList());
-            List<AiIssue> selectedAiIssues = new ArrayList<>(Arrays.asList(aiIssues));
+            List<AiIssue> selectedAiIssues = new ArrayList<>(aiIssues);
             Collections.shuffle(selectedAiIssues);
-            if (aiIssues.length > project.getMaxAiIssuesPerRun()) {
+            if (aiIssues.size() > project.getMaxAiIssuesPerRun()) {
                 selectedAiIssues = selectedAiIssues.subList(0, project.getMaxAiIssuesPerRun());
             }
             issues.addAll(selectedAiIssues.stream().map(aiIssue -> convertAiIssueToIssue(aiIssue, runId)).toList());
@@ -143,9 +115,8 @@ public class ScanAction extends AbstractAction {
             return ScanResult
                     .builder()
                     .status(ActionResult.Status.SUCCEEDED)
-                    .sonarIssueNum(sonarIssues.size())
-                    .aiIssueNum(aiIssues.length)
-                    .sonarIssueKeys(sonarIssueKeys)
+                    .scannedSonarIssueNum(sonarIssues.size())
+                    .scannedAiIssueNum(aiIssues.size())
                     .build();
         } catch (ProcessUtil.ProcessExecutionException | JsonProcessingException e) {
             return ScanResult
@@ -272,7 +243,7 @@ public class ScanAction extends AbstractAction {
                             "filePath": "src/main/java/Foo.java",
                             "codeSnippet": "    return list(map(lambda item: MigrationScript(path=MIGRATION_DIR / item['name'], version=item['version'], description=item['description']), cursor.fetchall())))",
                             "type": "GOD_CLASS",
-                            "effortInMinutes": "30",
+                            "effortInMinutes": 30,
                             "description": "...",
                             "suggestion": "...",
                             "reliabilitySeverity": "HIGH",
@@ -309,14 +280,5 @@ public class ScanAction extends AbstractAction {
                         - 取值范围: %s, null
                 - JSON 字符串值内部的所有双引号必须转义，否则 JSON 解析失败。
                 """.formatted(typeRange, severityRange, severityRange, severityRange);
-    }
-
-    private String purifyLLMOutput(String rawOutput) {
-        int start = rawOutput.indexOf('[');
-        int end = rawOutput.lastIndexOf(']');
-        if (start == -1 || end == -1 || start >= end) {
-            return "[]";
-        }
-        return rawOutput.substring(start, end + 1).trim();
     }
 }

@@ -9,7 +9,6 @@ import com.morningstar.dev.pojo.po.Issue;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.properties.GitProperties;
-import com.morningstar.dev.properties.SandboxProperties;
 import com.morningstar.dev.statemachine.AbstractAction;
 import com.morningstar.dev.statemachine.Action;
 import com.morningstar.dev.statemachine.Event;
@@ -28,23 +27,23 @@ public class RestoreAction extends AbstractAction {
     private final ProcessUtil processUtil;
     private final RunMapper runMapper;
     private final ProjectMapper projectMapper;
-    private final SandboxProperties sandboxProperties;
     private final IssueMapper issueMapper;
     private final GitProperties gitProperties;
+    private final CommonSteps commonSteps;
 
     public RestoreAction(StateMachineService stateMachineService,
                          ActionAttemptMapper actionAttemptMapper,
                          ProcessUtil processUtil,
                          RunMapper runMapper,
                          ProjectMapper projectMapper,
-                         SandboxProperties sandboxProperties, IssueMapper issueMapper, GitProperties gitProperties) {
+                         IssueMapper issueMapper, GitProperties gitProperties, CommonSteps commonSteps) {
         super(stateMachineService, actionAttemptMapper, Event.RESTORE_SUCCEEDED, Event.RESTORE_FAILED);
         this.processUtil = processUtil;
         this.runMapper = runMapper;
         this.projectMapper = projectMapper;
-        this.sandboxProperties = sandboxProperties;
         this.issueMapper = issueMapper;
         this.gitProperties = gitProperties;
+        this.commonSteps = commonSteps;
     }
 
     @Override
@@ -57,8 +56,8 @@ public class RestoreAction extends AbstractAction {
         Run run = runMapper.selectById(runId);
         Project project = projectMapper.selectById(run.getProjectId());
         String branchName = project.getBranchName();
-        String volumeName = sandboxProperties.getVolumeNamePrefix() + run.getProjectId();
-        String containerName = sandboxProperties.getContainerNamePrefix() + run.getId();
+        String volumeName = commonSteps.getVolumeName(run);
+        String containerName = commonSteps.getContainerName(run);
         String fixBranchName = gitProperties.getFixBranchPrefix() + runId;
 
         try {
@@ -125,13 +124,7 @@ public class RestoreAction extends AbstractAction {
                     "reset", "--hard", "origin/" + branchName);
 
             // 获取最新的 commit sha
-            String commitSha = processUtil.run(
-                    "docker", "run", "--rm",
-                    "-v", volumeName + ":/workspace/repo",
-                    "alpine/git",
-                    "-c", "safe.directory=/workspace/repo",
-                    "-C", "/workspace/repo",
-                    "rev-parse", "HEAD");
+            String commitSha = commonSteps.getHeadCommitSha(run);
 
             // 修正属主
             processUtil.run(

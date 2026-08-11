@@ -10,12 +10,12 @@
 
 - [x] 1.1 `FixAction` 切修复分支 `switch -C fix/<runId>`。
 - [x] 1.2 遍历 `SELECTED` issue（LambdaQueryWrapper：runId + status=SELECTED）。
-- [x] 1.3 统一 prompt（内嵌 text block）：读 issue 字段（title/codeSnippet/metadata.description/suggestion/filePath），Claude 修复代码，不依赖 MCP。
+- [x] 1.3 统一 prompt（内嵌 text block）：读 issue 字段（title/codeSnippet/metadata.description/suggestion/filePath），Claude 修复代码，修复后调用 sonarqube MCP `analyze_code_snippet` 自查避免引入新 issue。
 
 ## 2. 提交与回写
 
 - [x] 2.1 临时 alpine/git 容器 `git add -A && git commit -m "subject" -m "body"`（一漏洞一 commit）+ `rev-parse HEAD` 取 commitSha。
-- [x] 2.2 Claude 输出 JSON `{subject, body}`，括号深度提取 `{...}` + `objectMapper` 反序列化成 `Issue.CommitMessage` → 两个 `-m` 分别传入 subject/body。
+- [x] 2.2 Claude 输出通过 `--json-schema` + `--output-format json`，后端从 `structured_output` 拆封 → `objectMapper` 反序列化成 `Issue.CommitMessage` → 两个 `-m` 分别传入 subject/body。
 - [x] 2.3 回写 `dev_issue`（commitSha/commitMessage/status=`FIXED`）。
 - [x] 2.4 按 source 累加 `FixResult.fixedSonarIssueNum`/`fixedAiIssueNum`。
 

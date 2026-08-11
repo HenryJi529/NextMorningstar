@@ -7,13 +7,16 @@ import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.pojo.vo.UpdateProjectRequestVo;
 import com.morningstar.dev.properties.MaxIssuesPerRunProperties;
 import com.morningstar.dev.service.ProjectService;
+import com.morningstar.dev.statemachine.action.CommonSteps;
 import com.morningstar.dev.util.GiteaUtil;
+import com.morningstar.dev.util.SonarUtil;
 import com.morningstar.infra.exception.BaseException;
 import com.morningstar.infra.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +29,8 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectMapper projectMapper;
     private final GiteaUtil giteaUtil;
     private final MaxIssuesPerRunProperties maxIssuesPerRunProperties;
+    private final SonarUtil sonarUtil;
+    private final CommonSteps commonSteps;
 
     @Override
     public Project createProject(CreateProjectRequestVo vo) {
@@ -89,10 +94,19 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public void deleteProject(UUID projectId, UUID adminId) {
         Project dbProject = getProjectById(projectId, adminId);
-
         projectMapper.deleteById(projectId);
 
+        // 删除 Bot 的仓库权限
         giteaUtil.removeCollaborator(dbProject.getLink());
+
+        // 删除 SonarQube 项目
+        try {
+            sonarUtil.deleteSonarProjectByKey(commonSteps.getSonarProjectKey(dbProject));
+        } catch (RestClientException e) {
+            if (!e.getMessage().contains("not found")) {
+                throw new BaseException(e.getMessage());
+            }
+        }
     }
 
     @Override

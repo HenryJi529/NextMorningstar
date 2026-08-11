@@ -1,0 +1,108 @@
+{
+  "type": "object",
+  "properties": {
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "filePath": {
+            "type": "string"
+          },
+          "codeSnippet": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "GOD_CLASS",
+              "LONG_METHOD",
+              "DEEP_NESTING",
+              "CIRCULAR_DEPENDENCY",
+              "MISSING_ABSTRACTION",
+              "INCONSISTENT_STATE",
+              "MISSING_VALIDATION",
+              "OFF_BY_ONE",
+              "MISSING_ERROR_HANDLING",
+              "MISSING_RATE_LIMIT",
+              "INSECURE_DESERIALIZATION",
+              "DUPLICATE_LOGIC",
+              "COMMENT_ROT",
+              "HARDCODED_CONFIG",
+              "MAGIC_NUMBER",
+              "N_PLUS_ONE_QUERY",
+              "UNNECESSARY_ALLOCATION",
+              "RACE_CONDITION",
+              "DEADLOCK_RISK",
+              "SHARED_MUTABLE_STATE",
+              "OTHER"
+            ]
+          },
+          "effortInMinutes": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string"
+          },
+          "suggestion": {
+            "type": "string"
+          },
+          "reliabilitySeverity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "BLOCKER",
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "INFO",
+              null
+            ]
+          },
+          "securitySeverity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "BLOCKER",
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "INFO",
+              null
+            ]
+          },
+          "maintainabilitySeverity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "BLOCKER",
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "INFO",
+              null
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "filePath",
+          "description",
+          "type"
+        ]
+      }
+    }
+  },
+  "required": [
+    "issues"
+  ]
+}

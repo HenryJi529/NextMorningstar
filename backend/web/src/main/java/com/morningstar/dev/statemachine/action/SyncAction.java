@@ -7,7 +7,6 @@ import com.morningstar.dev.pojo.bo.RepoIdentity;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.properties.GiteaProperties;
-import com.morningstar.dev.properties.SandboxProperties;
 import com.morningstar.dev.statemachine.AbstractAction;
 import com.morningstar.dev.statemachine.Action;
 import com.morningstar.dev.statemachine.Event;
@@ -28,18 +27,18 @@ public class SyncAction extends AbstractAction {
     private final RunMapper runMapper;
     private final ProjectMapper projectMapper;
     private final GiteaUtil giteaUtil;
-    private final SandboxProperties sandboxProperties;
     private final GiteaProperties giteaProperties;
+    private final CommonSteps commonSteps;
 
 
-    public SyncAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper, ProcessUtil processUtil, RunMapper runMapper, ProjectMapper projectMapper, GiteaUtil giteaUtil, SandboxProperties sandboxProperties, GiteaProperties giteaProperties) {
+    public SyncAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper, ProcessUtil processUtil, RunMapper runMapper, ProjectMapper projectMapper, GiteaUtil giteaUtil, GiteaProperties giteaProperties, CommonSteps commonSteps) {
         super(stateMachineService, actionAttemptMapper, Event.SYNC_SUCCEEDED, Event.SYNC_FAILED);
         this.processUtil = processUtil;
         this.runMapper = runMapper;
         this.projectMapper = projectMapper;
         this.giteaUtil = giteaUtil;
-        this.sandboxProperties = sandboxProperties;
         this.giteaProperties = giteaProperties;
+        this.commonSteps = commonSteps;
     }
 
     @Override
@@ -54,8 +53,8 @@ public class SyncAction extends AbstractAction {
         Project project = projectMapper.selectById(run.getProjectId());
         RepoIdentity repoIdentity = giteaUtil.parseRepoIdentity(project.getLink());
         String branchName = project.getBranchName();
-        String volumeName = sandboxProperties.getVolumeNamePrefix() + run.getProjectId();
-        String containerName = sandboxProperties.getContainerNamePrefix() + run.getId();
+        String volumeName = commonSteps.getVolumeName(run);
+        String containerName = commonSteps.getContainerName(run);
         String gitUrl = giteaProperties.getContainerOrigin() + "/" + repoIdentity.getOwnerName() + "/" + repoIdentity.getRepoName() + ".git";
 
 
@@ -133,13 +132,7 @@ public class SyncAction extends AbstractAction {
                     "config", "user.email", giteaProperties.getBotEmail());
 
             // 获取最新的 commit sha
-            String commitSha = processUtil.run(
-                    "docker", "run", "--rm",
-                    "-v", volumeName + ":/workspace/repo",
-                    "alpine/git",
-                    "-c", "safe.directory=/workspace/repo",
-                    "-C", "/workspace/repo",
-                    "rev-parse", "HEAD");
+            String commitSha = commonSteps.getHeadCommitSha(run);
 
             // 修正属主:alpine/git 以 root 创建的文件 bot 无法写
             processUtil.run(

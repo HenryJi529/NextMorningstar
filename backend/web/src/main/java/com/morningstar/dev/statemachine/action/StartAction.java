@@ -2,6 +2,7 @@ package com.morningstar.dev.statemachine.action;
 
 import com.morningstar.dev.dao.mapper.ActionAttemptMapper;
 import com.morningstar.dev.dao.mapper.RunMapper;
+import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.properties.ClaudeCodeProperties;
 import com.morningstar.dev.properties.SandboxProperties;
 import com.morningstar.dev.properties.SonarqubeProperties;
@@ -25,19 +26,21 @@ public class StartAction extends AbstractAction {
     private final ClaudeCodeProperties claudeCodeProperties;
     private final SonarqubeProperties sonarqubeProperties;
     private final RunMapper runMapper;
+    private final CommonSteps commonSteps;
 
     public StartAction(StateMachineService stateMachineService, ActionAttemptMapper actionAttemptMapper,
                        ProcessUtil processUtil,
                        SandboxProperties sandboxProperties,
                        ClaudeCodeProperties claudeCodeProperties,
                        SonarqubeProperties sonarqubeProperties,
-                       RunMapper runMapper) {
+                       RunMapper runMapper, CommonSteps commonSteps) {
         super(stateMachineService, actionAttemptMapper, Event.START_SUCCEEDED, Event.START_FAILED);
         this.processUtil = processUtil;
         this.sandboxProperties = sandboxProperties;
         this.claudeCodeProperties = claudeCodeProperties;
         this.sonarqubeProperties = sonarqubeProperties;
         this.runMapper = runMapper;
+        this.commonSteps = commonSteps;
     }
 
     @Override
@@ -47,9 +50,9 @@ public class StartAction extends AbstractAction {
 
     @Override
     protected StartResult doExecute(UUID runId) {
-        UUID projectId = runMapper.selectById(runId).getProjectId();
-        String volumeName = sandboxProperties.getVolumeNamePrefix() + projectId;
-        String containerName = sandboxProperties.getContainerNamePrefix() + runId;
+        Run run = runMapper.selectById(runId);
+        String volumeName = commonSteps.getVolumeName(run);
+        String containerName = commonSteps.getContainerName(run);
 
         try {
             processUtil.run("docker", "volume", "create", volumeName);

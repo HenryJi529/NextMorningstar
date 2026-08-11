@@ -28,7 +28,7 @@ public class ScannedTrigger implements Trigger {
         }
         ActionAttempt currentActionAttempt = actionAttemptMapper.selectLatestActionAttempt(event.getRunId(), Action.Type.SCAN);
         ScanResult scanResult = (ScanResult) currentActionAttempt.getResult();
-        if (scanResult.getSonarIssueNum() + scanResult.getAiIssueNum() == 0) {
+        if (scanResult.getScannedSonarIssueNum() + scanResult.getScannedAiIssueNum() == 0) {
             stateMachineService.sendEvent(event.getRunId(), Event.CLEAN);
         } else {
             stateMachineService.sendEvent(event.getRunId(), Event.FIX);
