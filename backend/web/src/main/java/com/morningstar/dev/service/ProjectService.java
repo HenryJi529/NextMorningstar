@@ -14,7 +14,7 @@ public interface ProjectService {
 
     void deleteProject(UUID projectId, UUID adminId);
 
-    Project getProjectById(UUID projectId, UUID adminId);
+    Project getProjectById(UUID projectId);
 
-    List<Project> getAllProjectByAdminId(UUID adminId);
+    List<Project> getAllProject();
 }

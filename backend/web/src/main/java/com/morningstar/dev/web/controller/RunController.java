@@ -27,7 +27,7 @@ public class RunController {
     @Operation(summary = "获取任务")
     @GetMapping("/{id}")
     public R<Run> getById(@PathVariable UUID id) {
-        return R.ok(runService.getRun(id, AuthUtil.getUserId()));
+        return R.ok(runService.getRun(id));
     }
 
     @Operation(summary = "取消任务")

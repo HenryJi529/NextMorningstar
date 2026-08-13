@@ -88,7 +88,7 @@
 | 12 | **仓库授权(双 token)** ⭐ | **bot token(`repo write`)通过 git `http.extraHeader` 传入临时 alpine/git 容器**(日常 git 凭证,不落盘);**admin token 仅"加 collaborator"瞬间用、用完即弃**。项目经理启用项目时自动给 bot 加 write、禁用移除。凭证仅存在临时容器内、用完即毁 → 爆炸半径最小 |
 | 13 | **git 归临时容器** ⭐ | git clone/commit/push/reset 由后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器执行(**镜像名写死**,不进配置),用完即毁。clone/fetch URL 一律**无凭证形式**,token 走 `-c http.extraHeader` 当次生效,**不落 volume 里 `.git/config`**。代码互通靠 named volume(fix-runtime-container 决策 9)。**prompt injection 偷不到 git 凭证**。MVP 不处理子模块(clone 无 `--recursive`,决策 22) |
 | 14 | ~~失败 issue 跨 run 记忆~~ → 决策 28 | 不做跨 run 排除——当前阶段应先验证修复能力而非回避困难 issue |
-| 15 | **资源池 + 夜间窗口** ⭐ | 并发度可配(`schedule.max-concurrency`,**默认 2**——Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;Scan/Verify 才 CPU 密集且短)。夜间 21:00 自动创建 PENDING run,次日 **6:00 清晨清理**:`cancelOvernightRuns` 取消所有非终态活跃 run(PENDING 直接标 CANCELED,其余走 `requestCancel`)。另每 5min 超时检测(120min 无响应,8/10 调整)+ 每 30s 分发调度 |
+| 15 | **资源池 + 夜间窗口** ⭐ | 并发度可配(`schedule.max-concurrency`,**默认 2**——Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;Scan/Verify 才 CPU 密集且短)。夜间 21:00 自动创建 PENDING run,次日 **6:00 清晨清理**:`cancelOvernightRuns` 取消所有非终态活跃 run(PENDING 直接标 CANCELED,其余走 `requestCancel`)。另每 5min 超时检测(120min 无响应,8/10 调整;8/13 修复:查询加 `ne(state, CLEANED)` 排除终态,避免 CLEANED 的 run 走完后 updateTime 不再变被误判超时)+ 每 30s 分发调度 |
 | 16 | **AI 诊断报告(commit message)**(8/10 改,8/13 更新) | Claude 基于 **issue 字段**(title/metadata，不分 source)用**中文**生成 commit message，结构 `{subject, body}`——subject 一句话总结、body 修复思路与改动。AI 通过 `--json-schema` + `--output-format json` 输出结构化 JSON，后端从 `structured_output` 拆封 → `objectMapper` 反序列化 → 拼 `subject\n\nbody` 给 `git commit -m`、结构化对象回写 `dev_issue.commit_message`(供记录/诊断)。**弃用外部模板文件**(`ai-report-template.md`)，模板内嵌代码；去掉 verification/risk（验证归 VerifyAction、risk 不可靠且 preemptive） |
 | 17 | **容器操作走命令行 docker** ⭐ | `StartAction`/`CleanAction`/git 操作均用 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`/`docker run --rm alpine/git`),不引 docker-java 库,共用 `util/ProcessUtil`(8/6 已实现:stderr 独立线程防死锁、stdout 仅剥末尾换行、静态嵌套异常带完整 stderr、6 单测)。后端纯编排,不碰文件系统 |
 | 18 | **命名确定性 + 失败语义**(8/6 定) | 容器名 `morningstar_dev_sandbox_<runId>`、volume 名 `morningstar_dev_repo_<projectId>` 均由 ID 确定性推导(前缀在 `sandbox.container-name-prefix`/`volume-name-prefix`)→ **不记 `dev_run.container_id`**(DB 冗余会漂移,docker 才是真源)。Action 失败统一 catch `ProcessExecutionException` → FAILED 结果(stderr 落 `action_attempt.result`);**不裸抛**(`AbstractAction` 原无兜底,裸抛 = attempt 停 RUNNING + run 卡中间态占并发槽等 120min 超时;**8/11 决策 37 已补 `execute()` 全局 `catch(Exception)` 兜底**,此处主动 catch 转为"第一层带语义 message"——兜底接意外异常,主动 catch 接已知失败带可读 message)。CleanAction 幂等:"No such container" 视为成功。`FailedTrigger` 破环:FAILED 来自 CLEANING 不再发 CLEAN(否则 CLEAN 失败 → FAILED → CLEAN 无限循环刷 attempt 表);START 无重试,START_FAILED → FAILED → CLEAN(幂等)→ CLEANED 干净终态 |
@@ -107,10 +107,12 @@
 | 31 | **issue 状态机简化**(8/10 定) | `Issue.Status` 删 `FAILED`。fail-fast 下 issue 只走 `SELECTED → FIXED → VERIFIED`，失败一律整轮回 `SELECTED`(不标 FAILED)；`ACCEPTED`/`REJECTED` 预留 SUBMIT 后终态。verify 同 fix 一样 fail-fast：验不过直接抛异常整轮回退，不逐条标 FAILED。永不做跨 run 排除(强化决策 28) |
 | 32 | **FixAction 无 per-action 超时**(8/10 定) | 砍掉单 issue `--max-turns` + 整 run wall-clock + CancelTracker（原 claude-issue-fix design 决策 3）。复用全局 `CronTask.cancelTimeoutRuns`(120min + 每 5min 检测)兜底卡死。catch 只兜 `ProcessExecutionException`(+ FixAction 的 `JsonProcessingException`)，不补 `DataAccessException`(DB 失败概率极低，靠 CronTask) |
 | 33 | **FixResult 双计数**(8/10 定) | `FixResult` 记 `fixedSonarIssueNum`/`fixedAiIssueNum`(非单一 `fixedIssueNum`)。失败时 message 带卡住的 issue + 已修双计数，便于诊断卡在哪种 source |
-| 34 | **PR 状态反馈(submit 后续管理)**(8/10 定) | 定时任务(建议每 5min)轮询 `prId` 非空 + `prStatus=OPEN` 的 run 的 Gitea PR 状态:`merged` → 本 run 全 issue `ACCEPTED` + `prStatus=MERGED`;`closed&!merged` → 全 `REJECTED` + `CLOSED`;`open` → 续轮询,达终态即停。PR 整体映射不做 issue 级部分。`Run` 新增 `prStatus`(OPEN/MERGED/CLOSED,与 `prId` 配套),**不扩 `state`**(CLEANED 终态)不扩 `status`(执行观测)。兑现 `ACCEPTED`/`REJECTED` 终态(dev-plan 决策 31 删 FAILED 时预留)。见 pr-status-feedback change |
+| 34 | **PR 状态反馈(submit 后续管理)**(8/10 定,8/13 已实现) | 定时任务(`sync-pr-status-cron`,每 5min)轮询 `prId` 非空 + `prStatus=OPEN` 的 run 的 Gitea PR 状态:`merged` → 本 run `VERIFIED` issue `ACCEPTED` + `prStatus=MERGED`;`closed&!merged` → `REJECTED` + `CLOSED`;`open` → 续轮询,达终态即停。PR 整体映射不做 issue 级部分。`Run` 新增 `prStatus`(OPEN/MERGED/CLOSED,与 `prId` 配套),**不扩 `state`**(CLEANED 终态)不扩 `status`(执行观测)。兑现 `ACCEPTED`/`REJECTED` 终态(dev-plan 决策 31 删 FAILED 时预留)。`syncPrStatus(runId)` 抽成 service 方法:cron 遍历调用 + `getRun` 详情实时同步。见 pr-status-feedback change |
 | 35 | **severity scope 分通道**(8/11 定,8/12 更新) | SonarQube 和 AI 通道**各自独立**的 in-scope severity 过滤——`InScopeSeverities` 独立配置类（`morningstar.app.dev.in-scope-severities.sonar/ai`），Sonar 保留 `[BLOCKER,HIGH,MEDIUM]`，AI 加 `LOW`（AI 识别更精准、误报率低）。用 **set 成员判定**（非 floor/threshold）免给 severity 排序 |
 | 36 | **CommonSteps 共享件抽取**(8/11 定) | 跨 Scan/Fix/Verify 的共享步骤抽到 `CommonSteps`：`getContainerName`/`getVolumeName`（命名确定性）、`getHeadCommitSha`（Fix/Restore/Sync 共用取证 commitSha）、`getSonarProjectKey`（从 Project 解析 `owner:repo`，不再拼 runId）、`mavenBuild`/`sonarScan`（scan+verify 共用，sonarScan 返回 in-scope 过滤后结果）、`runClaude(ClaudeInput, Run, Class<T>)`（scan/fix/verify 共用，内含 `--json-schema` + `--output-format json` + `structured_output` 拆封，泛型输出参数决定反序列化类型）。定位"共享步骤枢纽"，方法参数避免裸 String |
 | 37 | **AbstractAction 兜底 try-catch**(8/11 定) | `execute()` 把 `doExecute(runId)` 包 `catch(Exception)`：任意意外异常（SonarUtil 返回 null→NPE、强转失败、拆箱等）转 FAILED result，走既有"标 attempt FAILED + sendEvent(failureEvent)"路径，**不再卡死**。动机：原 doExecute 未捕获异常冒泡（AbstractAction 无兜底）→ attempt 停 RUNNING + 状态机收不到失败事件 → run 静默挂死等 120min 超时。`catch Exception` 不 catch `Throwable`（Error 让进程崩）；message 用 `e.toString()`（兜无消息 NPE）；`log.error(...,e)` 留完整栈。SonarUtil 的 null 返回暂不改（兜底已盖住风险） |
+| 38 | **读公开、写私有权限模型**(8/13 定) | 读接口去 `adminId` 校验、登录即可看:配置参考页要看别人怎么填、仪表盘要看所有 run——`getProjectById(id)`/`getRun(id)` 去掉 adminId 参数,`list` 改 `getAllProject()` 返回所有项目(不过滤 enabled)。写接口保留 `adminId`:`create`/`update`/`delete`/`trigger`/`cancel` 均校验。连锁:`deleteProject` 原借 `getProjectById` 校验,去校验后需**显式补** adminId 判断;`cancelRun` 同理(原借 `getRun`)。`deleteProject` 加活跃 run 守卫:`ne(state, CLEANED)` 有非终态 run 即拒绝删除(响应码 `DEV_PROJECT_HAS_ACTIVE_RUN`)——真终态只有 CLEANED(FAILED/RESTORED 还有出边) |
+| 39 | **失败分支清理决定不做**(8/13 定) | ~~失败/取消/PR 关闭时删除修复分支~~ → 删除分支是危险操作(不可逆、误删风险)且越界(分支管理是仓库所有者的事),平台只观测不删除;残留 `fix/<runId>` 分支名唯一不冲突,由人工在 Gitea 手动清理。见 gitea-pr-submit change |
 
 ---
 
@@ -305,6 +307,7 @@ morningstar.app.dev:
     dispatch-cron: "*/30 * * * * ?"      # 每 30s 从 PENDING 队列分发
     timeout-cron: "0 */5 * * * ?"        # 每 5min 超时检测
     cleanup-cron: "0 0 6 * * ?"          # 次日 6:00 清晨清理
+    sync-pr-status-cron: "0 */5 * * * ?" # 每 5min 同步 PR 状态(合并/拒绝结果回写)
     run-timeout-minutes: 120             # 超过 120min 无响应视为超时(8/10 调整)
     max-concurrency: 2                   # 并发槽位数(Fix 是 I/O，2 核可并发 2-3)
 ```
@@ -372,13 +375,13 @@ morningstar.app.dev:
 - [x] 任一 issue 未关闭 / 有回归 / AI 判定 false → 整轮 RESTORING
 - **验收**:8/12 端到端实测通过，两道防线均可正确抓到回归 ✅
 
-### 阶段 7 · SubmitAction + PR 状态反馈 ⭐(~10h)— *8/12–8/13*
+### 阶段 7 · SubmitAction + PR 状态反馈 ⭐(~10h)— *8/12–8/13* ✅ 全部完成
 - [x] 后端通过临时 alpine/git 容器推修复分支 → 调 Gitea API 开 PR（8/13 实测通过）
 - [x] 统一格式诊断报告作为 PR body：每条 issue 分 Sonar/AI 分支——title + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description，SonarQube 对用户透明
-- [ ] PR 状态反馈：`Run.prStatus`(OPEN/MERGED/CLOSED)，定时任务(每 5min)轮询 Gitea PR → merged 全 issue ACCEPTED / closed 全 REJECTED，达终态即停（决策 34 / pr-status-feedback，未实现）
-- **验收**:✅ Gitea 出现含统一格式诊断报告的 PR（8/13 端到端实测）；merge/关闭后 issue 落 ACCEPTED/REJECTED 待 PR 状态反馈实现
+- [x] PR 状态反馈：`Run.prStatus`(OPEN/MERGED/CLOSED)，定时任务(每 5min)轮询 Gitea PR → merged 全 VERIFIED issue ACCEPTED / closed 全 REJECTED，达终态即停；`syncPrStatus(runId)` 抽成 service 方法，cron 遍历 + `getRun` 详情实时同步（决策 34 / pr-status-feedback，8/13 实测通过）
+- **验收**:✅ Gitea 出现含统一格式诊断报告的 PR（8/13 端到端实测）；✅ PR 状态反馈实测通过（merge/close 回写 issue 终态 + run.prStatus）
 
-> 🎉 **后端端到端闭环已于 8/13 跑通**:Scan→Fix→Verify→Submit 全链路实测通过，Gitea 正确 PR 落成。剩 PR 状态反馈 + 前端。
+> 🎉 **后端端到端闭环已于 8/13 跑通**:Scan→Fix→Verify→Submit→PR 状态反馈 全链路实测通过。剩前端。
 
 ### 阶段 8 · 前端(~10h)— *8/13*
 - [ ] 复用 `frontend/` + system 模块认证
@@ -413,7 +416,7 @@ morningstar.app.dev:
 | 8/10 | 一 | 10h ⭐ ✅ | FixAction 统一 prompt + 联调 | 决策(状态机简化删 FAILED/双计数/砍 per-action 超时/commit_message {subject,body} 弃外部模板)+ 基础设施(FixResult/CommitMessage/TypeHandler/骨架/RestoreAction issue 还原);C2-D7 核心循环全部完成 ✅ |
 | 8/11 | 二 | 5h ⭐ ✅ | VerifyAction 两道防线 | ✅ ①SonarQube 重扫（数量对比回归检测）②Claude review（不喂 diff+commitMessage，逐条判定）+ 横切基建（CommonSteps 抽取 / AbstractAction 兜底 / InScopeSeverities 分通道）；8/12 实测端到端通过 ✅ |
 | 8/12 | 三 | 5h ✅ | verify 端到端验证 + 文档同步 | ✅ Scan→Fix→Verify 全链路实测通过；dev-plan/openspec 文档同步 |
-| 8/13 | 四 | 5h ✅ | SubmitAction 实现 + 端到端 PR 验证 | ✅ 推分支 + 开 PR + 诊断报告(PR body)，Gitea 正确 PR 落成；PR 状态反馈、前端未做 |
+| 8/13 | 四 | 5h ✅ | SubmitAction + PR 状态反馈 + 权限模型 | ✅ 推分支 + 开 PR + 诊断报告(PR body)，Gitea 正确 PR 落成；✅ PR 状态反馈实测通过；✅ 读公开写私有权限模型 + deleteProject 活跃 run 守卫；失败分支清理决定不做 |
 | 8/14 | 五 | 5h | 联调 + demo 真跑 | demo 仓库端到端 → **Gitea PR 闭环跑通** 🎉 |
 | 8/15 | 六 | 10h | 前端打磨 + 交付 | 联调后 UI 收尾 + 录屏 + 材料 |
 
@@ -475,7 +478,7 @@ claude --dangerously-skip-permissions --print "使用 sonarqube mcp 查看 issue
 - [x] 用 **OpenSpec** 把阶段 0–9 拆成可追踪 change(已建 10 个)
 - [x] 提供 mcp.json(sonarqube MCP 配置,占位符版)已打进镜像;真 token 运行时 env(`SONARQUBE_TOKEN`)注入
 - [x] 提供 settings.json(deepseek 连接,占位符版)已打进镜像;真 key 运行时 env(`MODEL_API_KEY`)注入
-- [ ] 提供 **Gitea bot 账号 + 双 token**(admin 授权 + bot write)
+- [x] 提供 **Gitea bot 账号 + 双 token**(admin 授权 + bot write)（SubmitAction 推分支实测用 bot token 成功）
 - [ ] 提供 demo 仓库(或由我生成脚手架 + 埋漏洞)
 - [x] AI 诊断报告通过 `commit_message` 生成(决策 16:{subject,body} 内嵌模板，弃 ai-report-template.md，中文)
 - [x] 资源池 + 夜间窗口(决策 15,并发默认 2、6:00 清晨清理)

@@ -134,7 +134,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 **issue 状态机也因此精简到三态。** 既然整轮回退、不做 issue 级状态机，issue 的 `Status` 就只剩 `SELECTED → FIXED → VERIFIED` 的流转——任一阶段失败（fix 或 verify）都整轮回 `SELECTED`，不标 `FAILED`。fail-fast 下 `FAILED` 永无写入点（失败抛异常、不落状态），是死状态，直接从枚举删除。`ACCEPTED`/`REJECTED` 预留给 SUBMIT 后的人工终态。少一个永远不会出现的状态，枚举即文档——读代码的人不会困惑"这个状态什么时候出现"。
 
-**PR 结果也走字段，不进状态机。** run 提交 PR 后到 `CLEANED` 终态，但 PR 还在 Gitea 等人评审——合并或拒绝是几小时甚至几天后的事。这个"迟到的观测"不塞进状态机（`CLEANED` 是终态，后面再加 `MERGED`/`REJECTED` 会污染终态语义），而是用 `Run.prStatus` 字段（OPEN/MERGED/CLOSED）记录，定时任务轮询 Gitea API 回写；issue 的 `ACCEPTED`/`REJECTED` 终态也在此落定。观测归观测、流程归流程——状态机只管"下一步干什么"，不管"外部世界后来怎么了"。
+**PR 结果也走字段，不进状态机。** run 提交 PR 后到 `CLEANED` 终态，但 PR 还在 Gitea 等人评审——合并或拒绝是几小时甚至几天后的事。这个"迟到的观测"不塞进状态机（`CLEANED` 是终态，后面再加 `MERGED`/`REJECTED` 会污染终态语义），而是用 `Run.prStatus` 字段（OPEN/MERGED/CLOSED）记录，定时任务轮询 Gitea API 回写；issue 的 `ACCEPTED`/`REJECTED` 终态也在此落定。观测归观测、流程归流程——状态机只管"下一步干什么"，不管"外部世界后来怎么了"。（8/13 已实现：`syncPrStatus(runId)` 抽成 service 方法，`sync-pr-status-cron` 定时遍历 + `getRun` 详情实时同步，回写 `ACCEPTED`/`REJECTED`。）
 
 ---
 
@@ -232,3 +232,5 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | Gitea 双视角地址 | dev-plan 决策 19 | 容器内外看不同 URL |
 | CleanAction 破环 | dev-plan 决策 18 | 防止 CLEAN 失败→无限循环 |
 | 双 token 最小权限 | dev-plan 决策 12 | admin 和 bot 分离，爆炸半径最小 |
+| 读公开、写私有权限模型 | dev-plan 决策 38 | 读接口去 adminId 公开（配置参考 + 面板），写接口保留；deleteProject 活跃 run 守卫 |
+| 失败分支清理决定不做 | dev-plan 决策 39 | 删分支危险且越界，平台只观测不删除，残留人工清理 |

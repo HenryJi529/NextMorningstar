@@ -34,7 +34,7 @@ public class ProjectController {
     @Operation(summary = "获取项目(根据id)")
     @GetMapping("/{id}")
     public R<Project> getById(@PathVariable UUID id) {
-        return R.ok(projectService.getProjectById(id, AuthUtil.getUserId()));
+        return R.ok(projectService.getProjectById(id));
     }
 
     @Operation(summary = "更新项目")
@@ -54,9 +54,9 @@ public class ProjectController {
         return R.ok();
     }
 
-    @Operation(summary = "获取当前管理员的所有项目")
+    @Operation(summary = "获取所有项目")
     @GetMapping("")
-    public R<List<Project>> list() {
-        return R.ok(projectService.getAllProjectByAdminId(AuthUtil.getUserId()));
+    public R<List<Project>> listAll() {
+        return R.ok(projectService.getAllProject());
     }
 }

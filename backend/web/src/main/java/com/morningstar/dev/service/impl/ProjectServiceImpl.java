@@ -2,11 +2,14 @@ package com.morningstar.dev.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
+import com.morningstar.dev.dao.mapper.RunMapper;
 import com.morningstar.dev.pojo.po.Project;
+import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.pojo.vo.UpdateProjectRequestVo;
 import com.morningstar.dev.properties.MaxIssuesPerRunProperties;
 import com.morningstar.dev.service.ProjectService;
+import com.morningstar.dev.statemachine.State;
 import com.morningstar.dev.statemachine.action.CommonSteps;
 import com.morningstar.dev.util.GiteaUtil;
 import com.morningstar.dev.util.SonarUtil;
@@ -27,6 +30,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
     private final ProjectMapper projectMapper;
+    private final RunMapper runMapper;
     private final GiteaUtil giteaUtil;
     private final MaxIssuesPerRunProperties maxIssuesPerRunProperties;
     private final SonarUtil sonarUtil;
@@ -93,7 +97,21 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public void deleteProject(UUID projectId, UUID adminId) {
-        Project dbProject = getProjectById(projectId, adminId);
+        Project dbProject = getProjectById(projectId);
+        if (!dbProject.getAdminId().equals(adminId)) {
+            throw new BaseException(ResponseCode.DEV_PROJECT_ACCESS_DENIED, projectId);
+        }
+
+        // 确保没有正在运行的 run
+        long activeRunCount = runMapper.selectCount(
+                new LambdaQueryWrapper<Run>()
+                        .eq(Run::getProjectId, projectId)
+                        .ne(Run::getState, State.CLEANED)
+        );
+        if (activeRunCount > 0) {
+            throw new BaseException(ResponseCode.DEV_PROJECT_HAS_ACTIVE_RUN, projectId);
+        }
+
         projectMapper.deleteById(projectId);
 
         // 删除 Bot 的仓库权限
@@ -110,21 +128,16 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Project getProjectById(UUID projectId, UUID adminId) {
+    public Project getProjectById(UUID projectId) {
         Project dbProject = projectMapper.selectById(projectId);
         if (dbProject == null) {
             throw new BaseException(ResponseCode.DEV_PROJECT_NOT_FOUND, projectId);
-        }
-        if (!dbProject.getAdminId().equals(adminId)) {
-            throw new BaseException(ResponseCode.DEV_PROJECT_ACCESS_DENIED, projectId);
         }
         return dbProject;
     }
 
     @Override
-    public List<Project> getAllProjectByAdminId(UUID adminId) {
-        return projectMapper.selectList(
-                new LambdaQueryWrapper<Project>().eq(Project::getAdminId, adminId)
-        );
+    public List<Project> getAllProject() {
+        return projectMapper.selectList(null);
     }
 }

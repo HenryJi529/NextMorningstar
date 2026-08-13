@@ -62,7 +62,8 @@ public class RestoreAction extends AbstractAction {
 
         try {
             // 还原 issues
-            issueMapper.update(null,
+            issueMapper.update(
+                    Issue.builder().build(), // 空壳只为激活 updateTime 填充
                     new LambdaUpdateWrapper<Issue>()
                             .eq(Issue::getRunId, runId)
                             .in(Issue::getStatus, Issue.Status.FIXED, Issue.Status.VERIFIED)

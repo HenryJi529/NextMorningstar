@@ -6,15 +6,15 @@
 
 ## 2. 定时轮询任务
 
-- [ ] 2.1 新增 cron 配置 `pr-feedback-cron`（建议每 5min）。
-- [ ] 2.2 扫描 `prId` 非空 + `prStatus=OPEN` 的 run（不限 `state`，CLEANED 后仍轮询）。
-- [ ] 2.3 调 Gitea API `GET /repos/{owner}/{repo}/pulls/{prId}` 取 `merged`/`state`。
+- [x] 2.1 新增 cron 配置 `sync-pr-status-cron`（每 5min）。
+- [x] 2.2 扫描 `prId` 非空 + `prStatus=OPEN` 的 run（不限 `state`，CLEANED 后仍轮询）。
+- [x] 2.3 调 Gitea API `GET /repos/{owner}/{repo}/pulls/{prId}` 取 `merged`/`state`（`GiteaUtil.getPullRequest`）。
 
 ## 3. 状态回写
 
-- [ ] 3.1 `merged=true` → 本 run 全部 issue `ACCEPTED`，`run.prStatus=MERGED`。
-- [ ] 3.2 `state=closed & merged=false` → 全部 issue `REJECTED`，`run.prStatus=CLOSED`。
-- [ ] 3.3 `state=open` → 不变，下周期续轮询。
+- [x] 3.1 `merged=true` → 本 run 全部 `VERIFIED` issue `ACCEPTED`，`run.prStatus=MERGED`。
+- [x] 3.2 `state=closed & merged=false` → 全部 `VERIFIED` issue `REJECTED`，`run.prStatus=CLOSED`。
+- [x] 3.3 `state=open` → 不变，下周期续轮询。
 
 ## 4. 前端
 
@@ -22,7 +22,7 @@
 
 ## 5. 验证
 
-- [ ] 5.1 提交 PR 后人工 merge → issue 全 ACCEPTED、run.prStatus=MERGED、停止轮询。
-- [ ] 5.2 关闭 PR（不 merge）→ issue 全 REJECTED、run.prStatus=CLOSED。
-- [ ] 5.3 PR 保持 open → 不变，持续轮询。
-- [ ] 5.4 同一 run 重复轮询同状态 → 无副作用（幂等）。
+- [x] 5.1 提交 PR 后人工 merge → issue 全 ACCEPTED、run.prStatus=MERGED、停止轮询（8/13 实测）。
+- [x] 5.2 关闭 PR（不 merge）→ issue 全 REJECTED、run.prStatus=CLOSED（8/13 实测）。
+- [x] 5.3 PR 保持 open → 不变，持续轮询（8/14 实测）。
+- [x] 5.4 同一 run 重复轮询同状态 → 无副作用（幂等：OPEN 守卫 + 重复 update 无副作用）。

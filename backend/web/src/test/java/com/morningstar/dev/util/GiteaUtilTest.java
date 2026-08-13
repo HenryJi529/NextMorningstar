@@ -41,4 +41,10 @@ class GiteaUtilTest {
         giteaUtil.removeCollaborator(repoLink);
         log.info("remove collaborator");
     }
+
+    @Test
+    void testGetPullRequest() {
+        GiteaUtil.PullRequest pullRequest = giteaUtil.getPullRequest(repoLink, 1);
+        log.info("pullRequest: {}", pullRequest);
+    }
 }

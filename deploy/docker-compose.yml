@@ -313,7 +313,7 @@ services:
       - njcb-union-redis
       - njcb-union-mysql
   gitea:
-    image: gitea/gitea:latest
+    image: gitea/gitea:1.27
     container_name: ${PROJECT_NAME}_gitea
     environment:
       - USER_UID=1000

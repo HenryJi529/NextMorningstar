@@ -1,7 +1,9 @@
 package com.morningstar.dev.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.morningstar.dev.pojo.bo.RepoIdentity;
 import com.morningstar.dev.properties.GiteaProperties;
 import com.morningstar.infra.exception.BaseException;
@@ -132,11 +134,54 @@ public class GiteaUtil {
         );
     }
 
+    public PullRequest getPullRequest(String link, Integer prId) {
+        RepoIdentity id = parseRepoIdentity(link);
+        try {
+            return restTemplate.exchange(
+                    String.format("%s/api/v1/repos/%s/%s/pulls/%d",
+                            giteaProperties.getBackendOrigin(), id.getOwnerName(), id.getRepoName(), prId),
+                    HttpMethod.GET,
+                    new HttpEntity<>(getBotAuthHeaders()),
+                    PullRequest.class
+            ).getBody();
+        } catch (HttpClientErrorException.NotFound e) {
+            return null;
+        }
+    }
+
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PullRequest {
         private Integer number;
         @JsonProperty("html_url")
         private String htmlUrl;
+        private Boolean merged;
+        private State state;
+
+        public enum State {
+            OPEN("open"),
+            CLOSED("closed");
+
+            private final String value;
+
+            State(String value) {
+                this.value = value;
+            }
+
+            @JsonCreator
+            public static State fromValue(String value) {
+                for (State s : values()) {
+                    if (s.value.equals(value)) {
+                        return s;
+                    }
+                }
+                return null;
+            }
+
+            @JsonValue
+            public String getValue() {
+                return value;
+            }
+        }
     }
 }

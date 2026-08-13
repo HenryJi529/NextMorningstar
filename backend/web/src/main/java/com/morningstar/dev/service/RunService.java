@@ -9,7 +9,9 @@ public interface RunService {
 
     Run triggerRun(UUID projectId, UUID adminId);
 
-    Run getRun(UUID runId, UUID adminId);
+    Run getRun(UUID runId);
 
     void cancelRun(UUID runId, UUID adminId);
+
+    Run syncPrStatus(UUID runId);
 }

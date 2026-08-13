@@ -98,6 +98,7 @@ public class CronTask {
                 new LambdaQueryWrapper<Run>()
                         .ge(Run::getCreateTime, LocalDateTime.now().minusHours(24))
                         .lt(Run::getUpdateTime, deadline)
+                        .ne(Run::getState, State.CLEANED)
         );
 
         for (Run run : stuckRuns) {
@@ -135,4 +136,18 @@ public class CronTask {
         }
     }
 
+    /**
+     * 同步 PR 状态：轮询所有 OPEN 的 PR，回写合并/拒绝结果
+     */
+    @Scheduled(cron = "${morningstar.app.dev.schedule.sync-pr-status-cron}")
+    public void syncPrStatus() {
+        List<Run> openPrRuns = runMapper.selectList(
+                new LambdaQueryWrapper<Run>()
+                        .isNotNull(Run::getPrId)
+                        .eq(Run::getPrStatus, Run.PrStatus.OPEN)
+        );
+        for (Run run : openPrRuns) {
+            runService.syncPrStatus(run.getId());
+        }
+    }
 }

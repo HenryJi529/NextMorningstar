@@ -5,9 +5,9 @@
 
 ## 2. 无人值守
 
-- [ ] 2.1 夜间定时(21:00)触发,按 `runtime.concurrency`(默认 2)并发执行。
-- [ ] 2.2 单 run 失败不影响其他;池满时排队。
-- [ ] 2.3 `cleanup-cron`(06:00)对在跑的 run 触发 cancel(走取消流程 + 删修复分支),未启动的标 `SKIPPED`。
+- [x] 2.1 夜间定时(21:00)触发,按 `schedule.max-concurrency`(默认 2)并发执行（`nightlyCreateRuns` + `dispatchPendingRuns`，阶段 0 已实现）。
+- [x] 2.2 单 run 失败不影响其他;池满时排队（并发槽位 + PENDING 队列，阶段 0 已实现）。
+- [x] 2.3 `cleanup-cron`(06:00)对在跑的 run 触发 cancel（`cancelOvernightRuns`：PENDING 直接标 CANCELED，其余走 `requestCancel`；删修复分支决定不做，见决策 39）。
 
 ## 3. 边界
 
