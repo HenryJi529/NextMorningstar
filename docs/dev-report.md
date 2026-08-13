@@ -82,7 +82,7 @@ VerifyAction:
 
 ### 3.4 SonarQube 对用户透明
 
-issue 入库后不再区分来源。PR 评论统一格式：title + 三维 severity + description + suggestion + codeSnippet。用户看不到 SonarQube 原始 API 数据，只看到结构化的中文诊断报告。
+issue 入库后不再区分来源。PR body 统一格式：title + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description。用户看不到 SonarQube 原始 API 数据，只看到结构化的中文诊断报告。
 
 ---
 
@@ -103,7 +103,7 @@ maintainability_severity VARCHAR(16)    -- CODE_SMELL(代码异味)
 
 **三维 severity 独立**：SonarQube 的三质量维度（Reliability/Security/Maintainability）各自独立评分。一个 issue 可以同时是 BLOCKER 级别的安全漏洞和 MEDIUM 级别的代码异味——这不是反规范化，是正确建模。
 
-**AiIssueType 分类体系**：21 种 AI 可识别的代码问题类型，分六大类（架构/逻辑/安全/可维护/性能/并发）+ OTHER 兜底。每个类型带中文描述，既是 AI prompt 里的分类指引，也是 PR 评论里的用户可读标签。
+**AiIssueType 分类体系**：21 种 AI 可识别的代码问题类型，分六大类（架构/逻辑/安全/可维护/性能/并发）+ OTHER 兜底。每个类型带中文描述，既是 AI prompt 里的分类指引，也是 PR 报告里的用户可读标签。
 
 **不做的事**：不加唯一约束——ScanAction 插入前删除本 run 旧数据，业务逻辑保证不重复。不设 `rule_key` 顶层列——对 AI Discovery 没用，对 SonarQube 存 metadata 里即可。
 
@@ -218,7 +218,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | 两道防线验证 | sonar-rescan-verify design 决策 1 | SonarQube 客观门槛 + Claude 语义判定 |
 | VerifyAction 不喂 diff + 砍 reason | sonar-rescan-verify design 决策 3/4 | Claude 自己读代码 + commitMessage 判思路，输出最小 `{verified}` |
 | Source 区分器 + 三维 severity | pipeline-foundation design 决策 1 | JSON 多态 metadata，B/S/M 三维独立 |
-| SonarQube 对用户透明 | gitea-pr-submit design 决策 2 | PR 评论统一格式，不区分来源 |
+| SonarQube 对用户透明 | gitea-pr-submit design 决策 2 | PR body 诊断报告，不区分来源 |
 | 整轮回退 vs 精准保留 | fix-runtime-container 决策 18 | 四组论据论证整轮回退是正确设计 |
 | `maxIssuesPerRun` 复杂度调杆 | dev-plan 决策 28 | Sonar/AI 分别配置，随机打乱截断，调参不动架构 |
 | ~~失败 issue 跨 run 记忆~~ | dev-plan 决策 14 → 28 | 永不做——先验证修复能力，不应回避困难 |

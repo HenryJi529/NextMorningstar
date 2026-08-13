@@ -8,8 +8,8 @@ morningstar:
   app:
     dev:
       max-issues-per-run:
-        sonar: 3
-        ai: 2
+        sonar: 1
+        ai: 1
       sonarqube:
         token: squ_582d6a8085c8faa67488b29d479b6e14028be4b3
         backend-origin: http://127.0.0.1:7002

@@ -138,6 +138,8 @@ public class ScanAction extends AbstractAction {
                         .suggestion(aiIssue.getSuggestion())
                         .filePath(aiIssue.getFilePath())
                         .codeSnippet(aiIssue.getCodeSnippet())
+                        .startLine(aiIssue.getStartLine())
+                        .endLine(aiIssue.getEndLine())
                         .type(aiIssue.getType())
                         .build()
                 )
@@ -172,6 +174,8 @@ public class ScanAction extends AbstractAction {
                         .suggestion(how_to_fix)
                         .filePath(filePath)
                         .codeSnippet(codeSnippet)
+                        .startLine(sonarIssue.getTextRange().getStartLine())
+                        .endLine(sonarIssue.getTextRange().getEndLine())
                         .issueKey(sonarIssue.getKey())
                         .ruleKey(sonarRule.getKey())
                         .build()
@@ -225,7 +229,7 @@ public class ScanAction extends AbstractAction {
 
     private String buildAiScanPrompt() {
         String typeRange = Arrays.stream(Issue.AiMetadata.Type.values())
-                .map(t -> "\t\t- " + t.name() + ": " + t.getDescription())
+                .map(t -> "\t\t- %s: %s(%s)".formatted(t.name(), t.getName(), t.getDescription()))
                 .collect(Collectors.joining("\n"));
         String severityRange = Arrays.stream(Issue.Severity.values())
                 .map(Enum::name)
@@ -242,6 +246,8 @@ public class ScanAction extends AbstractAction {
                             "title": "请重构此方法，将其认知复杂度降低",
                             "filePath": "src/main/java/Foo.java",
                             "codeSnippet": "    return list(map(lambda item: MigrationScript(path=MIGRATION_DIR / item['name'], version=item['version'], description=item['description']), cursor.fetchall())))",
+                            "startLine": 10,
+                            "endLine": 20,
                             "type": "GOD_CLASS",
                             "effortInMinutes": 30,
                             "description": "...",
@@ -259,6 +265,12 @@ public class ScanAction extends AbstractAction {
                         - 字段含义: 文件的相对路径
                     - codeSnippet:
                         - 字段含义: 相关代码片段（能帮助理解上下文即可）
+                    - startLine:
+                        - 字段含义: 代码片段的起始行号
+                        - 取值要求: 必须用工具读取该文件，根据实际行号填写，禁止凭记忆估算
+                    - endLine:
+                        - 字段含义: 代码片段的结束行号
+                        - 取值要求: 必须用工具读取该文件，根据实际行号填写，禁止凭记忆估算
                     - type:
                         - 字段含义: 问题类型
                         - 取值范围:

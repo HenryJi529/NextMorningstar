@@ -1,8 +1,8 @@
 ## 1. 数据模型
 
-- [ ] 1.1 `Run` 新增 `prStatus` 字段（枚举 OPEN/MERGED/CLOSED）。
-- [ ] 1.2 `dev_run` 表新增 `pr_status` 列（DB 迁移，默认 OPEN）。
-- [ ] 1.3 SubmitAction 开 PR 成功回填 `prId` 时同步设 `run.prStatus=OPEN`。
+- [x] 1.1 `Run` 新增 `prStatus` 字段（枚举 OPEN/MERGED/CLOSED）。
+- [x] 1.2 `dev_run` 表新增 `pr_status` 列（`create.sql` 已含 `pr_status varchar(16)`）。
+- [x] 1.3 SubmitAction 开 PR 成功回填 `prId` 时同步设 `run.prStatus=OPEN`。
 
 ## 2. 定时轮询任务
 

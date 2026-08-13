@@ -1,9 +1,12 @@
 package com.morningstar.dev.util;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.morningstar.dev.pojo.bo.RepoIdentity;
 import com.morningstar.dev.properties.GiteaProperties;
 import com.morningstar.infra.exception.BaseException;
 import com.morningstar.infra.response.ResponseCode;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
@@ -35,20 +38,42 @@ public class GiteaUtil {
         return RepoIdentity.builder().ownerName(matcher.group(1)).repoName(matcher.group(2)).build();
     }
 
+    public String getCodeSnippetLink(String filePath, Integer startLine, Integer endLine, String projectLink, String commitSha) {
+        String fileLink = getFileLink(filePath, projectLink, commitSha);
+        return String.format("%s#L%d-L%d", fileLink, startLine, endLine);
+    }
+
+    public String getFileLink(String filePath, String projectLink, String commitSha) {
+        RepoIdentity repoIdentity = parseRepoIdentity(projectLink);
+        return String.format("%s/%s/%s/src/commit/%s/%s", giteaProperties.getBackendOrigin(), repoIdentity.getOwnerName(), repoIdentity.getRepoName(), commitSha, filePath);
+    }
+
+    public String getCommitLink(String projectLink, String commitSha) {
+        RepoIdentity repoIdentity = parseRepoIdentity(projectLink);
+        return String.format("%s/%s/%s/commit/%s", giteaProperties.getBackendOrigin(), repoIdentity.getOwnerName(), repoIdentity.getRepoName(), commitSha);
+    }
+
     public String formatRepoLink(String rawLink) {
         RepoIdentity repoIdentity = parseRepoIdentity(rawLink);
         return String.format("%s/%s/%s", giteaProperties.getBackendOrigin(), repoIdentity.getOwnerName(), repoIdentity.getRepoName());
     }
 
-    private String collaboratorUrl(String ownerName, String repoName) {
+    private String getCollaboratorUrl(String ownerName, String repoName) {
         return String.format("%s/api/v1/repos/%s/%s/collaborators/%s",
                 giteaProperties.getBackendOrigin(), ownerName, repoName, giteaProperties.getBotUsername());
     }
 
-    private HttpHeaders authHeaders() {
+    private HttpHeaders getAdminAuthHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "token " + giteaProperties.getAdminToken());
+        return headers;
+    }
+
+    private HttpHeaders getBotAuthHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "token " + giteaProperties.getBotToken());
         return headers;
     }
 
@@ -56,9 +81,9 @@ public class GiteaUtil {
         RepoIdentity id = parseRepoIdentity(link);
         try {
             restTemplate.exchange(
-                    collaboratorUrl(id.getOwnerName(), id.getRepoName()),
+                    getCollaboratorUrl(id.getOwnerName(), id.getRepoName()),
                     HttpMethod.GET,
-                    new HttpEntity<>(authHeaders()),
+                    new HttpEntity<>(getAdminAuthHeaders()),
                     Void.class
             );
             return true;
@@ -71,9 +96,9 @@ public class GiteaUtil {
         RepoIdentity id = parseRepoIdentity(link);
         try {
             restTemplate.exchange(
-                    collaboratorUrl(id.getOwnerName(), id.getRepoName()),
+                    getCollaboratorUrl(id.getOwnerName(), id.getRepoName()),
                     HttpMethod.PUT,
-                    new HttpEntity<>(Map.of("permission", "write"), authHeaders()),
+                    new HttpEntity<>(Map.of("permission", "write"), getAdminAuthHeaders()),
                     Void.class
             );
         } catch (HttpClientErrorException.NotFound e) {
@@ -85,11 +110,33 @@ public class GiteaUtil {
     public void removeCollaborator(String link) {
         RepoIdentity id = parseRepoIdentity(link);
         try {
-            restTemplate.exchange(collaboratorUrl(id.getOwnerName(), id.getRepoName()), HttpMethod.DELETE, new HttpEntity<>(authHeaders()), Void.class);
+            restTemplate.exchange(getCollaboratorUrl(id.getOwnerName(), id.getRepoName()), HttpMethod.DELETE, new HttpEntity<>(getAdminAuthHeaders()), Void.class);
         } catch (HttpClientErrorException.NotFound e) {
             throw new BaseException(ResponseCode.DEV_PROJECT_REPO_NOT_FOUND,
                     id.getOwnerName() + "/" + id.getRepoName());
         }
+    }
 
+    public PullRequest createPullRequest(String link,
+                                         String head, String base,
+                                         String title, String body) {
+        RepoIdentity id = parseRepoIdentity(link);
+        return restTemplate.postForObject(
+                String.format("%s/api/v1/repos/%s/%s/pulls",
+                        giteaProperties.getBackendOrigin(), id.getOwnerName(),
+                        id.getRepoName()),
+                new HttpEntity<>(Map.of(
+                        "head", head, "base", base, "title", title, "body", body),
+                        getBotAuthHeaders()),
+                PullRequest.class
+        );
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class PullRequest {
+        private Integer number;
+        @JsonProperty("html_url")
+        private String htmlUrl;
     }
 }

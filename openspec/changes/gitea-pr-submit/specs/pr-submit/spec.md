@@ -2,7 +2,7 @@
 
 ## 目的
 
-将已验证修复以 PR + AI 诊断报告交付人工评审,AI 无合并权,合并即清理分支。
+将已验证修复以 PR + AI 诊断报告(PR body)交付人工评审,AI 无合并权。
 
 ## 需求
 
@@ -11,14 +11,15 @@
 #### 场景:汇总修复开 PR
 
 - **WHEN** 运行完成所有已 `VERIFIED` 修复
-- **THEN** 推修复分支并向源分支开 PR，附统一格式诊断评论（title + 三维 severity + description + suggestion + codeSnippet）
+- **THEN** 推修复分支并向源分支开 PR，body 附统一格式诊断报告（Sonar/AI 分分支：title + 三维 severity + 代码片段链接 + 修改记录链接，AI 额外 type/description）
+- **AND** 回写 `Run.prId` + `prStatus=OPEN`
 
-#### 场景:合并后清理
+#### 场景:合并后清理（未实现）
 
 - **WHEN** PR 被合并或关闭
-- **THEN** 修复分支自动删除
+- **THEN** 修复分支自动删除（8/13 未实现：`createPullRequest` 未设 `delete_branch_after_merge`，留待后续）
 
-#### 场景:失败清理
+#### 场景:失败清理（未实现）
 
 - **WHEN** 运行失败或取消未成功提 PR
-- **THEN** 已创建的修复分支被主动删除
+- **THEN** 已创建的修复分支被主动删除（8/13 未实现：分支名带 runId 唯一、残留不堆积，非阻塞）

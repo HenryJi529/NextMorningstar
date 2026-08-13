@@ -15,6 +15,12 @@
           "codeSnippet": {
             "type": "string"
           },
+          "startLine": {
+            "type": "integer"
+          },
+          "endLine": {
+            "type": "integer"
+          },
           "type": {
             "type": "string",
             "enum": [
@@ -96,6 +102,9 @@
         "required": [
           "title",
           "filePath",
+          "codeSnippet",
+          "startLine",
+          "endLine",
           "description",
           "type"
         ]

@@ -16,6 +16,8 @@ public class AiIssue {
     private String title;
     private String filePath;
     private String codeSnippet;
+    private Integer startLine;
+    private Integer endLine;
     private Issue.AiMetadata.Type type;
     private Integer effortInMinutes;
     private String description;

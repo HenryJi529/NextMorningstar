@@ -5,9 +5,9 @@
 ## 变更内容
 
 - `SubmitAction`:临时 alpine/git 容器推修复分支 `fix/<runId>`(凭证 `http.extraHeader` 注入,用完即毁)。
-- 调 Gitea API 开 PR(目标=源分支),启用"合并后自动删除源分支"。
-- 统一格式 PR 评论:每条 issue 展示 title + 三维 severity + metadata.description + metadata.suggestion + codeSnippet，不依赖外部 SonarQube 链接。
-- 失败/取消/PR 关闭:主动删除修复分支(不留垃圾)。
+- 调 Gitea API 开 PR(head=`fix/<runId>`, base=源分支, title + body)。
+- 统一格式诊断报告直接作为 **PR body**（不再单独发 comment）:每条 issue 一段，Sonar/AI 分分支——title + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description。不依赖外部 SonarQube 链接。
+- ~~失败/取消/PR 关闭:主动删除修复分支~~ → 未实现，分支名带 runId 唯一、残留不堆积，非阻塞。
 
 ## 能力
 
@@ -17,4 +17,6 @@
 ## 影响范围
 
 - `SubmitAction`:替换 Mock。
-- `GiteaProperties`(publicOrigin/token/bot)。
+- `GiteaUtil`:新增 `createPullRequest` + `getCommitLink`/`getFileLink`/`getCodeSnippetLink` + `PullRequest` DTO。
+- `SubmitResult`:新增（prUrl/prTitle/prBody）。
+- `GiteaProperties` 复用 `backendOrigin`/`botToken`。

@@ -1,6 +1,7 @@
 package com.morningstar.dev.pojo.vo;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,10 +31,12 @@ public class CreateProjectRequestVo {
     @Schema(description = "项目描述")
     private String description;
 
-    @Schema(description = "单次最大Sonar问题数")
+    @Schema(description = "每轮修复的Sonar问题上限")
+    @Min(value = 1, message = "每轮修复的Sonar问题上限不能小于1")
     private Integer maxSonarIssuesPerRun;
 
-    @Schema(description = "单次最大AI问题数")
+    @Schema(description = "每轮修复的AI问题上限")
+    @Min(value = 1, message = "每轮修复的AI问题上限不能小于1")
     private Integer maxAiIssuesPerRun;
 
     @Schema(description = "管理员ID", hidden = true)
