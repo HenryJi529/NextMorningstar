@@ -47,3 +47,12 @@ export const getRunById = (id: string): Promise<AxiosResponse<R<Run>>> => {
 export const cancelRun = (id: string): Promise<AxiosResponse<R<void>>> => {
     return axios.delete(`${API_RUN}/${id}`);
 };
+
+/* 工坊管理员 */
+const API_ADMIN = '/dev/admin';
+export const adminCancelRun = (id: string): Promise<AxiosResponse<R<void>>> => {
+    return axios.delete(`${API_ADMIN}/run/${id}`);
+};
+export const adminDisableProject = (id: string): Promise<AxiosResponse<R<void>>> => {
+    return axios.post(`${API_ADMIN}/project/${id}/disable`);
+};

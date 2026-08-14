@@ -13,6 +13,7 @@ Desktop.ini
 .mcp.json
 .zread/
 .scannerwork/
+.playwright-mcp/
 
 .env
 /deploy/backup/*

@@ -198,7 +198,7 @@ create table if not exists dev_project
     update_time              datetime,
     unique key uk_dev_project_link (link),
     primary key (id)
-) comment '研发项目表';
+) comment '工坊项目表';
 
 create table if not exists dev_run
 (
@@ -211,7 +211,7 @@ create table if not exists dev_run
     create_time datetime,
     update_time datetime,
     primary key (id)
-) comment '研发任务表';
+) comment '工坊任务表';
 
 create table if not exists dev_action_attempt
 (
@@ -224,7 +224,7 @@ create table if not exists dev_action_attempt
     create_time datetime,
     update_time datetime,
     primary key (id)
-) comment '研发动作记录表';
+) comment '工坊动作记录表';
 
 create table if not exists dev_issue
 (
@@ -243,6 +243,6 @@ create table if not exists dev_issue
     create_time              datetime,
     update_time              datetime,
     primary key (id)
-) comment '研发问题表';
+) comment '工坊问题表';
 
 set FOREIGN_KEY_CHECKS = 1;

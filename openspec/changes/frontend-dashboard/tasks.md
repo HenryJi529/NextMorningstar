@@ -13,3 +13,7 @@
 - [ ] 2.1 run 实时状态机流转(SSE/WS 推送)。
 - [ ] 2.2 修复成功率、节省人月(20min/bug)。
 - [ ] 2.3 高频缺陷 Top(MVP 可后置)。
+
+## 3. 系统管理页
+
+- [ ] 3.1 管理员操作入口(自 admin-operations 3.2 移交):正在运行行级"取消"(`adminCancelRun`)、项目"停用"(`adminDisableProject`),axios 定义已就绪;按登录用户 permissions(含 `dev:run:cancel`/`dev:project:disable`)控制显隐。

@@ -64,5 +64,7 @@ morningstar:
         role-tag: "blog_admin"
       - username: "henry"
         role-tag: "proxy_admin"
+      - username: "henry"
+        role-tag: "dev_admin"
 server:
   address: 0.0.0.0

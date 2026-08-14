@@ -14,7 +14,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "创建研发项目请求对象")
+@Schema(description = "创建工坊项目请求对象")
 public class CreateProjectRequestVo {
     @NotBlank(message = "项目名不能为空")
     @Schema(description = "项目名")

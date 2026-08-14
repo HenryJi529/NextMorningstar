@@ -8,7 +8,7 @@ import lombok.Data;
 import java.util.UUID;
 
 @Data
-@Schema(description = "更新研发项目请求对象")
+@Schema(description = "更新工坊项目请求对象")
 public class UpdateProjectRequestVo {
     @NotNull(message = "项目ID不能为空")
     @Schema(description = "项目ID")

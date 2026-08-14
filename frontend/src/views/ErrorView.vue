@@ -15,7 +15,7 @@ onMounted(() => {
 <template>
     <div class="h-page flex flex-col mx-auto w-screen">
         <div class="flex-1 flex justify-center items-center">
-            <span class="text-5xl">
+            <span class="text-4xl">
                 <slot></slot>
             </span>
         </div>

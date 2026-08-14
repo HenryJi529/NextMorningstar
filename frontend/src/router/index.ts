@@ -78,6 +78,7 @@ const router = createRouter({
             children: devRoutes,
             meta: {
                 requiresAuth: true,
+                requireDesktop: true,
             },
         },
         {

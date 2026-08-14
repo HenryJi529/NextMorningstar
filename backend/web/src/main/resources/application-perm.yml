@@ -10,6 +10,9 @@ morningstar:
       - tag: "proxy_admin"
         status: true
         name: "代理管理员"
+      - tag: "dev_admin"
+        status: true
+        name: "工坊管理员"
     permissions:
       - tag: "sys:user:manage"
         status: true
@@ -35,6 +38,12 @@ morningstar:
       - tag: "proxy:node:manage"
         status: true
         name: "代理节点管理权限"
+      - tag: "dev:project:disable"
+        status: true
+        name: "工坊项目禁用权限"
+      - tag: "dev:run:cancel"
+        status: true
+        name: "工坊任务取消权限"
     role-permissions:
       system_admin:
         - "sys:user:manage"
@@ -47,3 +56,6 @@ morningstar:
         - "proxy:token:manage"
         - "proxy:sub:manage"
         - "proxy:node:manage"
+      dev_admin:
+        - "dev:project:disable"
+        - "dev:run:cancel"

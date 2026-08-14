@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
-@Tag(name = "研发任务相关接口定义")
+@Tag(name = "工坊任务相关接口定义")
 @RestController
 @RequestMapping("/dev/run")
 @RequiredArgsConstructor
