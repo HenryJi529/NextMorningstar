@@ -6,7 +6,7 @@ export const downloadUrl = (url: string, filename: string) => {
     document.body.appendChild(a);
     a.click(); //执行下载
     setTimeout(() => {
-        document.body.removeChild(a); //释放标签
+        a.remove(); // 释放标签
     }, 3000);
 };
 
