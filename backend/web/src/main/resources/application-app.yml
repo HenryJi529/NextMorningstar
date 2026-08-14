@@ -30,7 +30,7 @@ morningstar:
         dispatch-cron: "*/30 * * * * ?"
         timeout-cron: "0 */5 * * * ?"
         cleanup-cron: "0 0 6 * * ?"
-        sync-pr-status-cron: "0 */5 * * * ?"
+        sync-pr-status-cron: "30 */5 * * * ?"
         run-timeout-minutes: 120
         max-concurrency: 2
       sandbox:

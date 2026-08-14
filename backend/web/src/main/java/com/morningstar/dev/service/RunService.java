@@ -14,4 +14,6 @@ public interface RunService {
     void cancelRun(UUID runId, UUID adminId);
 
     Run syncPrStatus(UUID runId);
+
+    boolean hasActiveRun(UUID projectId);
 }

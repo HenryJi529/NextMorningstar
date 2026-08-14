@@ -70,6 +70,7 @@ public enum ResponseCode {
     DEV_RUN_ACCESS_DENIED("您无权访问任务[%s]"),
     DEV_PROJECT_REPO_LINK_INVALID("项目仓库链接[%s]无效，无法解析owner/repo"),
     DEV_PROJECT_REPO_NOT_FOUND("项目仓库[%s]不存在"),
+    DEV_PROJECT_BRANCH_NOT_FOUND("项目分支[%s]不存在"),
     DEV_PROJECT_HAS_ACTIVE_RUN("项目[%s]存在进行中的任务"),
     ;
 

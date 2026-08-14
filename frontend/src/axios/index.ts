@@ -26,8 +26,8 @@ _axios.interceptors.request.use(
 
 _axios.interceptors.response.use(
     response => {
-        if (response.data.code <= 0) {
-            console.error(`code ${response.data.code}: ${response.data.message}`);
+        if (response.data.code !== ResponseCode.SUCCESS) {
+            console.error(`code ${response.data.code}: ${response.data.msg}`);
             if (
                 response.data.code === ResponseCode.TOKEN_INVALID ||
                 response.data.code === ResponseCode.TOKEN_EXPIRED

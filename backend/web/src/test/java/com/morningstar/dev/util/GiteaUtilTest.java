@@ -22,6 +22,11 @@ class GiteaUtilTest {
     }
 
     @Test
+    void testValidateRepoAndBranch() {
+        giteaUtil.validateRepoAndBranch(repoLink, "main");
+    }
+
+    @Test
     void testIsCollaborator() {
         if (giteaUtil.isCollaborator(repoLink)) {
             log.info("is collaborator");

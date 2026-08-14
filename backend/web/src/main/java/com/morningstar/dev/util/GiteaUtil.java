@@ -79,6 +79,25 @@ public class GiteaUtil {
         return headers;
     }
 
+    public void validateRepoAndBranch(String link, String branchName) {
+        RepoIdentity id = parseRepoIdentity(link);
+        String repoName = id.getOwnerName() + "/" + id.getRepoName();
+        try {
+            restTemplate.exchange(
+                    String.format("%s/api/v1/repos/%s", giteaProperties.getBackendOrigin(), repoName),
+                    HttpMethod.GET, new HttpEntity<>(getAdminAuthHeaders()), Void.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new BaseException(ResponseCode.DEV_PROJECT_REPO_NOT_FOUND, repoName);
+        }
+        try {
+            restTemplate.exchange(
+                    String.format("%s/api/v1/repos/%s/branches/%s", giteaProperties.getBackendOrigin(), repoName, branchName),
+                    HttpMethod.GET, new HttpEntity<>(getAdminAuthHeaders()), Void.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            throw new BaseException(ResponseCode.DEV_PROJECT_BRANCH_NOT_FOUND, branchName);
+        }
+    }
+
     public boolean isCollaborator(String link) {
         RepoIdentity id = parseRepoIdentity(link);
         try {

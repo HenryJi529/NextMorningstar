@@ -8,6 +8,7 @@ import type { LovePhotoData } from '@/types/love';
 import { isMobile } from '@/utils/client';
 import dayjs from 'dayjs';
 import { getFirstParam } from '@/utils/http';
+import { ResponseCode } from '@/constants/response';
 
 const trigger = isMobile() ? 'touchEnter' : 'mousemove';
 const svg = ref();
@@ -201,7 +202,7 @@ function getFullData() {
             },
         })
         .then(res => {
-            if (res.data.code <= 0) {
+            if (res.data.code !== ResponseCode.SUCCESS) {
                 return;
             }
             lovePhotoData.base64String = res.data.data;

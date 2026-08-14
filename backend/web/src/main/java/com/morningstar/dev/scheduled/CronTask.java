@@ -45,12 +45,7 @@ public class CronTask {
         );
         log.info("共 {} 个已启用项目", enabledProjects.size());
         for (Project project : enabledProjects) {
-            long activeCount = runMapper.selectCount(
-                    new LambdaQueryWrapper<Run>()
-                            .eq(Run::getProjectId, project.getId())
-                            .notIn(Run::getState, Set.of(State.CLEANED, State.FAILED))
-            );
-            if (activeCount > 0) {
+            if (runService.hasActiveRun(project.getId())) {
                 log.info("项目 {} 已有活跃 run，跳过", project.getId());
                 continue;
             }
@@ -98,7 +93,7 @@ public class CronTask {
                 new LambdaQueryWrapper<Run>()
                         .ge(Run::getCreateTime, LocalDateTime.now().minusHours(24))
                         .lt(Run::getUpdateTime, deadline)
-                        .ne(Run::getState, State.CLEANED)
+                        .notIn(Run::getState, Set.of(State.PENDING, State.CLEANED))
         );
 
         for (Run run : stuckRuns) {
@@ -125,11 +120,8 @@ public class CronTask {
         log.info("早上清理：共 {} 个 run 待取消", activeRuns.size());
         for (Run run : activeRuns) {
             if (run.getState() == State.PENDING) {
-                // PENDING 没启动过，直接标记取消
-                runMapper.updateById(Run.builder()
-                        .id(run.getId())
-                        .status(Run.Status.CANCELED)
-                        .build());
+                // PENDING 没启动过，直接删除，不绕过状态机
+                runMapper.deleteById(run.getId());
             } else {
                 stateMachineService.requestCancel(run.getId());
             }
@@ -147,7 +139,11 @@ public class CronTask {
                         .eq(Run::getPrStatus, Run.PrStatus.OPEN)
         );
         for (Run run : openPrRuns) {
-            runService.syncPrStatus(run.getId());
+            try {
+                runService.syncPrStatus(run.getId());
+            } catch (Exception e) {
+                log.error("[{}] 同步 PR 状态失败", run.getId(), e);
+            }
         }
     }
 }

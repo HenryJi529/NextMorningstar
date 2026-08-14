@@ -1,5 +1,6 @@
 package com.morningstar.dev.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.morningstar.dev.dao.mapper.IssueMapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
@@ -53,6 +54,11 @@ public class RunServiceImpl implements RunService {
             throw new BaseException(ResponseCode.DEV_PROJECT_ACCESS_DENIED, projectId);
         }
 
+        // 已有非终态 run 则拒绝再触发
+        if (hasActiveRun(projectId)) {
+            throw new BaseException(ResponseCode.DEV_PROJECT_HAS_ACTIVE_RUN, projectId);
+        }
+        
         Run run = createRun(projectId);
         stateMachineService.sendEvent(run.getId(), Event.START);
         return runMapper.selectById(run.getId());
@@ -65,13 +71,17 @@ public class RunServiceImpl implements RunService {
             throw new BaseException(ResponseCode.DEV_RUN_NOT_FOUND, runId);
         }
 
-        return syncPrStatus(run.getId());
+        return run;
     }
 
     @Override
     public void cancelRun(UUID runId, UUID adminId) {
         Run run = getRun(runId);
-        if (!projectMapper.selectById(run.getProjectId()).getAdminId().equals(adminId)) {
+        Project project = projectMapper.selectById(run.getProjectId());
+        if (project == null) {
+            throw new BaseException(ResponseCode.DEV_RUN_NOT_FOUND, runId);
+        }
+        if (!project.getAdminId().equals(adminId)) {
             throw new BaseException(ResponseCode.DEV_RUN_ACCESS_DENIED, runId);
         }
         stateMachineService.requestCancel(runId);
@@ -113,5 +123,14 @@ public class RunServiceImpl implements RunService {
         // open → 不变
 
         return runMapper.selectById(runId);
+    }
+
+    @Override
+    public boolean hasActiveRun(UUID projectId) {
+        long activeRunCount = runMapper.selectCount(
+                new LambdaQueryWrapper<Run>()
+                        .eq(Run::getProjectId, projectId)
+                        .ne(Run::getState, State.CLEANED));
+        return activeRunCount > 0;
     }
 }

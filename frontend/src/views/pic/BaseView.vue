@@ -138,7 +138,7 @@ const deleteImage = async (path: string) => {
     }
     deletingImages.value.push(path);
     const response = (await api.deleteImage(path)).data;
-    if (response.code <= 0) {
+    if (response.code !== ResponseCode.SUCCESS) {
         message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
     } else {
         message.success({
@@ -248,7 +248,7 @@ const setCompressionQuality = async () => {
         )
     ).data;
     isCompressionQualitySetting.value = false;
-    if (response.code <= 0) {
+    if (response.code !== ResponseCode.SUCCESS) {
         message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
     } else {
         message.success({
@@ -421,7 +421,7 @@ const clearGithubPat = async () => {
     }
     isPatClearing.value = true;
     const response = (await api.clearGithubPat()).data;
-    if (response.code <= 0) {
+    if (response.code !== ResponseCode.SUCCESS) {
         message.error({
             content: 'Github PAT清除失败，请重试...',
             class: 'ant-message-notice-custom',

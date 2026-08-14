@@ -1,15 +1,12 @@
 package com.morningstar.dev.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
-import com.morningstar.dev.dao.mapper.RunMapper;
 import com.morningstar.dev.pojo.po.Project;
-import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.pojo.vo.UpdateProjectRequestVo;
 import com.morningstar.dev.properties.MaxIssuesPerRunProperties;
 import com.morningstar.dev.service.ProjectService;
-import com.morningstar.dev.statemachine.State;
+import com.morningstar.dev.service.RunService;
 import com.morningstar.dev.statemachine.action.CommonSteps;
 import com.morningstar.dev.util.GiteaUtil;
 import com.morningstar.dev.util.SonarUtil;
@@ -30,14 +27,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
     private final ProjectMapper projectMapper;
-    private final RunMapper runMapper;
     private final GiteaUtil giteaUtil;
     private final MaxIssuesPerRunProperties maxIssuesPerRunProperties;
     private final SonarUtil sonarUtil;
     private final CommonSteps commonSteps;
+    private final RunService runService;
 
     @Override
     public Project createProject(CreateProjectRequestVo vo) {
+        giteaUtil.validateRepoAndBranch(vo.getLink(), vo.getBranchName());
+
         giteaUtil.addCollaborator(vo.getLink());
 
         Project project = Project.builder()
@@ -71,6 +70,10 @@ public class ProjectServiceImpl implements ProjectService {
             throw new BaseException(ResponseCode.DEV_PROJECT_ACCESS_DENIED, vo.getId());
         }
 
+        if (vo.getBranchName() != null) {
+            giteaUtil.validateRepoAndBranch(dbProject.getLink(), vo.getBranchName());
+        }
+
         boolean enabling = Boolean.TRUE.equals(vo.getEnabled()) && !Boolean.TRUE.equals(dbProject.getEnabled());
         boolean disabling = Boolean.FALSE.equals(vo.getEnabled()) && Boolean.TRUE.equals(dbProject.getEnabled());
 
@@ -83,8 +86,8 @@ public class ProjectServiceImpl implements ProjectService {
                 .name(vo.getName())
                 .branchName(vo.getBranchName())
                 .description(vo.getDescription())
-                .maxSonarIssuesPerRun(Optional.ofNullable(vo.getMaxSonarIssuesPerRun()).orElse(maxIssuesPerRunProperties.getSonar()))
-                .maxAiIssuesPerRun(Optional.ofNullable(vo.getMaxAiIssuesPerRun()).orElse(maxIssuesPerRunProperties.getAi()))
+                .maxSonarIssuesPerRun(vo.getMaxSonarIssuesPerRun())
+                .maxAiIssuesPerRun(vo.getMaxAiIssuesPerRun())
                 .enabled(vo.getEnabled())
                 .build());
 
@@ -103,21 +106,11 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         // 确保没有正在运行的 run
-        long activeRunCount = runMapper.selectCount(
-                new LambdaQueryWrapper<Run>()
-                        .eq(Run::getProjectId, projectId)
-                        .ne(Run::getState, State.CLEANED)
-        );
-        if (activeRunCount > 0) {
+        if (runService.hasActiveRun(projectId)) {
             throw new BaseException(ResponseCode.DEV_PROJECT_HAS_ACTIVE_RUN, projectId);
         }
 
-        projectMapper.deleteById(projectId);
-
-        // 删除 Bot 的仓库权限
-        giteaUtil.removeCollaborator(dbProject.getLink());
-
-        // 删除 SonarQube 项目
+        // 删除 SonarQube 项目(幂等)
         try {
             sonarUtil.deleteSonarProjectByKey(commonSteps.getSonarProjectKey(dbProject));
         } catch (RestClientException e) {
@@ -125,6 +118,12 @@ public class ProjectServiceImpl implements ProjectService {
                 throw new BaseException(e.getMessage());
             }
         }
+
+        // 删除 Bot 的仓库权限
+        giteaUtil.removeCollaborator(dbProject.getLink());
+
+        // 确保用户可以重试
+        projectMapper.deleteById(projectId);
     }
 
     @Override
