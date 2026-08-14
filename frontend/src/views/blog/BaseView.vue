@@ -122,6 +122,10 @@ onMounted(() => {
                     <div class="text-4xl font-bold text-center">本站服务</div>
                     <div class="py-4 text-2xl flex flex-col items-center justify-center">
                         <div class="flex space-x-2 items-center">
+                            <font-awesome-icon :icon="['fas', 'code']" />
+                            <router-link to="/dev">代码工坊</router-link>
+                        </div>
+                        <div class="flex space-x-2 items-center">
                             <font-awesome-icon :icon="['fas', 'compass']" />
                             <router-link to="/nav">码农导航</router-link>
                         </div>

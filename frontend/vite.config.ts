@@ -54,7 +54,7 @@ export default defineConfig(({ command, mode }) => {
             legacy({
                 renderLegacyChunks: false,
                 modernTargets: browserslist(),
-                modernPolyfills: true
+                modernPolyfills: true,
             }),
         ],
         resolve: {

@@ -21,6 +21,9 @@ useHead({
     <div class="flex items-center justify-center relative min-h-dvh">
         <div class="grid grid-flow-row grid-cols-2 lg:grid-cols-3 gap-4 text-center">
             <div class="app-item">
+                <router-link :to="'/dev'">代码工坊</router-link>
+            </div>
+            <div class="app-item">
                 <router-link :to="'/nav'">码农导航</router-link>
             </div>
             <div class="app-item">

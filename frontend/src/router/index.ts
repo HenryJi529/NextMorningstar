@@ -6,6 +6,7 @@ import blogRoutes from '@/router/blog';
 import proxyRoutes from '@/router/proxy';
 import adminRoutes from '@/router/admin';
 import labRoutes from '@/router/lab';
+import devRoutes from '@/router/dev';
 import { getPreRoute, setPreRoute } from '@/utils/route';
 import { useUserStore } from '@/stores/users';
 import { hasAnyPermission } from '@/utils/permission';
@@ -70,6 +71,14 @@ const router = createRouter({
         {
             path: '/resume',
             component: () => import('@/views/resume/BaseView.vue'),
+        },
+        {
+            path: '/dev',
+            component: () => import('@/views/dev/BaseView.vue'),
+            children: devRoutes,
+            meta: {
+                requiresAuth: true,
+            },
         },
         {
             path: '/lab',
