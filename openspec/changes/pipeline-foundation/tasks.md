@@ -7,7 +7,7 @@
 ## 2. 接口入口
 
 - [x] 2.1 `ProjectService` 接口与 `ProjectServiceImpl` 实现:CRUD + `adminId` 权限校验。VO:`CreateProjectRequestVo`(name/link/branchName/description/maxSonarIssuesPerRun/maxAiIssuesPerRun/adminId)、`UpdateProjectRequestVo`(仅 name/branchName/description/maxSonarIssuesPerRun/maxAiIssuesPerRun/enabled 可改;link 不可变)。
-- [x] 2.2 `RunService` 接口与 `RunServiceImpl` 实现:`createRun`(无需权限，供调度器使用)/`triggerRun`(含 adminId 权限校验，供 Controller 使用)/`getRun`/`cancelRun`。
+- [x] 2.2 `RunService` 接口与 `RunServiceImpl` 实现:`createRun`(无需权限，供调度器使用)/`triggerRun`(含 adminId 权限校验，供 Controller 使用)/`getRun`/`cancelRun`。（8/14 加固:`triggerRun` 加单飞守卫 `hasActiveRun`;`getRun` 纯读化;`cancelRun` 显式 adminId + project null 守卫)
 - [x] 2.3 `ProjectController` + `RunController` REST 接口。
 - [x] 2.4 `ResponseCode` 新增 `DEV_PROJECT_NOT_FOUND`/`DEV_PROJECT_ACCESS_DENIED`/`DEV_RUN_NOT_FOUND`/`DEV_RUN_ACCESS_DENIED`。
 
@@ -17,13 +17,14 @@
 - [x] 3.2 项目禁用时移除 bot collaborator。
 - [x] 3.3 授权失败(仓库不存在,或无权访问——受控部署下不会出现)时,向项目经理报错并阻止启用。
 - [x] 3.4 仓库链接归一化(`<origin>/<owner>/<repo>`)存储并加 UNIQUE;重复创建同一仓库报错(根因:collaborator 为仓库级,多 project 共享会互相踩踏)。
+- [x] 3.5 配置入口校验(8/14):`GiteaUtil.validateRepoAndBranch`——创建/更新项目时先验仓库存在(404→`DEV_PROJECT_REPO_NOT_FOUND`)再验分支存在(404→`DEV_PROJECT_BRANCH_NOT_FOUND`),先校验后变更零副作用,分支写错不再晚炸到 SyncAction。
 
 ## 4. 定时调度
 
 - [x] 4.1 `nightlyCreateRuns`:21:00 扫描 `enabled` 项目，对有活跃 run 的项目跳过，其余创建 PENDING run。
 - [x] 4.2 `dispatchPendingRuns`:每 30s 查 PENDING run，按并发槽位数(默认 2)捞取并入队(START)。
-- [x] 4.3 `cancelTimeoutRuns`:每 5min 查超过 120min 无响应的 run，触发取消(24h 时间窗口防止全表扫描)。
-- [x] 4.4 `cancelOvernightRuns`:次日 6:00 取消所有非终态活跃 run(PENDING 直接标 CANCELED，其余走 requestCancel)。
+- [x] 4.3 `cancelTimeoutRuns`:每 5min 查超过 120min 无响应的 run，触发取消(24h 时间窗口防止全表扫描/给取消不掉的僵尸设放弃期限)。（8/14:查询改 `notIn(PENDING, CLEANED)`——排除终态 + 排队态,排队时间不算超时;dispatch 起跑刷新 `updateTime`,执行预算从起跑重计)
+- [x] 4.4 `cancelOvernightRuns`:次日 6:00 取消所有非终态活跃 run(PENDING 直接 `deleteById`——从未启动不留记录,8/14 改;其余走 requestCancel)。
 - [x] 4.5 配置 `application-app.yml`:`schedule.create-cron`/`dispatch-cron`/`timeout-cron`/`cleanup-cron`/`run-timeout-minutes`/`max-concurrency`。
 - [x] 4.6 `StartedTrigger` 加 `isCancelingRun` 检查：取消时走 CLEAN 而非 SYNC(与 Synced/Scanned/Fixed/Verified/Cleaned 六个 trigger 一致)。
 

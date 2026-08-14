@@ -183,7 +183,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 | 配置 | 消费者 | dev 值 | 为什么不同 |
 |---|---|---|---|
-| `public-origin` | 后端 API + PR 链接 + 浏览器 | `http://127.0.0.1:7001` | Mac 宿主机不解析 `host.docker.internal` |
+| `backend-origin` | 后端 API + PR 链接 + 浏览器 | `http://127.0.0.1:7001` | Mac 宿主机不解析 `host.docker.internal` |
 | `container-origin` | 临时 git 容器 clone/fetch/push | `http://host.docker.internal:7001` | 容器内无法访问 `127.0.0.1` |
 
 每环境两值显式配置，不隐式回退。生产两者同为公网域名——冗余但不隐藏差异。

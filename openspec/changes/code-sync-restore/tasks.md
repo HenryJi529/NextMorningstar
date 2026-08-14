@@ -1,6 +1,6 @@
 ## 1. 配置拆分
 
-- [x] 1.1 `GiteaProperties`:`origin` 改名 `publicOrigin`,新增 `containerOrigin`;`GiteaUtil` 三处引用迁到 `publicOrigin`。
+- [x] 1.1 `GiteaProperties`:`origin` 改名 `publicOrigin`,新增 `containerOrigin`;`GiteaUtil` 三处引用迁到 `publicOrigin`。(后定名 `backendOrigin`)
 - [x] 1.2 `application-dev.yml` / `application-prod.yml`:gitea 段同步改名 + 补 `container-origin`。
 
 ## 2. SyncResult

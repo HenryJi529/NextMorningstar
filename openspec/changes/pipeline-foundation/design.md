@@ -36,7 +36,7 @@ Fix 阶段是模型对话 I/O,CPU 空闲,多 run 可并行;Scan/Verify 才 CPU �
 - `nightlyCreateRuns`(21:00):扫描 enabled 项目，跳过已有活跃 run 的项目，其余创建 PENDING run。
 - `dispatchPendingRuns`(每 30s):查 PENDING run，按 maxConcurrency(默认 2)槽位捞取并发送 START 事件。
 - `cancelTimeoutRuns`(每 5min):查超过 120min 无响应的 run(24h 时间窗口)，触发取消。
-- `cancelOvernightRuns`(6:00):取消所有非终态活跃 run(PENDING 直接标 CANCELED，其余走 requestCancel)。
+- `cancelOvernightRuns`(6:00):取消所有非终态活跃 run(PENDING 直接 `deleteById`——从未启动不留记录,8/14 改;其余走 requestCancel)。
 
 **动机**:创建与启动分离，创建轻量(只 insert)，分发控制并发。超时与清晨清理确保资源不泄漏。
 

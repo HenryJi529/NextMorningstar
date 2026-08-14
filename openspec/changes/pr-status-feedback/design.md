@@ -25,6 +25,6 @@ PR 是整体合并单元（Gitea 不部分合并）。`merged` → 本 run 全�
 
 这正兑现 `Issue.Status` 预留的 `ACCEPTED`/`REJECTED`——它们之前无写入点（dev-plan 决策 31 删 `FAILED` 时保留这两个作为 SUBMIT 后终态预留），现在由 PR 结果落定。issue 状态流转补全：`SELECTED → FIXED → VERIFIED →（PR merged）ACCEPTED /（PR closed）REJECTED`。
 
-### 决策 5:复用 GiteaProperties publicOrigin
+### 决策 5:复用 GiteaProperties backendOrigin
 
-PR 查询从后端发起（不在容器内），用 `GiteaProperties.publicOrigin`（后端视角地址）+ token 调 Gitea API，与现有 Gitea 调用一致。
+PR 查询从后端发起（不在容器内），用 `GiteaProperties.backendOrigin`（后端视角地址,8/14 订正字段名:原 `publicOrigin`）+ token 调 Gitea API，与现有 Gitea 调用一致。

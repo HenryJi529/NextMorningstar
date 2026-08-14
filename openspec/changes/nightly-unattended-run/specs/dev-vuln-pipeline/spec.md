@@ -16,4 +16,4 @@
 
 - **WHEN** 到达 `schedule.cleanup-cron`(06:00)
 - **THEN** 对在跑的 run 触发 cancel(走取消流程;删修复分支决定不做,见决策 39)
-- **AND** 未启动的 run 标记 `CANCELED`(PENDING 直接标 CANCELED),明夜重新触发
+- **AND** 未启动的 run 直接删除(PENDING 从未启动,`deleteById` 不留记录;8/14 改,原"标 CANCELED"),明夜重新触发

@@ -64,7 +64,7 @@ Gitea 地址按消费方拆两份,**每环境显式配全、无任何回退**:
 
 | 配置 | 用途 | dev | prod |
 |------|------|-----|------|
-| `public-origin` | 后端 API、PR 链接、浏览器访问 | `http://127.0.0.1:7001` | `https://gitea.morningstar369.com` |
+| `public-origin`(后定名 `backend-origin`) | 后端 API、PR 链接、浏览器访问 | `http://127.0.0.1:7001` | `https://gitea.morningstar369.com` |
 | `container-origin` | 临时 git 容器内访问 Gitea | `http://host.docker.internal:7001` | `https://gitea.morningstar369.com` |
 
 命名选择:`public-origin` 对齐 Gitea ROOT_URL 语义(官方文档称"对外访问地址"),`container-origin` 表"容器网络内视角"。dev 两个值不同(Mac 宿主机不解析 host.docker.internal,8/7 ping 实测否决单配置方案),生产两者同为公网域名但显式写出,不依赖隐式回退。
