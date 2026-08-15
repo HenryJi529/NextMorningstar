@@ -93,6 +93,7 @@ export interface ProjectDetail extends Project {
 export interface RunDetail extends Run {
     projectName?: string;
     prLink?: string;
+    deliveredIssueCount?: number;
 }
 
 export interface Stats {

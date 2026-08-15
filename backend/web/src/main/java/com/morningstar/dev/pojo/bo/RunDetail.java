@@ -13,4 +13,5 @@ import lombok.experimental.SuperBuilder;
 public class RunDetail extends Run {
     private String projectName;
     private String prLink;
+    private Integer deliveredIssueCount;
 }

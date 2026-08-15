@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 @Component("devCronTask")
 @RequiredArgsConstructor
@@ -85,7 +84,7 @@ public class CronTask {
                 new LambdaQueryWrapper<Run>()
                         .ge(Run::getCreateTime, LocalDateTime.now().minusHours(24))
                         .lt(Run::getUpdateTime, deadline)
-                        .notIn(Run::getState, Set.of(State.PENDING, State.CLEANED, State.FAILED))
+                        .notIn(Run::getState, State.PENDING, State.CLEANED, State.FAILED)
         );
 
         for (Run run : stuckRuns) {
@@ -102,9 +101,7 @@ public class CronTask {
         List<Run> activeRuns = runMapper.selectList(
                 new LambdaQueryWrapper<Run>()
                         .ge(Run::getCreateTime, LocalDateTime.now().minusHours(24))
-                        .notIn(Run::getState, Set.of(
-                                State.CLEANING, State.CLEANED, State.FAILED
-                        ))
+                        .notIn(Run::getState, State.CLEANING, State.CLEANED, State.FAILED)
         );
 
         if (activeRuns.isEmpty()) return;

@@ -21,6 +21,7 @@
 - **WHEN** 选中某个项目
 - **THEN** 展示项目卡(链接/分支/enabled/上限/归属人)与历史任务单表
 - **AND** 历史任务表 PR 列直接渲染 `RunDetail.prLink` + `prStatus` 徽章,无 PR 显示 —(PR 不拆表,`prId`/`prStatus` 本就是 run 的列)
+- **AND** 修复数列渲染 `RunDetail.deliveredIssueCount`(交付口径:仅 SUCCEEDED 的 run 非 null,为该 run 下 VERIFIED/ACCEPTED/REJECTED issue 总数;非 SUCCEEDED 显示 —)
 - **AND** owner 可编辑配置(弹窗)、手动触发、启停、删除;非 owner 仅只读
 
 #### Scenario: 当前任务可视化

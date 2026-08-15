@@ -23,7 +23,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -167,9 +166,7 @@ public class RunServiceImpl implements RunService {
         // 查当前有多少 run 正在执行中（非 PENDING 且非终态）
         return Math.toIntExact(runMapper.selectCount(
                 new LambdaQueryWrapper<Run>()
-                        .notIn(Run::getState, Set.of(
-                                State.PENDING, State.CLEANED
-                        ))
+                        .notIn(Run::getState, State.PENDING, State.CLEANED)
         ));
     }
 
@@ -182,6 +179,13 @@ public class RunServiceImpl implements RunService {
             if (run.getPrId() != null) {
                 detail.setPrLink(giteaUtil.getPrLink(project.getLink(), run.getPrId()));
             }
+        }
+        if (run.getStatus() == Run.Status.SUCCEEDED) {
+            detail.setDeliveredIssueCount(Math.toIntExact(
+                    issueMapper.selectCount(
+                            new LambdaQueryWrapper<Issue>()
+                                    .eq(Issue::getRunId, run.getId())
+                                    .in(Issue::getStatus, Issue.Status.VERIFIED, Issue.Status.ACCEPTED, Issue.Status.REJECTED))));
         }
         return detail;
     }
