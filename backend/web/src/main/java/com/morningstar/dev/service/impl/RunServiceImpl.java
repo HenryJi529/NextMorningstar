@@ -2,10 +2,13 @@ package com.morningstar.dev.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.morningstar.dev.dao.mapper.ActionAttemptMapper;
 import com.morningstar.dev.dao.mapper.IssueMapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
 import com.morningstar.dev.dao.mapper.RunMapper;
+import com.morningstar.dev.pojo.bo.ActionAttemptBrief;
 import com.morningstar.dev.pojo.bo.RunDetail;
+import com.morningstar.dev.pojo.po.ActionAttempt;
 import com.morningstar.dev.pojo.po.Issue;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
@@ -34,6 +37,7 @@ public class RunServiceImpl implements RunService {
     private final StateMachineService stateMachineService;
     private final GiteaUtil giteaUtil;
     private final IssueMapper issueMapper;
+    private final ActionAttemptMapper actionAttemptMapper;
 
     @Value("${morningstar.app.dev.schedule.max-concurrency}")
     private int maxConcurrency;
@@ -106,7 +110,10 @@ public class RunServiceImpl implements RunService {
 
     @Override
     public void cancelRun(UUID runId, UUID adminId) {
-        Run run = getRun(runId);
+        Run run = runMapper.selectById(runId);
+        if (run == null) {
+            throw new BaseException(ResponseCode.DEV_RUN_NOT_FOUND, runId);
+        }
         Project project = projectMapper.selectById(run.getProjectId());
         if (project == null) {
             throw new BaseException(ResponseCode.DEV_RUN_NOT_FOUND, runId);
@@ -187,10 +194,25 @@ public class RunServiceImpl implements RunService {
                                     .eq(Issue::getRunId, run.getId())
                                     .in(Issue::getStatus, Issue.Status.VERIFIED, Issue.Status.ACCEPTED, Issue.Status.REJECTED))));
         }
+        detail.setActionAttemptBriefs(listAttemptBriefs(run.getId()));
         return detail;
     }
 
     private List<RunDetail> toDetails(List<Run> runs) {
         return runs.stream().map(this::toDetail).toList();
+    }
+
+    private List<ActionAttemptBrief> listAttemptBriefs(UUID runId) {
+        return actionAttemptMapper.selectList(
+                        new LambdaQueryWrapper<ActionAttempt>()
+                                .select(ActionAttempt::getActionType, ActionAttempt::getAttemptNo,
+                                        ActionAttempt::getStatus, ActionAttempt::getCreateTime, ActionAttempt::getUpdateTime)
+                                .eq(ActionAttempt::getRunId, runId)
+                                .orderByAsc(ActionAttempt::getId))
+                .stream().map(attempt -> {
+                    ActionAttemptBrief brief = new ActionAttemptBrief();
+                    CopyUtil.copyNonNullProperties(attempt, brief);
+                    return brief;
+                }).toList();
     }
 }

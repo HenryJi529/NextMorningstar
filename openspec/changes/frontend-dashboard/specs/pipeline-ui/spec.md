@@ -28,7 +28,8 @@
 
 - **WHEN** 选中项目存在活跃 run(state 非 CLEANED/FAILED)
 - **THEN** 渲染 7 节点状态机(启动/同步/扫描/修复/验证/提交/清理),当前节点高亮 + 耗时 + 当前阶段说明一行,轮询更新
-- **AND** 头部展示阶段失败徽章(如"同步失败 ×1")
+- **AND** 可视化数据来自 `RunDetail.actionAttemptBriefs` 阶段执行流水(`actionType`/`attemptNo`/`status`/起止时间):节点耗时 = attempt 的 createTime→updateTime,RESTORE 条数即回退环激活次数
+- **AND** 头部展示阶段失败徽章(如"同步失败 ×1",流水中 FAILED 按 actionType 分组计数)
 - **AND** 流水线下方展示回退环弧线(验证→修复):休眠时淡虚线,RESTORING 激活时虚线流动动画
 - **AND** 漏斗计数条展示"扫描发现 / 本轮入选 / 已修复 / 验证通过"(本轮入选 = 经 maxIssuesPerRun 截断的入选数)
 - **WHEN** 无活跃 run

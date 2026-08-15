@@ -39,6 +39,23 @@ export enum RunPrStatus {
     MERGED = 'MERGED',
 }
 
+export enum ActionType {
+    START = 'START',
+    SYNC = 'SYNC',
+    SCAN = 'SCAN',
+    FIX = 'FIX',
+    VERIFY = 'VERIFY',
+    SUBMIT = 'SUBMIT',
+    CLEAN = 'CLEAN',
+    RESTORE = 'RESTORE',
+}
+
+export enum ActionStatus {
+    SUCCEEDED = 'SUCCEEDED',
+    FAILED = 'FAILED',
+    RUNNING = 'RUNNING',
+}
+
 /* PO */
 export interface Project {
     id: string;
@@ -94,6 +111,15 @@ export interface RunDetail extends Run {
     projectName?: string;
     prLink?: string;
     deliveredIssueCount?: number;
+    actionAttemptBriefs?: ActionAttemptBrief[];
+}
+
+export interface ActionAttemptBrief {
+    actionType: ActionType;
+    attemptNo: number;
+    status: ActionStatus;
+    createTime: string;
+    updateTime: string;
 }
 
 export interface Stats {

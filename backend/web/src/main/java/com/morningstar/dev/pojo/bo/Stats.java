@@ -11,7 +11,7 @@ public class Stats {
     private Integer executingRunCount;
 
     /**
-     * 成功结束的 run交付的Issue总数(状态 VERIFIED/ACCEPTED/REJECTED)
+     * 成功结束的 run 交付的Issue总数(状态 VERIFIED/ACCEPTED/REJECTED)
      */
     private Integer deliveredIssueCount;
 

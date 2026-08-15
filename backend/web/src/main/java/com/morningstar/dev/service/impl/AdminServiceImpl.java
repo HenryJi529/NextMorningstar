@@ -33,7 +33,10 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public void cancelRun(UUID runId) {
-        Run run = runService.getRun(runId);
+        Run run = runMapper.selectById(runId);
+        if (run == null) {
+            throw new BaseException(ResponseCode.DEV_RUN_NOT_FOUND, runId);
+        }
         Project project = projectMapper.selectById(run.getProjectId());
         if (project == null) {
             throw new BaseException(ResponseCode.DEV_RUN_NOT_FOUND, runId);
@@ -67,8 +70,8 @@ public class AdminServiceImpl implements AdminService {
                 .deliveredIssueCount(succeededRunIds.isEmpty() ? 0 : Math.toIntExact(issueMapper.selectCount(
                         new LambdaQueryWrapper<Issue>()
                                 .in(Issue::getRunId, succeededRunIds)
-                                .in(Issue::getStatus, List.of(
-                                        Issue.Status.VERIFIED, Issue.Status.ACCEPTED, Issue.Status.REJECTED)))))
+                                .in(Issue::getStatus,
+                                        Issue.Status.VERIFIED, Issue.Status.ACCEPTED, Issue.Status.REJECTED))))
                 .prTotal(Math.toIntExact(runMapper.selectCount(
                         new LambdaQueryWrapper<Run>().isNotNull(Run::getPrId))))
                 .prMerged(Math.toIntExact(runMapper.selectCount(

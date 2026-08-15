@@ -256,6 +256,6 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | Stats 用 Integer 不用 Long | dev-plan 决策 45 | 全局 `Long→ToStringSerializer` 会把 Long 序列化成 string，与前端 `number` 冲突 |
 | deliveredIssueCount 口径 | dev-plan 决策 45 | 只算 SUCCEEDED run 的 VERIFIED/ACCEPTED/REJECTED；REJECTED 计入——修复数衡量 AI 能力，接受度归合并率 KPI |
 | FAILED 一律算活跃 | dev-plan 决策 46 | 躺平 FAILED 容器现场未知，必须占槽+挡触发，防同项目双 run 抢 volume |
-| Detail bo 展示扩充 | dev-plan 决策 47 | PO 不沾染展示字段；`@SuperBuilder` 继承 + 统一 `toDetail`，前端类型同构继承 |
+| Detail bo 展示扩充 | dev-plan 决策 47 | PO 不沾染展示字段；`@SuperBuilder` 继承 + 统一 `toDetail`，前端类型同构继承；RunDetail 含 actionAttemptBriefs 阶段流水（可视化数据源），CopyUtil 健壮化支持跨类同名拷贝 |
 | Run 触发方式入 PO | dev-plan 决策 48 | `triggerType`(MANUAL/SCHEDULED）是真实属性不进 Detail；写入点收敛 `createRun`,调用方用 enum 声明 |
-| 前端三页 IA 与可视化定稿 | dev-plan 决策 49 | 我的项目/系统管理/平台说明；历史任务单表不拆 PR；回退环弧线表达 RESTORING 回路 |
+| 前端三页 IA 与可视化定稿 | dev-plan 决策 49 | 我的项目/系统管理/平台说明；历史任务单表不拆 PR；回退环弧线表达 RESTORING 回路；失败徽章/耗时由 actionAttemptBriefs 前端聚合 |

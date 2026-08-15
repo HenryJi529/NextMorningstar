@@ -6,6 +6,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @SuperBuilder
@@ -14,4 +16,5 @@ public class RunDetail extends Run {
     private String projectName;
     private String prLink;
     private Integer deliveredIssueCount;
+    private List<ActionAttemptBrief> actionAttemptBriefs;
 }

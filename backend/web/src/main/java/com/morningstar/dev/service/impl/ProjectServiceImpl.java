@@ -105,7 +105,10 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public void deleteProject(UUID projectId, UUID adminId) {
-        Project dbProject = getProjectById(projectId);
+        Project dbProject = projectMapper.selectById(projectId);
+        if (dbProject == null) {
+            throw new BaseException(ResponseCode.DEV_PROJECT_NOT_FOUND, projectId);
+        }
         if (!dbProject.getAdminId().equals(adminId)) {
             throw new BaseException(ResponseCode.DEV_PROJECT_ACCESS_DENIED, projectId);
         }
