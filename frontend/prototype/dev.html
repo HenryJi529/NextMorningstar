@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>代码工坊 · UI 原型</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+  body { background: #f3f4f6; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(249,115,22,.30); }
+    70% { box-shadow: 0 0 0 10px rgba(249,115,22,0); }
+    100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+  }
+  .node-active { animation: pulse-ring 1.6s ease-out infinite; }
+  @keyframes dash-move { to { stroke-dashoffset: -8; } }
+  .retry-arc { stroke-dasharray: 4 4; animation: dash-move .6s linear infinite; }
+</style>
+</head>
+<body class="text-slate-700 antialiased">
+<div id="app" class="min-h-screen">
+
+  <!-- ============ 顶栏 + 二级子菜单(整体吸顶) ============ -->
+  <div class="sticky top-0 z-20">
+  <header class="h-14 border-b border-slate-200 bg-white/90 backdrop-blur flex items-center px-6 gap-8">
+    <div class="flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-black text-sm">M</div>
+      <div class="leading-tight">
+        <div class="text-sm font-semibold text-slate-800">Morningstar 代码工坊</div>
+        <div class="text-[10px] text-slate-400 tracking-widest">AI CODE WORKSHOP</div>
+      </div>
+    </div>
+    <nav class="flex items-center gap-1 text-sm">
+      <button @click="page='dev'"
+        :class="page==='dev' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500 hover:text-slate-800'"
+        class="px-3.5 py-1.5 rounded-md transition">我的项目</button>
+      <button @click="page='admin'"
+        :class="page==='admin' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500 hover:text-slate-800'"
+        class="px-3.5 py-1.5 rounded-md transition flex items-center gap-1.5">
+        系统管理
+        <span class="text-[10px] px-1.5 py-px rounded bg-amber-50 text-amber-600 border border-amber-200">ADMIN</span>
+      </button>
+      <button @click="page='about'"
+        :class="page==='about' ? 'bg-orange-50 text-orange-600 font-medium' : 'text-slate-500 hover:text-slate-800'"
+        class="px-3.5 py-1.5 rounded-md transition">平台说明</button>
+    </nav>
+    <div class="ml-auto flex items-center gap-2.5">
+      <div class="w-7 h-7 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-xs text-orange-600">H</div>
+      <span class="text-sm text-slate-600">henry</span>
+    </div>
+  </header>
+
+  <!-- 二级子菜单:项目切换(仅"我的项目"页) -->
+  <div v-if="page==='dev'" class="border-b border-slate-200 bg-white/90 backdrop-blur">
+    <div class="max-w-[1400px] mx-auto px-6 py-2.5 flex items-center gap-2 overflow-x-auto">
+      <button v-for="p in myProjects" :key="p.id" @click="selectedId=p.id"
+        :class="selectedId===p.id ? 'bg-white border-orange-400 text-slate-800 shadow-sm' : 'bg-white/60 border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300'"
+        class="flex items-center gap-2 px-4 py-1.5 rounded-full border transition whitespace-nowrap text-sm">
+        <span class="w-1.5 h-1.5 rounded-full" :class="p.enabled ? 'bg-emerald-500' : 'bg-slate-300'"></span>
+        {{ p.name }}
+      </button>
+      <button @click="openCreate()" class="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-dashed border-slate-300 text-slate-400 hover:text-orange-500 hover:border-orange-400 transition text-sm whitespace-nowrap bg-white/40">
+        <span class="text-base leading-none">＋</span> 接入新项目
+      </button>
+    </div>
+  </div>
+  </div>
+
+  <main class="max-w-[1400px] mx-auto px-6 py-6 w-full">
+
+    <!-- ==================================================== -->
+    <!-- 页面一:我的工作台 /dev                                -->
+    <!-- ==================================================== -->
+    <section v-show="page==='dev'" class="flex flex-col" style="min-height: calc(100vh - 3.5rem - 3rem)">
+
+      <!-- 项目头部横幅 -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-4 mb-5 flex items-center gap-6">
+        <div class="min-w-0">
+          <div class="flex items-center gap-3">
+            <h1 class="text-lg font-semibold text-slate-800">{{ currentProject.name }}</h1>
+            <span class="px-2 py-0.5 rounded text-xs border" :class="currentProject.enabled ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-400 border-slate-200'">
+              {{ currentProject.enabled ? '已启用' : '已停用' }}
+            </span>
+          </div>
+          <div class="mt-1.5 flex items-center gap-4 text-xs text-slate-400">
+            <span class="font-mono text-orange-500">{{ currentProject.link }}</span>
+            <span>分支 <span class="font-mono text-slate-500">{{ currentProject.branchName }}</span></span>
+            <span>归属人 <span class="text-slate-500">{{ currentProject.adminName }}</span></span>
+            <span>上限 <span class="font-mono text-slate-500">{{ currentProject.maxSonarIssuesPerRun }}/{{ currentProject.maxAiIssuesPerRun }}</span></span>
+          </div>
+        </div>
+        <div class="ml-auto flex items-center gap-2.5 shrink-0">
+          <button class="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-sm font-medium transition shadow-sm shadow-orange-200">手动触发</button>
+          <button @click="openEdit()" class="px-4 py-2 rounded-lg border border-slate-200 hover:border-slate-300 text-sm text-slate-600 transition">编辑配置</button>
+          <button class="px-4 py-2 rounded-lg border border-slate-200 hover:border-amber-300 text-sm text-amber-600 transition">{{ currentProject.enabled ? '停用' : '启用' }}</button>
+          <button class="px-4 py-2 rounded-lg border border-slate-200 hover:border-rose-300 text-sm text-rose-500 transition">删除</button>
+        </div>
+      </div>
+
+      <!-- 当前任务状态机(整行) -->
+      <div class="rounded-2xl border border-orange-100 bg-white shadow-sm overflow-hidden ring-4 ring-orange-50 mb-5">
+        <div class="flex items-center justify-between px-6 pt-4 pb-1">
+          <div class="flex items-center gap-3">
+            <h2 class="text-base font-semibold text-slate-800">当前任务</h2>
+            <span class="font-mono text-xs text-slate-400">{{ activeRun.id.slice(0,8) }}…</span>
+            <span class="text-xs text-slate-400">{{ triggerLabel(activeRun.triggerType) }}</span>
+            <span v-for="f in activeRun.failures" :key="f.stage" class="px-1.5 py-px rounded text-[11px] bg-rose-50 text-rose-500 border border-rose-200">{{ f.stage }}失败 ×{{ f.count }}</span>
+          </div>
+          <span class="text-xs text-amber-600 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>已耗时 {{ activeRun.elapsed }}
+          </span>
+        </div>
+
+        <!-- 7 节点流水线 -->
+        <div class="px-10 pt-10 pb-4">
+          <div class="grid max-w-4xl mx-auto" style="grid-template-columns: repeat(6, 1fr 64px) 1fr">
+            <template v-for="(node, i) in pipeline" :key="node.key">
+              <div class="flex flex-col items-center">
+                <div class="flex items-center justify-center w-12 h-12 rounded-full transition"
+                  :class="nodeClass(i)">
+                  <svg v-if="i < activeStep" class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 111.4-1.4L8 12.58l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>
+                  <span v-else-if="i === activeStep" class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                  <span v-else class="w-2 h-2 rounded-full bg-slate-300"></span>
+                </div>
+                <div class="mt-2.5 text-sm" :class="i===activeStep ? 'text-orange-600 font-medium' : i<activeStep ? 'text-slate-700' : 'text-slate-400'">{{ node.label }}</div>
+              </div>
+              <div v-if="i < pipeline.length-1" class="flex items-center h-12">
+                <div class="h-[3px] w-full rounded-full" :class="i < activeStep ? 'bg-orange-400' : 'bg-slate-200'"></div>
+              </div>
+            </template>
+          </div>
+          <!-- 回退环:验证失败 → restore → 回到修复 -->
+          <div class="grid max-w-4xl mx-auto" style="grid-template-columns: repeat(6, 1fr 64px) 1fr">
+            <div style="grid-column: 7 / 10" class="h-9 relative cursor-pointer" title="点击切换:回退环 激活/休眠 演示" @click="restoring=!restoring">
+              <svg class="absolute inset-0 w-full h-full overflow-visible" viewBox="0 0 200 36" preserveAspectRatio="none">
+                <path d="M188 2 C 188 30, 12 30, 12 4" fill="none" stroke-width="2" vector-effect="non-scaling-stroke"
+                  :stroke="restoring ? '#fb7185' : '#fecdd3'" :class="restoring ? 'retry-arc' : ''" stroke-dasharray="4 4"/>
+                <path d="M12 0 l-4.5 8 h9 z" :fill="restoring ? '#fb7185' : '#fecdd3'"/>
+                <text x="100" y="33" text-anchor="middle" font-size="10" :fill="restoring ? '#fb7185' : '#fda4af'">回退环:验证未通过 → 恢复现场 → 重新修复</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- 当前阶段说明 + 实况计数 -->
+        <div class="pb-3 text-center text-sm text-slate-500">
+          当前阶段:<span class="text-orange-500 font-medium">{{ stageTitle }}</span><span class="text-slate-300 mx-1.5">—</span>{{ stageDesc }}
+        </div>
+        <div class="flex items-center justify-center gap-8 pb-7 text-xs text-slate-400">
+          <span>扫描发现 <span class="font-mono text-sm text-slate-700">32</span></span>
+          <span class="text-slate-200">|</span>
+          <span>本轮入选 <span class="font-mono text-sm text-slate-700">12</span></span>
+          <span class="text-slate-200">|</span>
+          <span>已修复 <span class="font-mono text-sm text-slate-700">7</span></span>
+          <span class="text-slate-200">|</span>
+          <span>验证通过 <span class="font-mono text-sm text-orange-500">5</span></span>
+        </div>
+      </div>
+
+      <!-- 运行历史(通栏,PR 作为 run 的交付物同行列出;表体滚动) -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col flex-1">
+        <div class="px-5 py-3.5 border-b border-slate-100 shrink-0 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-800">历史任务</h2>
+          <span class="text-[11px] text-slate-400">PR 是成功任务的交付物,同一行呈现</span>
+        </div>
+        <div class="flex-1 overflow-y-auto min-h-[180px]">
+          <table class="w-full text-sm">
+            <thead class="sticky top-0 bg-white"><tr class="text-[11px] text-slate-400 border-b border-slate-100">
+              <th class="text-left font-medium px-5 py-2.5">任务</th><th class="text-left font-medium px-3 py-2.5">结果</th>
+              <th class="text-left font-medium px-3 py-2.5">触发</th><th class="text-right font-medium px-3 py-2.5">修复</th>
+              <th class="text-left font-medium px-3 py-2.5">PR</th><th class="text-right font-medium px-3 py-2.5">开始时间</th>
+              <th class="text-right font-medium px-3 py-2.5">结束时间</th><th class="text-right font-medium px-5 py-2.5">耗时</th>
+            </tr></thead>
+            <tbody>
+              <tr v-for="r in runHistory" :key="r.id" class="border-b border-slate-50 last:border-0 hover:bg-orange-50/40">
+                <td class="px-5 py-3 font-mono text-xs text-slate-400">{{ r.id.slice(0,8) }}</td>
+                <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-xs border" :class="statusBadge(r.status)">{{ r.status }}</span></td>
+                <td class="px-3 py-3 text-slate-500 text-xs">{{ triggerLabel(r.triggerType) }}</td>
+                <td class="px-3 py-3 text-right font-mono text-slate-600">{{ r.fixed }}</td>
+                <td class="px-3 py-3 text-xs">
+                  <template v-if="r.prId">
+                    <a href="#" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono border hover:underline" :class="prBadge(r.prStatus)">#{{ r.prId }}<span class="w-px h-2.5 opacity-40" :class="prDivider(r.prStatus)"></span>{{ r.prStatus }}</a>
+                  </template>
+                  <span v-else class="text-slate-300">—</span>
+                </td>
+                <td class="px-3 py-3 text-right text-xs text-slate-400">{{ r.startTime }}</td>
+                <td class="px-3 py-3 text-right text-xs text-slate-400">{{ r.endTime }}</td>
+                <td class="px-5 py-3 text-right font-mono text-xs text-slate-400">{{ r.cost }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- 页面二:系统管理 /dev/admin                            -->
+    <!-- ==================================================== -->
+    <section v-show="page==='admin'" class="space-y-5">
+
+      <!-- KPI 行 -->
+      <div class="grid grid-cols-4 gap-4">
+        <div v-for="k in kpis" :key="k.label" class="rounded-xl border border-slate-200 bg-white shadow-sm px-5 py-4">
+          <div class="text-[11px] text-slate-400">{{ k.label }}</div>
+          <div class="mt-1.5 flex items-baseline gap-1.5">
+            <span class="font-mono text-2xl font-semibold" :class="k.color">{{ k.value }}</span>
+            <span class="text-[11px] text-slate-400">{{ k.unit }}</span>
+          </div>
+          <div class="mt-1 text-[11px] text-slate-400">{{ k.sub }}</div>
+        </div>
+      </div>
+
+      <!-- 项目列表(整行长块,只读 + 停用) -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-800">项目列表</h2>
+          <span class="text-[11px] text-slate-400">只读 · 仅可停用</span>
+        </div>
+        <table class="w-full text-sm">
+          <thead><tr class="text-[11px] text-slate-400 border-b border-slate-100">
+            <th class="text-left font-medium px-5 py-2.5">项目</th><th class="text-left font-medium px-3 py-2.5">仓库</th>
+            <th class="text-left font-medium px-3 py-2.5">分支</th><th class="text-left font-medium px-3 py-2.5">归属人</th>
+            <th class="text-right font-medium px-3 py-2.5">上限 S/AI</th><th class="text-left font-medium px-3 py-2.5">状态</th>
+            <th class="text-right font-medium px-5 py-2.5">操作</th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="p in allProjects" :key="p.id" class="border-b border-slate-50 last:border-0 hover:bg-orange-50/40">
+              <td class="px-5 py-3 text-xs font-medium text-slate-700">{{ p.name }}</td>
+              <td class="px-3 py-3 font-mono text-[11px] text-orange-500">{{ p.link }}</td>
+              <td class="px-3 py-3 font-mono text-[11px] text-slate-500">{{ p.branchName }}</td>
+              <td class="px-3 py-3 text-xs text-slate-500">{{ p.adminName }}</td>
+              <td class="px-3 py-3 text-right font-mono text-[11px] text-slate-500">{{ p.maxSonarIssuesPerRun }} / {{ p.maxAiIssuesPerRun }}</td>
+              <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-[11px] border" :class="p.enabled ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-50 text-slate-400 border-slate-200'">{{ p.enabled ? '启用' : '停用' }}</span></td>
+              <td class="px-5 py-3 text-right">
+                <button v-if="p.enabled" class="px-2.5 py-1 rounded-md border border-amber-200 text-amber-600 text-xs hover:bg-amber-50 transition">停用</button>
+                <span v-else class="text-[11px] text-slate-300">已停用</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 正在运行 -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
+          <h2 class="text-sm font-semibold text-slate-800">正在运行</h2>
+          <span class="text-xs text-slate-400">占槽 <span class="font-mono text-orange-500">2</span><span class="font-mono text-slate-400">/2</span>,1 个排队中</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 p-4">
+          <div v-for="r in adminRunning" :key="r.id" class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <div class="text-sm font-medium text-slate-800">{{ r.projectName }}</div>
+                <div class="font-mono text-[10px] text-slate-400 mt-0.5">{{ r.id.slice(0,8) }} · {{ triggerLabel(r.triggerType) }}</div>
+              </div>
+              <button v-if="!r.queued" class="px-2.5 py-1 rounded-md border border-rose-200 text-rose-500 text-xs hover:bg-rose-50 transition">取消</button>
+              <span v-else class="px-2 py-0.5 rounded text-[11px] bg-slate-100 text-slate-400 border border-slate-200">排队中</span>
+            </div>
+            <!-- 迷你流水线 -->
+            <div class="flex items-center gap-1">
+              <template v-for="(node, i) in pipeline" :key="node.key">
+                <div class="h-1.5 rounded-full flex-1" :class="i < r.step ? 'bg-orange-400' : i === r.step ? 'bg-orange-500' : 'bg-slate-200'"></div>
+              </template>
+            </div>
+            <div class="flex items-center justify-between mt-2 text-[11px]">
+              <span :class="r.queued ? 'text-slate-400' : 'text-orange-500'">{{ r.queued ? 'PENDING' : stateLabel(r.state) }}</span>
+              <span class="font-mono text-slate-400">{{ r.elapsed }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近完成(整行收尾) -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div class="px-5 py-3.5 border-b border-slate-100"><h2 class="text-sm font-semibold text-slate-800">最近完成</h2></div>
+        <table class="w-full text-sm">
+          <thead><tr class="text-[11px] text-slate-400 border-b border-slate-100">
+            <th class="text-left font-medium px-5 py-2.5">项目</th><th class="text-left font-medium px-3 py-2.5">结果</th>
+            <th class="text-right font-medium px-3 py-2.5">修复</th><th class="text-left font-medium px-3 py-2.5">PR</th>
+            <th class="text-right font-medium px-3 py-2.5">耗时</th><th class="text-right font-medium px-5 py-2.5">完成时间</th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="r in adminRecent" :key="r.id" class="border-b border-slate-50 last:border-0 hover:bg-orange-50/40">
+              <td class="px-5 py-3 text-xs text-slate-600">{{ r.projectName }}</td>
+              <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-xs border" :class="statusBadge(r.status)">{{ r.status }}</span></td>
+              <td class="px-3 py-3 text-right font-mono text-slate-600">{{ r.fixed }}</td>
+              <td class="px-3 py-3 font-mono text-xs"><a v-if="r.pr" href="#" class="text-orange-500 hover:underline">#{{ r.pr }}</a><span v-else class="text-slate-300">—</span></td>
+              <td class="px-3 py-3 text-right font-mono text-xs text-slate-400">{{ r.cost }}</td>
+              <td class="px-5 py-3 text-right text-xs text-slate-400">{{ r.time }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================================================== -->
+    <!-- 页面三:平台说明 /dev/about                            -->
+    <!-- ==================================================== -->
+    <section v-show="page==='about'" class="space-y-5 max-w-5xl mx-auto">
+
+      <!-- Hero -->
+      <div class="rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 via-white to-amber-50 px-10 py-10 text-center ring-4 ring-orange-50">
+        <div class="text-[11px] tracking-[0.3em] text-orange-400 mb-3">MORNINGSTAR CODE WORKSHOP</div>
+        <h1 class="text-2xl font-bold text-slate-800 leading-relaxed">每晚自动修复代码问题,<span class="text-orange-500">清晨给你一个待合并的 PR</span></h1>
+        <p class="mt-3 text-sm text-slate-500 max-w-2xl mx-auto leading-relaxed">
+          夜间由 AI 无人值守完成 扫描 → 修复 → 验证 → 提交,清晨你只需在 Gitea 上 review 一个 PR。
+          AI 拥有完整的执行权,但合并到主干的权力永远在人手里——AI 自主 + 人工门。
+        </p>
+      </div>
+
+      <!-- 流水线怎么跑 -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
+        <h2 class="text-sm font-semibold text-slate-800 mb-1">流水线怎么跑</h2>
+        <p class="text-xs text-slate-400 mb-5">一条主链七个阶段,任一阶段失败则整轮回退清理,绝不留半成品现场</p>
+        <div class="grid grid-cols-2 gap-x-8 gap-y-4">
+          <div v-for="(s, i) in aboutStages" :key="s.label" class="flex items-start gap-3">
+            <div class="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-mono"
+              :class="i < 5 ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-500'">{{ i + 1 }}</div>
+            <div class="min-w-0">
+              <div class="text-sm font-medium text-slate-700">{{ s.label }}<span class="ml-2 text-[10px] px-1.5 py-px rounded bg-slate-50 border border-slate-200 text-slate-400 font-mono">{{ s.actor }}</span></div>
+              <div class="text-xs text-slate-400 mt-0.5 leading-relaxed">{{ s.desc }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 安全吗 -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
+        <h2 class="text-sm font-semibold text-slate-800 mb-1">AI 碰得到我的代码吗</h2>
+        <p class="text-xs text-slate-400 mb-5">能改仓库的凭证绝不进 AI 容器,三道防线逐层收紧</p>
+        <div class="grid grid-cols-3 gap-4">
+          <div v-for="s in security" :key="s.title" class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+            <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-500 flex items-center justify-center text-sm mb-3" v-html="s.icon"></div>
+            <div class="text-sm font-medium text-slate-700">{{ s.title }}</div>
+            <div class="text-xs text-slate-400 mt-1.5 leading-relaxed">{{ s.desc }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 三层身份 -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
+        <h2 class="text-sm font-semibold text-slate-800 mb-1">谁在操作系统</h2>
+        <p class="text-xs text-slate-400 mb-5">三层身份各司其职,任一身份被攻破,爆炸半径都限制在自己的职责内</p>
+        <div class="grid grid-cols-3 gap-4">
+          <div v-for="r in identities" :key="r.role" class="rounded-lg border p-4" :class="r.style">
+            <div class="text-sm font-semibold" :class="r.titleColor">{{ r.role }}</div>
+            <div class="text-[11px] font-mono mt-0.5" :class="r.titleColor">{{ r.who }}</div>
+            <div class="text-xs text-slate-500 mt-2 leading-relaxed">{{ r.desc }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 怎么接入 -->
+      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
+        <h2 class="text-sm font-semibold text-slate-800 mb-5">三步接入你的仓库</h2>
+        <div class="flex items-start">
+          <template v-for="(s, i) in onboard" :key="s.title">
+            <div class="flex-1 text-center px-4">
+              <div class="w-10 h-10 mx-auto rounded-full bg-orange-500 text-white flex items-center justify-center font-mono font-semibold">{{ i + 1 }}</div>
+              <div class="text-sm font-medium text-slate-700 mt-3">{{ s.title }}</div>
+              <div class="text-xs text-slate-400 mt-1.5 leading-relaxed">{{ s.desc }}</div>
+            </div>
+            <div v-if="i < 2" class="flex items-center h-10 text-slate-300 text-lg">→</div>
+          </template>
+        </div>
+        <div class="mt-6 text-center">
+          <button @click="page='dev'" class="px-5 py-2.5 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-sm font-medium transition shadow-sm shadow-orange-200">去接入项目</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ 接入/编辑项目 弹窗 ============ -->
+  <div v-if="showForm" class="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm" @click.self="showForm=false">
+    <div class="w-[480px] rounded-2xl bg-white shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <h2 class="text-base font-semibold text-slate-800">{{ formMode === 'create' ? '接入新项目' : '编辑配置' }}</h2>
+        <button @click="showForm=false" class="w-7 h-7 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition">✕</button>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1.5">项目名称 <span class="text-rose-400">*</span></label>
+          <input v-model="form.name" placeholder="如 order-service" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1.5">仓库链接 <span class="text-rose-400">*</span></label>
+          <input v-model="form.link" placeholder="http://gitea.local/wms/order-service" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition" />
+          <p class="mt-1 text-[11px] text-slate-400">提交时自动校验仓库存在,并把 bot 加为协作者</p>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1.5">分支 <span class="text-rose-400">*</span></label>
+            <input v-model="form.branchName" placeholder="main" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1.5">归属人</label>
+            <input value="henry(当前用户)" disabled class="w-full px-3 py-2 rounded-lg border border-slate-100 bg-slate-50 text-sm text-slate-400" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1.5">Sonar 上限/轮</label>
+            <input v-model="form.maxSonarIssuesPerRun" type="number" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1.5">AI 上限/轮</label>
+            <input v-model="form.maxAiIssuesPerRun" type="number" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm font-mono outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1.5">描述</label>
+          <textarea v-model="form.description" rows="2" placeholder="选填" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition resize-none"></textarea>
+        </div>
+      </div>
+      <div class="px-6 py-4 border-t border-slate-100 flex justify-end gap-2.5">
+        <button @click="showForm=false" class="px-4 py-2 rounded-lg border border-slate-200 text-sm text-slate-500 hover:border-slate-300 transition">取消</button>
+        <button @click="submitForm()" class="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-400 text-white text-sm font-medium transition shadow-sm shadow-orange-200">{{ formMode === 'create' ? '接入' : '保存' }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      page: 'dev',
+      selectedId: 'p1',
+      showForm: false,
+      formMode: 'create',
+      form: {},
+      pipeline: [
+        { key: 'STARTING',   label: '启动', desc: '拉起容器挂载共享卷' },
+        { key: 'SYNCING',    label: '同步', desc: '后端 git 拉取最新代码' },
+        { key: 'SCANNING',   label: '扫描', desc: 'SonarQube + AI 双通道发现' },
+        { key: 'FIXING',     label: '修复', desc: 'Claude 逐 issue 修复并 MCP 自查' },
+        { key: 'VERIFYING',  label: '验证', desc: 'SonarQube 复扫 + Claude 语义判定' },
+        { key: 'SUBMITTING', label: '提交', desc: '推送分支并创建 PR' },
+        { key: 'CLEANING',   label: '清理', desc: '回收容器与现场' },
+      ],
+      activeStep: 3,
+      restoring: false,
+      activeRun: { id: 'a3f8c2e1-7b4d-4e2a-9c1f-5d6e7f8a9b0c', state: 'FIXING', triggerType: 'SCHEDULED', failures: [{ stage: '同步', count: 1 }, { stage: '扫描', count: 2 }], elapsed: '1h 12m' },
+      myProjects: [
+        { id: 'p1', name: 'order-service', enabled: true },
+        { id: 'p2', name: 'user-center', enabled: true },
+        { id: 'p3', name: 'legacy-billing', enabled: false },
+      ],
+      projects: {
+        p1: { name: 'order-service', link: 'http://gitea.local/wms/order-service', branchName: 'main', adminName: 'henry', maxSonarIssuesPerRun: 10, maxAiIssuesPerRun: 5, enabled: true, description: '订单核心服务,nightly 扫描 main 分支' },
+        p2: { name: 'user-center', link: 'http://gitea.local/wms/user-center', branchName: 'develop', adminName: 'henry', maxSonarIssuesPerRun: 8, maxAiIssuesPerRun: 4, enabled: true, description: '' },
+        p3: { name: 'legacy-billing', link: 'http://gitea.local/wms/legacy-billing', branchName: 'master', adminName: 'henry', maxSonarIssuesPerRun: 5, maxAiIssuesPerRun: 2, enabled: false, description: '老系统,暂停接入' },
+      },
+      runHistory: [
+        { id: 'b7e2d4f0-1111-4e2a-9c1f-000000000001', status: 'SUCCEEDED', triggerType: 'SCHEDULED', fixed: 9, prId: 47, prStatus: 'MERGED', startTime: '08-15 07:12', endTime: '08-15 07:43', cost: '31m02s' },
+        { id: 'c1a9e5b2-2222-4e2a-9c1f-000000000002', status: 'SUCCEEDED', triggerType: 'MANUAL', fixed: 4, prId: 43, prStatus: 'OPEN', startTime: '08-14 15:03', endTime: '08-14 15:23', cost: '19m44s' },
+        { id: 'd5f3c8a7-3333-4e2a-9c1f-000000000003', status: 'FAILED', triggerType: 'SCHEDULED', fixed: 0, prId: null, startTime: '08-14 07:15', endTime: '08-14 07:27', cost: '12m10s' },
+        { id: 'e8b1d6c4-4444-4e2a-9c1f-000000000004', status: 'CANCELED', triggerType: 'MANUAL', fixed: 0, prId: null, startTime: '08-13 20:40', endTime: '08-13 20:45', cost: '4m51s' },
+        { id: 'f2c7a9d3-5555-4e2a-9c1f-000000000005', status: 'SUCCEEDED', triggerType: 'SCHEDULED', fixed: 11, prId: 35, prStatus: 'MERGED', startTime: '08-13 07:08', endTime: '08-13 07:43', cost: '35m27s' },
+        { id: '9d4e1b6a-6666-4e2a-9c1f-000000000006', status: 'SUCCEEDED', triggerType: 'SCHEDULED', fixed: 6, prId: 31, prStatus: 'MERGED', startTime: '08-12 07:11', endTime: '08-12 07:34', cost: '22m53s' },
+        { id: '4a8c3e7b-7777-4e2a-9c1f-000000000007', status: 'SUCCEEDED', triggerType: 'MANUAL', fixed: 3, prId: null, startTime: '08-11 16:22', endTime: '08-11 16:39', cost: '16m39s' },
+        { id: '7b5d2f8e-8888-4e2a-9c1f-000000000008', status: 'SUCCEEDED', triggerType: 'SCHEDULED', fixed: 8, prId: 28, prStatus: 'MERGED', startTime: '08-11 07:09', endTime: '08-11 07:37', cost: '28m14s' },
+        { id: '2e6a4c9d-9999-4e2a-9c1f-000000000009', status: 'FAILED', triggerType: 'SCHEDULED', fixed: 0, prId: null, startTime: '08-10 07:14', endTime: '08-10 07:24', cost: '9m33s' },
+        { id: '8f1b5d3a-aaaa-4e2a-9c1f-000000000010', status: 'SUCCEEDED', triggerType: 'SCHEDULED', fixed: 7, prId: 24, prStatus: 'CLOSED', startTime: '08-09 07:06', endTime: '08-09 07:33', cost: '26m48s' },
+        { id: '6c9e2a4f-bbbb-4e2a-9c1f-000000000011', status: 'SUCCEEDED', triggerType: 'MANUAL', fixed: 5, prId: 21, prStatus: 'MERGED', startTime: '08-08 14:37', endTime: '08-08 14:58', cost: '21m07s' },
+        { id: '3d7f8b1c-cccc-4e2a-9c1f-000000000012', status: 'SUCCEEDED', triggerType: 'SCHEDULED', fixed: 10, prId: 18, prStatus: 'MERGED', startTime: '08-08 07:10', endTime: '08-08 07:43', cost: '33m19s' },
+        { id: '5a2c6d9e-dddd-4e2a-9c1f-000000000013', status: 'CANCELED', triggerType: 'SCHEDULED', fixed: 0, prId: null, startTime: '08-07 07:44', endTime: '08-07 07:51', cost: '7m22s' },
+        { id: '1e4b7a5c-eeee-4e2a-9c1f-000000000014', status: 'SUCCEEDED', triggerType: 'SCHEDULED', fixed: 8, prId: 14, prStatus: 'MERGED', startTime: '08-06 07:13', endTime: '08-06 07:43', cost: '29m55s' },
+        { id: '9c3d6e2b-ffff-4e2a-9c1f-000000000015', status: 'SUCCEEDED', triggerType: 'SCHEDULED', fixed: 4, prId: null, startTime: '08-05 07:08', endTime: '08-05 07:26', cost: '18m26s' },
+      ],
+      kpis: [
+        { label: '接入仓库', value: 6, unit: '个', sub: '4 个启用中', color: 'text-slate-800' },
+        { label: '累计交付修复', value: 217, unit: '个', sub: '仅计成功结束的 run', color: 'text-orange-500' },
+        { label: 'PR 合并率', value: '68%', unit: '', sub: '31 / 45 已合并', color: 'text-emerald-600' },
+        { label: '进行中占槽', value: '2/2', unit: '', sub: '1 个排队中', color: 'text-amber-500' },
+      ],
+      adminRunning: [
+        { id: 'a3f8c2e1-7b4d-4e2a-9c1f-000000000001', projectName: 'order-service', triggerType: 'SCHEDULED', state: 'FIXING', step: 3, elapsed: '1h 12m', queued: false },
+        { id: 'f2c7a9d3-5555-4e2a-9c1f-000000000005', projectName: 'user-center', triggerType: 'SCHEDULED', state: 'SCANNING', step: 2, elapsed: '11m02s', queued: false },
+        { id: '9d4e1b6a-6666-4e2a-9c1f-000000000006', projectName: 'NextMorningstar', triggerType: 'SCHEDULED', state: 'PENDING', step: -1, elapsed: '等待 2m10s', queued: true },
+      ],
+      adminRecent: [
+        { id: 'r1', projectName: 'order-service', status: 'SUCCEEDED', fixed: 9, pr: 47, cost: '31m02s', time: '08-15 07:12' },
+        { id: 'r2', projectName: 'NextMorningstar', status: 'SUCCEEDED', fixed: 5, pr: 12, cost: '27m18s', time: '08-15 06:58' },
+        { id: 'r3', projectName: 'legacy-billing', status: 'FAILED', fixed: 0, pr: null, cost: '12m10s', time: '08-14 07:15' },
+        { id: 'r4', projectName: 'user-center', status: 'CANCELED', fixed: 0, pr: null, cost: '4m51s', time: '08-13 20:40' },
+      ],
+      allProjects: [
+        { id: 'p1', name: 'order-service', link: 'gitea.local/wms/order-service', branchName: 'main', adminName: 'henry', maxSonarIssuesPerRun: 10, maxAiIssuesPerRun: 5, enabled: true },
+        { id: 'p2', name: 'user-center', link: 'gitea.local/wms/user-center', branchName: 'develop', adminName: 'henry', maxSonarIssuesPerRun: 8, maxAiIssuesPerRun: 4, enabled: true },
+        { id: 'p3', name: 'legacy-billing', link: 'gitea.local/wms/legacy-billing', branchName: 'master', adminName: 'henry', maxSonarIssuesPerRun: 5, maxAiIssuesPerRun: 2, enabled: false },
+        { id: 'p4', name: 'NextMorningstar', link: 'gitea.local/infra/NextMorningstar', branchName: 'main', adminName: 'morningstar-nightly', maxSonarIssuesPerRun: 10, maxAiIssuesPerRun: 6, enabled: true },
+      ],
+      aboutStages: [
+        { label: '启动', actor: '后端 · Docker', desc: '创建项目专属容器,挂载共享代码卷,环境隔离互不干扰' },
+        { label: '同步', actor: '后端 · git', desc: '由后端命令行 git 拉取最新代码,凭证不进 AI 容器' },
+        { label: '扫描', actor: 'SonarQube + Claude', desc: '规则引擎客观扫描 + AI 语义审查,双通道互补发现问题' },
+        { label: '修复', actor: 'Claude', desc: '逐 issue 生成修复,每修一个用 SonarQube MCP 即时自查' },
+        { label: '验证', actor: 'SonarQube + Claude', desc: '复扫确认问题消除,再由 AI 独立判定修复思路是否正确' },
+        { label: '提交', actor: '后端 · Gitea', desc: '推送修复分支并创建 PR,附带完整诊断报告' },
+        { label: '清理', actor: '后端 · Docker', desc: '回收容器与临时现场,无论成败都不留残留' },
+      ],
+      security: [
+        { title: '凭证隔离', icon: '⛨', desc: 'Git 凭证只在后端内存,用时注入临时容器、用完即毁;AI 容器内零 git 凭证,prompt injection 偷不到仓库写权限' },
+        { title: '最小权限', icon: '◈', desc: 'admin token 只在授权协作者的一瞬间使用;bot token 只有单仓库写权限,爆炸半径压缩到单个仓库' },
+        { title: '出站白名单', icon: '⊘', desc: '容器网络只放行 Gitea / SonarQube / DeepSeek 三个目标,其余全部挡死,凭证被偷也传不出去' },
+      ],
+      identities: [
+        { role: '项目归属人', who: 'owner', desc: '配置、触发、启停、删除自己的项目;平台自跑项目归专门服务账号 morningstar-nightly', style: 'border-orange-200 bg-orange-50/50', titleColor: 'text-orange-600' },
+        { role: '提交机器人', who: 'bot · HaibaraAi369', desc: 'Gitea 侧的机器身份,负责推送修复分支、创建 PR,对平台内部无感知', style: 'border-slate-200 bg-slate-50/60', titleColor: 'text-slate-600' },
+        { role: '平台管理员', who: 'admin · 熔断者', desc: '只有熔断权没有所有权:可取消任何 run、停用任何项目;不能恢复、不能改配置', style: 'border-amber-200 bg-amber-50/50', titleColor: 'text-amber-600' },
+      ],
+      onboard: [
+        { title: '填仓库链接和分支', desc: '工作台点"接入新项目",粘贴 Gitea 仓库地址,平台自动校验仓库与分支存在' },
+        { title: '授权协作自动完成', desc: '平台自动把 bot 加为仓库协作者,无需手动配置任何凭证' },
+        { title: '明早来看 PR', desc: '每晚 21:00 自动开跑,清晨在 Gitea review 修复 PR,合并与否你说了算' },
+      ],
+    };
+  },
+  computed: {
+    currentProject() { return this.projects[this.selectedId]; },
+    stageTitle() { return 'AI ' + this.pipeline[this.activeStep].label; },
+    stageDesc() { return this.pipeline[this.activeStep].desc; },
+  },
+  methods: {
+    openCreate() {
+      this.formMode = 'create';
+      this.form = { name: '', link: '', branchName: 'main', description: '', maxSonarIssuesPerRun: 10, maxAiIssuesPerRun: 5 };
+      this.showForm = true;
+    },
+    openEdit() {
+      this.formMode = 'edit';
+      this.form = { ...this.currentProject };
+      this.showForm = true;
+    },
+    submitForm() {
+      if (this.formMode === 'create') { /* 原型:仅演示,不落数据 */ }
+      this.showForm = false;
+    },
+    nodeClass(i) {
+      if (i < this.activeStep) return 'bg-orange-500 text-white';
+      if (i === this.activeStep) return 'node-active bg-white border-2 border-orange-400 ring-4 ring-orange-100';
+      return 'bg-slate-100';
+    },
+    stateLabel(s) {
+      return { STARTING:'启动容器', SYNCING:'同步代码', SCANNING:'扫描问题', FIXING:'AI 修复', VERIFYING:'验证修复', SUBMITTING:'提交 PR', CLEANING:'清理现场', PENDING:'排队中' }[s] || s;
+    },
+    statusBadge(s) {
+      return {
+        SUCCEEDED: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+        FAILED: 'bg-rose-50 text-rose-500 border-rose-200',
+        CANCELED: 'bg-slate-50 text-slate-400 border-slate-200',
+        RUNNING: 'bg-orange-50 text-orange-500 border-orange-200',
+      }[s];
+    },
+    triggerLabel(t) {
+      return { MANUAL: '手动触发', SCHEDULED: '夜间调度' }[t];
+    },
+    prBadge(s) {
+      return {
+        MERGED: 'bg-violet-50 text-violet-500 border-violet-200',
+        OPEN: 'bg-orange-50 text-orange-500 border-orange-200',
+        CLOSED: 'bg-slate-50 text-slate-400 border-slate-200',
+      }[s];
+    },
+    prDivider(s) {
+      return {
+        MERGED: 'bg-violet-300',
+        OPEN: 'bg-orange-300',
+        CLOSED: 'bg-slate-300',
+      }[s];
+    },
+  },
+}).mount('#app');
+</script>
+</body>
+</html>

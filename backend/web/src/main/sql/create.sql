@@ -202,14 +202,15 @@ create table if not exists dev_project
 
 create table if not exists dev_run
 (
-    id          binary(16),
-    project_id  binary(16),
-    state       varchar(64) not null,
-    status      varchar(64) not null,
-    pr_id       int,
-    pr_status   varchar(16),
-    create_time datetime,
-    update_time datetime,
+    id           binary(16),
+    project_id   binary(16),
+    trigger_type varchar(16) not null,
+    state        varchar(64) not null,
+    status       varchar(64) not null,
+    pr_id        int,
+    pr_status    varchar(16),
+    create_time  datetime,
+    update_time  datetime,
     primary key (id)
 ) comment '工坊任务表';
 

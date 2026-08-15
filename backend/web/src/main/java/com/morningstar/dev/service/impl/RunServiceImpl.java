@@ -40,15 +40,16 @@ public class RunServiceImpl implements RunService {
     private int maxConcurrency;
 
     @Override
-    public RunDetail createRun(UUID projectId) {
+    public RunDetail createRun(UUID projectId, Run.TriggerType triggerType) {
         Run run = Run.builder()
                 .id(UUID.randomUUID())
                 .projectId(projectId)
                 .state(State.PENDING)
                 .status(Run.Status.RUNNING)
+                .triggerType(triggerType)
                 .build();
         runMapper.insert(run);
-        log.info("[{}] 创建 run 成功，projectId={}", run.getId(), projectId);
+        log.info("[{}] 创建 run 成功，projectId={}，triggerType={}", run.getId(), projectId, triggerType);
         return toDetail(run);
     }
 
@@ -67,7 +68,7 @@ public class RunServiceImpl implements RunService {
             throw new BaseException(ResponseCode.DEV_PROJECT_HAS_ACTIVE_RUN, projectId);
         }
 
-        Run run = createRun(projectId);
+        Run run = createRun(projectId, Run.TriggerType.MANUAL);
         if (countExecutingRun() < maxConcurrency) {
             stateMachineService.sendEvent(run.getId(), Event.START);
         } else {
@@ -178,6 +179,9 @@ public class RunServiceImpl implements RunService {
         Project project = projectMapper.selectById(run.getProjectId());
         if (project != null) { // project 可能已删
             detail.setProjectName(project.getName());
+            if (run.getPrId() != null) {
+                detail.setPrLink(giteaUtil.getPrLink(project.getLink(), run.getPrId()));
+            }
         }
         return detail;
     }

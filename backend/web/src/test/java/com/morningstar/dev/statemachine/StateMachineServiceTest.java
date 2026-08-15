@@ -30,9 +30,31 @@ class StateMachineServiceTest {
     @Value("${morningstar.app.dev.schedule.run-timeout-minutes}")
     private Integer timeout;
 
+//    @BeforeEach
+//    void setUp() {
+//        String repoLink = "http://127.0.0.1:7001/SpiderMan/smart-union-hub";
+//        Project project = projectMapper.selectOne(
+//                new LambdaQueryWrapper<Project>()
+//                        .eq(Project::getLink, repoLink));
+//        if (project == null) {
+//            project = projectService.createProject(
+//                    CreateProjectRequestVo
+//                            .builder()
+//                            .name("智慧工会")
+//                            .link(repoLink)
+//                            .branchName("master")
+//                            .description("test-description")
+//                            .adminId(UUID.randomUUID())
+//                            .build()
+//            );
+//        }
+//        this.run = runService.createRun(project.getId());
+//        log.info("当前run: {}", run.getId());
+//    }
+
     @BeforeEach
     void setUp() {
-        String repoLink = "http://127.0.0.1:7001/SpiderMan/smart-union-hub";
+        String repoLink = "http://127.0.0.1:7001/SpiderMan/AMLDashboard";
         Project project = projectMapper.selectOne(
                 new LambdaQueryWrapper<Project>()
                         .eq(Project::getLink, repoLink));
@@ -40,15 +62,15 @@ class StateMachineServiceTest {
             project = projectService.createProject(
                     CreateProjectRequestVo
                             .builder()
-                            .name("智慧工会")
+                            .name("反洗钱驾驶舱")
                             .link(repoLink)
-                            .branchName("master")
-                            .description("test-description")
+                            .branchName("main")
+                            .description("这是个反洗钱驾驶舱")
                             .adminId(UUID.randomUUID())
                             .build()
             );
         }
-        this.run = runService.createRun(project.getId());
+        this.run = runService.createRun(project.getId(), Run.TriggerType.MANUAL);
         log.info("当前run: {}", run.getId());
     }
 

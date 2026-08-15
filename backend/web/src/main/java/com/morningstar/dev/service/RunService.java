@@ -1,12 +1,13 @@
 package com.morningstar.dev.service;
 
 import com.morningstar.dev.pojo.bo.RunDetail;
+import com.morningstar.dev.pojo.po.Run;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface RunService {
-    RunDetail createRun(UUID projectId);
+    RunDetail createRun(UUID projectId, Run.TriggerType triggerType);
 
     RunDetail triggerRun(UUID projectId, UUID adminId);
 

@@ -45,6 +45,11 @@ public class GiteaUtil {
         return String.format("%s#L%d-L%d", fileLink, startLine, endLine);
     }
 
+    public String getPrLink(String projectLink, Integer prId) {
+        RepoIdentity repoIdentity = parseRepoIdentity(projectLink);
+        return String.format("%s/%s/%s/pulls/%d", giteaProperties.getBackendOrigin(), repoIdentity.getOwnerName(), repoIdentity.getRepoName(), prId);
+    }
+
     public String getFileLink(String filePath, String projectLink, String commitSha) {
         RepoIdentity repoIdentity = parseRepoIdentity(projectLink);
         return String.format("%s/%s/%s/src/commit/%s/%s", giteaProperties.getBackendOrigin(), repoIdentity.getOwnerName(), repoIdentity.getRepoName(), commitSha, filePath);

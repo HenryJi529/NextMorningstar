@@ -24,6 +24,8 @@ public class Run {
 
     private UUID projectId;
 
+    private TriggerType triggerType;
+
     private State state;
 
     // NOTE: 观测变量
@@ -38,6 +40,11 @@ public class Run {
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
+    public enum TriggerType {
+        MANUAL,
+        SCHEDULED,
+    }
 
     public enum Status {
         RUNNING,

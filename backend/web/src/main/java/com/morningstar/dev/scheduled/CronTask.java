@@ -49,7 +49,7 @@ public class CronTask {
                 log.info("项目 {} 已有活跃 run，跳过", project.getId());
                 continue;
             }
-            runService.createRun(project.getId());
+            runService.createRun(project.getId(), Run.TriggerType.SCHEDULED);
         }
     }
 

@@ -12,4 +12,5 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode(callSuper = true)
 public class RunDetail extends Run {
     private String projectName;
+    private String prLink;
 }

@@ -20,11 +20,11 @@ morningstar:
         bot-username: HaibaraAi369
         bot-email: jeep.jipu@outlook.com
       max-attempts:
-        sync: 10
-        scan: 10
-        fix: 10
-        verify: 10
-        submit: 10
+        sync: 2
+        scan: 2
+        fix: 3
+        verify: 3
+        submit: 2
       schedule:
         create-cron: "0 0 21 * * ?"
         dispatch-cron: "*/30 * * * * ?"

@@ -28,6 +28,11 @@ export enum RunStatus {
     CANCELED = 'CANCELED',
 }
 
+export enum RunTriggerType {
+    MANUAL = 'MANUAL',
+    SCHEDULED = 'SCHEDULED',
+}
+
 export enum RunPrStatus {
     OPEN = 'OPEN',
     CLOSED = 'CLOSED',
@@ -54,6 +59,7 @@ export interface Run {
     projectId: string;
     state: RunState;
     status: RunStatus;
+    triggerType: RunTriggerType;
     prId?: number;
     prStatus?: RunPrStatus;
     createTime: string;
@@ -86,6 +92,7 @@ export interface ProjectDetail extends Project {
 
 export interface RunDetail extends Run {
     projectName?: string;
+    prLink?: string;
 }
 
 export interface Stats {
