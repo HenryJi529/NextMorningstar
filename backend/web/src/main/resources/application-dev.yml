@@ -35,9 +35,6 @@ morningstar:
   redis:
     host: 127.0.0.1
     password: ''
-  mongodb:
-    host: localhost
-    password: 1234asdw
   es:
     hostname: "localhost"
     port: 9200

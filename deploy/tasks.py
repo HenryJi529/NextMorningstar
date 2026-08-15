@@ -204,11 +204,6 @@ class Commands:
                 "ports": [6379],
             },
             {
-                "name": "MongoDB",
-                "host": f"{Env.PROJECT_NAME}_mongodb",
-                "ports": [27017],
-            },
-            {
                 "name": "RabbitMQ",
                 "host": f"{Env.PROJECT_NAME}_rabbitmq",
                 "ports": [15672, 5672, 61613],

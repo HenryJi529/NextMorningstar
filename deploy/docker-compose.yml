@@ -5,12 +5,6 @@ volumes:
   mysql_data: 
     external: true
     name: ${PROJECT_NAME}_mysql_data
-  mongodb_db: 
-    external: true
-    name: ${PROJECT_NAME}_mongodb_db
-  mongodb_configdb: 
-    external: true
-    name: ${PROJECT_NAME}_mongodb_configdb
   rabbitmq_data: 
     external: true
     name: ${PROJECT_NAME}_rabbitmq_data
@@ -136,20 +130,6 @@ services:
       - 3306:3306
     networks:
       - website
-  mongodb:
-    image: mongo:8
-    restart: unless-stopped
-    container_name: ${PROJECT_NAME}_mongodb
-    ports:
-      - 27017:27017
-    volumes:
-      - mongodb_db:/data/db
-      - mongodb_configdb:/data/configdb
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-    networks:
-      - website
   rabbitmq:
     container_name: ${PROJECT_NAME}_rabbitmq
     build:
@@ -229,14 +209,12 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD}
     depends_on:
       - es
       - mysql
       - redis
-      - mongodb
       - rabbitmq
       - neo4j
     networks:

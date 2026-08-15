@@ -18,14 +18,6 @@ spring:
   # 关闭sql初始化
   sql.init.mode: never
   data:
-    # 配置mongodb数据源
-    mongodb:
-      host: ${morningstar.mongodb.host}
-      port: 27017
-      username: root
-      password: ${morningstar.mongodb.password}
-      database: morningstar
-      authentication-database: admin
     # 配置redis数据源
     redis:
       host: ${morningstar.redis.host}
