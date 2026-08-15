@@ -129,6 +129,8 @@ export interface Stats {
     pendingRunCount: number;
     maxConcurrency: number;
     deliveredIssueCount: number;
+    acceptedIssueCount: number;
     prTotal: number;
     prMerged: number;
+    savedPersonDays: number;
 }

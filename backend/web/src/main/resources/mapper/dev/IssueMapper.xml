@@ -4,4 +4,11 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.morningstar.dev.dao.mapper.IssueMapper">
 
+    <!-- NOTE: 注意status对应枚举类 -->
+    <select id="calcSavedPersonDays" resultType="java.lang.Double">
+        SELECT ROUND(COALESCE(SUM(effort_in_minutes), 0) / 480.0, 1)
+        FROM dev_issue
+        WHERE status = 'ACCEPTED'
+    </select>
+
 </mapper>

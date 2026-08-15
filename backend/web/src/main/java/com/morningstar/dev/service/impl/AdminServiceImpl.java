@@ -86,6 +86,9 @@ public class AdminServiceImpl implements AdminService {
                         new LambdaQueryWrapper<Run>().isNotNull(Run::getPrId))))
                 .prMerged(Math.toIntExact(runMapper.selectCount(
                         new LambdaQueryWrapper<Run>().eq(Run::getPrStatus, Run.PrStatus.MERGED))))
+                .acceptedIssueCount(Math.toIntExact(issueMapper.selectCount(
+                        new LambdaQueryWrapper<Issue>().eq(Issue::getStatus, Issue.Status.ACCEPTED))))
+                .savedPersonDays(issueMapper.calcSavedPersonDays())
                 .build();
     }
 }

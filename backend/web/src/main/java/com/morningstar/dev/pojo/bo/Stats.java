@@ -22,6 +22,11 @@ public class Stats {
     private Integer deliveredIssueCount;
 
     /**
+     * 已采纳(PR 合并)的 Issue 总数
+     */
+    private Integer acceptedIssueCount;
+
+    /**
      * 提交过 PR 的 run 总数
      */
     private Integer prTotal;
@@ -30,4 +35,9 @@ public class Stats {
      * PR 被合并的 run 总数
      */
     private Integer prMerged;
+
+    /**
+     * 累计节约人天
+     */
+    private Double savedPersonDays;
 }
