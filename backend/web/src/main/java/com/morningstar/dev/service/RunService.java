@@ -2,6 +2,7 @@ package com.morningstar.dev.service;
 
 import com.morningstar.dev.pojo.po.Run;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface RunService {
@@ -11,9 +12,11 @@ public interface RunService {
 
     Run getRun(UUID runId);
 
+    List<Run> listRun(UUID projectId, UUID adminId);
+
     void cancelRun(UUID runId, UUID adminId);
 
-    Run syncPrStatus(UUID runId);
+    void syncPrStatus(UUID runId);
 
     boolean hasActiveRun(UUID projectId);
 }

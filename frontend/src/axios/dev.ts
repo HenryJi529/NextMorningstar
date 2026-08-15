@@ -34,6 +34,12 @@ export const deleteProject = (id: string): Promise<AxiosResponse<R<void>>> => {
 
 /* 任务 */
 const API_RUN = '/dev/run';
+export const getAllRun = (params?: {
+    projectId?: string;
+    adminId?: string;
+}): Promise<AxiosResponse<R<Run[]>>> => {
+    return axios.get(API_RUN, { params });
+};
 export const triggerRun = (projectId: string): Promise<AxiosResponse<R<Run>>> => {
     return axios({
         url: API_RUN,

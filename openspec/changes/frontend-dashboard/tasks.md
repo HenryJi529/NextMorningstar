@@ -2,6 +2,7 @@
 
 - [x] 0.1 路由/ico/BaseView 骨架(8/14)。
 - [x] 0.2 `types/dev.ts` 全套类型 + `axios/dev.ts` 8 端点(8/14):契约对齐后端序列化规则(枚举 `name()`、UUID→string、`non_null` 下可空字段标 `?:`),返回类型 `AxiosResponse<R<T>>`,无 data 端点标 `R<void>`;拦截器死代码修复(`code !== SUCCESS` + `msg`)。
+- [x] 0.3 `GET /dev/run` 列表接口(8/15):`projectId`/`adminId` 可选过滤、都不带查全量、按 `create_time` 倒序,读公开;`dev_run` 无 admin_id 列,adminId 过滤先查归属项目再 `in`。axios 加 `getAllRun`。
 
 ## 1. 配置页
 

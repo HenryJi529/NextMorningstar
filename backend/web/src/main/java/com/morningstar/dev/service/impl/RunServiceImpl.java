@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -58,7 +59,7 @@ public class RunServiceImpl implements RunService {
         if (hasActiveRun(projectId)) {
             throw new BaseException(ResponseCode.DEV_PROJECT_HAS_ACTIVE_RUN, projectId);
         }
-        
+
         Run run = createRun(projectId);
         stateMachineService.sendEvent(run.getId(), Event.START);
         return runMapper.selectById(run.getId());
@@ -75,6 +76,24 @@ public class RunServiceImpl implements RunService {
     }
 
     @Override
+    public List<Run> listRun(UUID projectId, UUID adminId) {
+        LambdaQueryWrapper<Run> wrapper = new LambdaQueryWrapper<>();
+        if (projectId != null) {
+            wrapper.eq(Run::getProjectId, projectId);
+        }
+        if (adminId != null) { // dev_run 无 admin_id 列,先查归属项目再过滤
+            List<UUID> adminProjectIds = projectMapper.selectList(
+                            new LambdaQueryWrapper<Project>().eq(Project::getAdminId, adminId))
+                    .stream().map(Project::getId).toList();
+            if (adminProjectIds.isEmpty()) {
+                return List.of();
+            }
+            wrapper.in(Run::getProjectId, adminProjectIds);
+        }
+        return runMapper.selectList(wrapper.orderByDesc(Run::getCreateTime));
+    }
+
+    @Override
     public void cancelRun(UUID runId, UUID adminId) {
         Run run = getRun(runId);
         Project project = projectMapper.selectById(run.getProjectId());
@@ -88,21 +107,21 @@ public class RunServiceImpl implements RunService {
     }
 
     @Override
-    public Run syncPrStatus(UUID runId) {
+    public void syncPrStatus(UUID runId) {
         Run run = runMapper.selectById(runId);
         // 无 PR 或已达终态 → 幂等跳过
         if (run == null || run.getPrId() == null || run.getPrStatus() != Run.PrStatus.OPEN) {
-            return run;
+            return;
         }
 
         Project project = projectMapper.selectById(run.getProjectId());
         if (project == null) { // project 已删（run 已 CLEANED 但 PR 未处理时可能发生）
-            return run;
+            return;
         }
 
         GiteaUtil.PullRequest pr = giteaUtil.getPullRequest(project.getLink(), run.getPrId());
         if (pr == null) { // 404：PR 被手动删了，跳过
-            return run;
+            return;
         }
 
         if (Boolean.TRUE.equals(pr.getMerged())) {
@@ -121,8 +140,6 @@ public class RunServiceImpl implements RunService {
             runMapper.updateById(Run.builder().id(runId).prStatus(Run.PrStatus.CLOSED).build());
         }
         // open → 不变
-
-        return runMapper.selectById(runId);
     }
 
     @Override

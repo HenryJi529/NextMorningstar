@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "工坊任务相关接口定义")
@@ -22,6 +23,13 @@ public class RunController {
     @PostMapping
     public R<Run> trigger(@RequestParam UUID projectId) {
         return R.ok(runService.triggerRun(projectId, AuthUtil.getUserId()));
+    }
+
+    @Operation(summary = "获取任务列表")
+    @GetMapping("")
+    public R<List<Run>> list(@RequestParam(required = false) UUID projectId,
+                             @RequestParam(required = false) UUID adminId) {
+        return R.ok(runService.listRun(projectId, adminId));
     }
 
     @Operation(summary = "获取任务")
