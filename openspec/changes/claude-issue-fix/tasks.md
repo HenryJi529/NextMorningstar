@@ -11,6 +11,7 @@
 - [x] 1.1 `FixAction` 切修复分支 `switch -C fix/<runId>`。
 - [x] 1.2 遍历 `SELECTED` issue（LambdaQueryWrapper：runId + status=SELECTED）。
 - [x] 1.3 统一 prompt（内嵌 text block）：读 issue 字段（title/codeSnippet/metadata.description/suggestion/filePath），Claude 修复代码，修复后调用 sonarqube MCP `analyze_code_snippet` 自查避免引入新 issue。
+- [x] 1.4 提示词防跨文件回归（8/16）：编译自查（与后端 `mavenBuild` 同口径命令，无 pom 容忍）+ 波及面自查（改动涉及被引用声明时检索引用方文件同样 `analyze_code_snippet`，只查直接引用不扩大范围）。**重试反馈提示词方案评估后放弃**（同日）：曾实现"上轮 verify 失败的 key 清单喂回下轮 fix 提示词"，后删除——message 契约是给人排错、喂模型是受众错位；回滚后"新引入"问题的位置信息失效；自检 + 回退环重试随机性已够，偏门 case 靠流水记录事后研究。
 
 ## 2. 提交与回写
 

@@ -61,7 +61,7 @@ public class CommonSteps {
         String containerName = getContainerName(run);
         processUtil.run(
                 "docker", "exec", containerName, "bash", "-c",
-                "p=$(find /workspace/repo -name pom.xml | head -1) && [ \"$p\" ] && mvn -s /workspace/maven-settings.xml -q compile -f \"$p\" || true"
+                "p=$(find /workspace/repo -name pom.xml | head -1); if [ -n \"$p\" ]; then mvn -s /workspace/maven-settings.xml -q compile -f \"$p\"; fi"
         );
     }
 

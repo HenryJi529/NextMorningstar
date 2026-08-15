@@ -260,3 +260,4 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | Detail bo 展示扩充 | dev-plan 决策 47 | PO 不沾染展示字段；`@SuperBuilder` 继承 + 统一 `toDetail`，前端类型同构继承；RunDetail 含 actionAttemptBriefs 阶段流水（可视化数据源），CopyUtil 健壮化支持跨类同名拷贝 |
 | Run 触发方式入 PO | dev-plan 决策 48 | `triggerType`(MANUAL/SCHEDULED）是真实属性不进 Detail；写入点收敛 `createRun`,调用方用 enum 声明 |
 | 前端三页 IA 与可视化定稿 | dev-plan 决策 49 | 我的项目/系统管理/平台说明；历史任务单表不拆 PR；回退环弧线表达 RESTORING 回路；失败徽章/耗时由 actionAttemptBriefs 前端聚合 |
+| Verify 门禁 key 明细与防跨文件回归 | dev-plan 决策 50 | key 差集明细只为排障，判定口径仍是数量对比；mavenBuild 不吞编译失败（否则旧字节码分析新源码，门禁不可信）；重试反馈提示词方案放弃（受众错位 + 回滚后位置失效 + 自检已够） |

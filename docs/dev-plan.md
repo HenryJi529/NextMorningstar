@@ -123,6 +123,7 @@
 | 47 | **Detail bo 展示扩充模式**(8/15 定,已实现) | PO 不沾染展示字段,Service 出口统一返回 bo:`ProjectDetail extends Project`(补 `adminName`,取归属人 `username`——唯一登录名辨识度高,nickname 可选常为空不做 fallback 链)、`RunDetail extends Run`(补 `projectName`;另补 `prLink`——复用 `GiteaUtil.getPrLink` 拼 `backendOrigin/owner/repo/pulls/{prId}`,与 PR body 文件链接同 origin 口径,`project == null` 或 `prId == null` 时留空降级;`deliveredIssueCount`——交付口径同决策 45,仅 SUCCEEDED run 非 null,值为该 run 下 VERIFIED/ACCEPTED/REJECTED issue 总数,与 Stats 同词同口径避免词汇漂移;`actionAttemptBriefs`——阶段执行流水 `List<ActionAttemptBrief>`(`ActionAttempt` 的轻量视图 bo:仅 `actionType/attemptNo/status/createTime/updateTime`,列裁剪使 `result` 列不出库——ScanResult 带全量 issueKeys 体积大;RESTORE 条数即回退环激活次数,是当前任务可视化节点耗时/重试徽章/回退环的数据源));父子均 `@SuperBuilder`,`CopyUtil.copyNonNullProperties` 拷贝(CopyUtil 已健壮化:泛型签名改 `Object`,两侧沿父类链按名字匹配字段——跨类拷贝(PO→Brief)安全、target 缺字段跳过、同名遮蔽只留子类、static/synthetic 不拷)。**单条 `toDetail` 为正典,批量即 `stream().map(this::toDetail)`**——MVP 不做批量查询优化(项目个位数,N+1 无感;流水随 toDetail 统一填充,列表多条各查一次流水亦无感)。**关联对象为 null 时展示字段留空降级,不抛异常**(归属人被逻辑删除/项目已删而 run 日志留存均为真实场景;展示路径降级 ≠ 掩盖异常)。前端镜像同构:`types/dev.ts` 用 `interface XxxDetail extends Xxx` 继承(不直接改 PO 类型),axios 端点返回类型随迁;内部调用方(CronTask/AdminServiceImpl)零改动——Detail is-a PO 直接兼容。**鉴权/打日志只需 PO 时直接 `selectById`,不借 `getRun`/`toDetail`**(cancelRun 两处:返回 void 时组装 Detail 的四次额外查询纯浪费) |
 | 48 | **Run 触发方式 `triggerType`**(8/15 定,已实现) | 真实属性进 PO 不进 Detail:`Run` 加嵌套枚举 `TriggerType { MANUAL, SCHEDULED }` + `trigger_type` 列(`trigger` 是 MySQL 保留字,避开)。写入点收敛在 `createRun(projectId, triggerType)`——调用方声明:`triggerRun` 传 `MANUAL`、`CronTask` 传 `SCHEDULED`(enum 参数,不裸 String)。命名不用 `trigger` 单词:作动词偏"手动触发"语义(CI 语境 manual trigger),`xxxType` 分类命名中性;且状态机已有 `Trigger` 接口(`statemachine/Trigger`),枚举名 `TriggerType` 顺带避开撞名。前端 `RunTriggerType` 枚举 + 展示映射(MANUAL→手动触发/SCHEDULED→夜间调度);存量 dev 库 `alter table dev_run add column trigger_type varchar(16) not null default 'SCHEDULED'` 回溯(存量均为夜间调度产物) |
 | 49 | **前端三页 IA 与状态机可视化定稿**(8/15 定,原型已定稿 `frontend/prototype/dev.html`) | 两页→三页:`/dev` 我的项目(owner 入口)、`/dev/admin` 系统管理、`/dev/about` 平台说明(演示叙事:流水线怎么跑/安全三卡/三层身份/三步接入)。项目切换从 Tab 改**吸顶二级子菜单**(项目胶囊,与顶栏同一 sticky 容器);接入/编辑用弹窗表单。**历史任务单表不拆 PR 表**——`prId`/`prStatus` 本就是 `dev_run` 的列,PR 作为成功 run 的交付物同行渲染(链接直接用 `RunDetail.prLink`)。状态机可视化:7 节点流水线 + 头部阶段失败徽章(数据源 `RunDetail.actionAttemptBriefs`,决策 47:FAILED 按 actionType 分组计数,无需专用聚合接口)+ **回退环弧线**(RESTORING 是验证→修复的节点间回路,不是节点也不是节点属性——放流水线下方,休眠淡虚线/激活虚线流动;回滚节点、节点自环两方案均被否)+ 漏斗计数条(**本轮入选** = 经 maxIssuesPerRun 截断的入选数,不是"发现数";**扫描发现**总数只能从 action_attempt.result 的 issueKeys 解析,MVP 暴露方式未定可先隐藏;**无 PR 项**——PR 一创建 run 即终态,不算当前运行)。视觉:浅色橙主题(底 `#f3f4f6`、白卡、orange-500 accent、语义浅底徽章),管理页布局 KPI → 项目列表整行 → 正在运行 → 最近完成 |
+| 50 | **Verify 门禁 key 明细与防跨文件回归**(8/16 定,已实现) | `ScanResult` 落全量基线 `scannedSonarIssueKeys`;Verify 门禁失败时按 key 求差集——未修复 = 当前扫描 ∩ 本轮 FIXED 的 key、新引入 = 当前扫描 − 基线,记入 `VerifyResult.unfixedSonarIssueKeys`/`introducedSonarIssueKeys` + message 明细(**判定口径仍是数量对比,不变**——数量比较成立时新引入清单必非空,明细只为排障)。`mavenBuild` 去掉 `|| true` 吞错:无 pom 才跳过,有 pom 编译失败抛 `ProcessExecutionException` 使 SCAN/VERIFY 响亮失败(否则 sonar 拿扫描阶段旧字节码分析新源码,门禁不可信)。fix 提示词加两条防跨文件回归:编译自查(与后端 `mavenBuild` 同口径命令)+ 波及面自查(改动涉及被引用声明时检索引用方文件同样 `analyze_code_snippet`,只查直接引用不扩大范围)。**重试反馈提示词方案评估后放弃**(同日):曾实现"上轮 verify 失败的 key 清单喂回下轮 fix 提示词",后删除——①message 契约是给人排错,喂模型是受众错位(前步骤不该包含后步骤的提示词);②回滚后"新引入"问题的位置信息失效(指向已不存在的修复代码);③`analyze_code_snippet` 自检 + 回退环重试随机性已够,偏门 case 靠流水记录事后研究而非装置加码 |
 
 ---
 
@@ -185,8 +186,8 @@ docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git \
 
 ### 4.3 sonar 裁判机制(VerifyAction)
 
-修复后 `mvn -q compile` → `sonar-scanner` 重扫 → 两道防线:
-- **第一道（SonarQube 客观）**：重扫后统计 in-scope issue 数量，数量对比判定回归：`currentIssueNum > scannedSonarIssueNum - fixedSonarIssueNum` 则存在未修复或回归，整轮 `VERIFY_FAILED`
+修复后 `mvn -q compile`(编译失败即抛异常,不吞错,决策 50) → `sonar-scanner` 重扫 → 两道防线:
+- **第一道（SonarQube 客观）**：重扫后统计 in-scope issue 数量，数量对比判定回归：`currentIssueNum > scannedSonarIssueNum - fixedSonarIssueNum` 则存在未修复或回归，整轮 `VERIFY_FAILED`;失败时按 key 求差集记录明细(未修复/新引入清单进 `VerifyResult` 与 message,供排障,决策 50)
 - **第二道（Claude 语义验证）**：Claude 逐条 review issue（不喂 diff，读 `commitMessage` 判思路 + 读当前代码判实现），输出 `{"verified":true/false}`
 - 两道任一失败 → 整轮 `VERIFY_FAILED` → RestoreAction 整轮回退（issue 回 `SELECTED`，**不标 FAILED**，决策 31）
 - MVP 不做逐 commit 保留（理由见 fix-runtime-container 决策 18）
@@ -368,7 +369,7 @@ morningstar.app.dev:
 - [x] RestClient（`SonarUtil`）调 SonarQube API（翻页取全量 + `/api/rules/show` 拿规则描述）
 - [x] SonarQube 通道:`docker exec` 跑 scanner → 拉 OPEN issue → `impacts` 数组映射三维 severity → `convertSonarIssueToIssue`
 - [x] AI Discovery 通道:Claude heredoc 写 prompt + schema 文件 + `--json-schema --output-format json` 自由探索 → `structured_output` 反序列化 → `convertAiIssueToIssue`
-- [x] `ScanResult` 加 `scannedSonarIssueNum`/`scannedAiIssueNum`（供 VerifyAction 数量对比回归检测）
+- [x] `ScanResult` 加 `scannedSonarIssueNum`/`scannedAiIssueNum`（供 VerifyAction 数量对比回归检测;8/16 补 `scannedSonarIssueKeys` 基线,供 key 差集明细,决策 50）
 - [x] 随机打乱后按 `maxSonarIssuesPerRun`/`maxAiIssuesPerRun` 截断，不做去重/黑名单/跨 run 排除
 - [x] SonarIssue → Issue 映射（`description`, `suggestion`, `filePath`, `codeSnippet` via sed, `effortInMinutes`）
 - [x] 联调端到端验证：双通道各有产出，issue 真实入库 ✅

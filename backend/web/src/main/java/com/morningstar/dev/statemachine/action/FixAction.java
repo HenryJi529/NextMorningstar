@@ -159,7 +159,12 @@ public class FixAction extends AbstractAction {
                 - 直接修改文件完成修复，不要只给出修改建议。
                 - 只修改与该问题直接相关的代码，不要重构无关部分、不要创建无关文件。
                 - 尽力修复，即使问题复杂也不要放弃。
-                - 修复过程中，调用 sonarqube mcp 的 analyze_code_snippet 检查你所修改的每个文件，如有新增 issue，继续修正直到干净。
+                - 修复过程中，调用 sonarqube mcp 的 analyze_code_snippet 检查你所修改的每个文件，如有新增 issue，继续修改直到干净。
+                - 如果是可以编译的Maven项目，修复完成后，请确保编译通过，如不通过，继续修改。编译命令如下：
+                    ```bash
+                    p=$(find /workspace/repo -name pom.xml | head -1); if [ -n "$p" ]; then mvn -s /workspace/maven-settings.xml -q compile -f "$p"; fi
+                    ```
+                - 若你的改动涉及方法签名、类名、字段等被其它文件引用的声明，用检索工具找出引用这些声明的文件，对它们同样调用 analyze_code_snippet 检查，如有新增 issue 一并修改。只检查直接引用你改动声明的文件，不要扩大检索范围。
                 
                 ## 输出规则
                 - 只输出以下格式JSON，不要任何额外文字或说明，不要用 Markdown 代码块，直接输出 JSON 本身。
@@ -179,6 +184,7 @@ public class FixAction extends AbstractAction {
                 issue.getMetadata().getFilePath(),
                 issue.getMetadata().getDescription(),
                 issue.getMetadata().getSuggestion(),
-                issue.getMetadata().getCodeSnippet());
+                issue.getMetadata().getCodeSnippet()
+        );
     }
 }

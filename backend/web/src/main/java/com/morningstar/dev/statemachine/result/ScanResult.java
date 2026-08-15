@@ -4,6 +4,8 @@ package com.morningstar.dev.statemachine.result;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,4 +15,5 @@ import lombok.experimental.SuperBuilder;
 public class ScanResult extends ActionResult {
     private Integer scannedSonarIssueNum;
     private Integer scannedAiIssueNum;
+    private List<String> scannedSonarIssueKeys;
 }

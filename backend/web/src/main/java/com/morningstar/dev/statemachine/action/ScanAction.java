@@ -117,6 +117,7 @@ public class ScanAction extends AbstractAction {
                     .status(ActionResult.Status.SUCCEEDED)
                     .scannedSonarIssueNum(sonarIssues.size())
                     .scannedAiIssueNum(aiIssues.size())
+                    .scannedSonarIssueKeys(sonarIssues.stream().map(SonarUtil.SonarIssue::getKey).toList())
                     .build();
         } catch (ProcessUtil.ProcessExecutionException | JsonProcessingException e) {
             return ScanResult

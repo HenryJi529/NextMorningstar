@@ -2,7 +2,7 @@
 
 - [x] 1.1 `ScanAction` 容器内 `find pom.xml` + `mvn -q compile` 产 `target/classes`。
 - [x] 1.2 容器内 `sonar-scanner` 推分析到 SonarQube。
-- [x] 1.3 调 `/api/issues/search`(翻页取全量)拉 OPEN issue → InScopeSeverities.sonar 过滤，记录 in-scope 总数进 `ScanResult.scannedSonarIssueNum`（供 VerifyAction 数量对比回归检测）。
+- [x] 1.3 调 `/api/issues/search`(翻页取全量)拉 OPEN issue → InScopeSeverities.sonar 过滤，记录 in-scope 总数进 `ScanResult.scannedSonarIssueNum`（供 VerifyAction 数量对比回归检测）；8/16 补：同时落全量 issue key 列表 `scannedSonarIssueKeys`（供 VerifyAction 求差集明细）。
 - [x] 1.4 每个 issue 调 `/api/rules/show` 拿规则描述（introduction/root_cause → description，how_to_fix → suggestion），存进 `metadata`。
 - [x] 1.5 随机打乱 → 按 project 的 `maxSonarIssuesPerRun` 截断。不做规则黑名单（随机选择天然分散）、不做 severity 排序（避免每次都选同一批最严重的老问题）。
 
@@ -17,7 +17,7 @@
 - [x] ~~3.1 合并去重~~ — 永不做。SonarQube 和 AI 发现的是不同类型问题（规则 vs 语义），重叠概率极低。
 - [x] ~~3.2 跨 run 排除 FAILED 的 issue~~ — 永不做。当前阶段应验证修复能力，而非回避困难 issue。
 - [x] 3.3 不同 runId 天然隔离，无需删除旧 issue → batch insert（status=`SELECTED`）。
-- [x] 3.4 `ScanResult` 写入 `scannedSonarIssueNum` + `scannedAiIssueNum`。
+- [x] 3.4 `ScanResult` 写入 `scannedSonarIssueNum` + `scannedAiIssueNum`；8/16 补 `scannedSonarIssueKeys` 基线。
 
 ## 4. 验证
 

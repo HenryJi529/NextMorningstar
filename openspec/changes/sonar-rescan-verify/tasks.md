@@ -2,6 +2,8 @@
 
 - [x] 1.1 `VerifyAction` 容器内 `mvn -q compile` + `sonar-scanner` 重扫（复用 `CommonSteps.mavenBuild`/`sonarScan`）。
 - [x] 1.2 数量对比检测回归：`currentIssueNum > scannedSonarIssueNum - fixedSonarIssueNum` → 存在未修复或引入新 issue。
+- [x] 1.3 门禁失败明细（8/16）：key 差集——未修复 = 当前扫描 ∩ 本轮 FIXED 的 key、新引入 = 当前扫描 − 基线 `scannedSonarIssueKeys`，记入 `VerifyResult.unfixedSonarIssueKeys`/`introducedSonarIssueKeys` 与 message（排障用；**判定口径仍是数量对比，不变**，数量比较成立时新引入清单必非空）。
+- [x] 1.4 `CommonSteps.mavenBuild` 去掉 `|| true` 吞错（8/16）：无 pom 才跳过，有 pom 编译失败抛 `ProcessExecutionException` 使 SCAN/VERIFY 响亮失败——否则 sonar 拿扫描阶段的旧字节码分析新源码，门禁结果不可信。
 
 ## 2. 第二道防线：Claude 语义验证
 

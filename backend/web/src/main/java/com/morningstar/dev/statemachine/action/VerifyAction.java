@@ -22,7 +22,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -76,19 +78,33 @@ public class VerifyAction extends AbstractAction {
                     .map(issue -> ((Issue.SonarMetadata) issue.getMetadata()).getIssueKey())
                     .toList();
 
+            // 未被修复的问题: 本轮标记 FIXED 的 issue 在当前扫描中仍存在
+            List<String> unfixedSonarIssueKeys = currentSonarIssueKeys.stream()
+                    .filter(fixedSonarIssueKeys::contains)
+                    .toList();
+            // 新引入的问题: 当前扫描中出现而上次扫描基线中不存在的 issue
+            Set<String> baselineIssueKeys = new HashSet<>(lastScanResult.getScannedSonarIssueKeys());
+            List<String> introducedSonarIssueKeys = currentSonarIssueKeys.stream()
+                    .filter(key -> !baselineIssueKeys.contains(key))
+                    .toList();
+
             // 是否有未被修复的问题
-            boolean hasUnfixed = fixedSonarIssueKeys.stream()
-                    .anyMatch(currentSonarIssueKeys::contains);
-            log.info("是否有未被修复的问题: {}", hasUnfixed);
-            // 是否引入了新问题  NOTE: 存在修复更多旧issue的同时又引入新issue的可能
-            boolean hasRegression = currentSonarIssueKeys.size()
-                    > lastScanResult.getScannedSonarIssueNum() - fixedSonarIssueKeys.size();
-            log.info("是否引入了新问题: {}", hasRegression);
-            if (hasUnfixed || hasRegression) {
+            boolean hasUnfixed = !unfixedSonarIssueKeys.isEmpty();
+            // 是否引入了新问题  NOTE: 存在修复更多旧issue的同时又引入新issue的可能，因此这里只统计数量
+            boolean hasIntroduced = currentSonarIssueKeys.size()
+                    > baselineIssueKeys.size() - fixedSonarIssueKeys.size();
+            if (hasUnfixed || hasIntroduced) {
+                String message = "";
+                if (hasUnfixed) {
+                    message += "未修复的SonarIssue key: " + String.join(",", unfixedSonarIssueKeys) + "\n";
+                }
+                if (hasIntroduced) {
+                    message += "新引入的SonarIssue key: " + String.join(",", introducedSonarIssueKeys) + "\n";
+                }
                 return VerifyResult
                         .builder()
                         .status(ActionResult.Status.FAILED)
-                        .message("有未被修复的问题 或 引入了新问题")
+                        .message(message)
                         .build();
             }
 
