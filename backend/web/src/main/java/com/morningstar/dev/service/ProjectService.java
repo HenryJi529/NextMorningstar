@@ -1,6 +1,6 @@
 package com.morningstar.dev.service;
 
-import com.morningstar.dev.pojo.po.Project;
+import com.morningstar.dev.pojo.bo.ProjectDetail;
 import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.pojo.vo.UpdateProjectRequestVo;
 
@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ProjectService {
-    Project createProject(CreateProjectRequestVo vo);
+    ProjectDetail createProject(CreateProjectRequestVo vo);
 
-    Project updateProject(UpdateProjectRequestVo vo);
+    ProjectDetail updateProject(UpdateProjectRequestVo vo);
 
     void deleteProject(UUID projectId, UUID adminId);
 
-    Project getProjectById(UUID projectId);
+    ProjectDetail getProjectById(UUID projectId);
 
-    List<Project> getAllProject();
+    List<ProjectDetail> listProject();
 }

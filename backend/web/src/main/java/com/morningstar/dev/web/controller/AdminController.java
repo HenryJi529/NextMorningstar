@@ -1,5 +1,6 @@
 package com.morningstar.dev.web.controller;
 
+import com.morningstar.dev.pojo.bo.Stats;
 import com.morningstar.dev.service.AdminService;
 import com.morningstar.infra.response.R;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,6 +17,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminController {
     private final AdminService adminService;
+
+    @Operation(summary = "平台统计")
+    @GetMapping("/stats")
+    public R<Stats> stats() {
+        return R.ok(adminService.getStats());
+    }
 
     @Operation(summary = "取消任务")
     @DeleteMapping("/run/{id}")

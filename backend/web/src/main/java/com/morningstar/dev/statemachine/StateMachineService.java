@@ -52,7 +52,7 @@ public class StateMachineService {
 
     public void requestCancel(UUID runId) {
         State currentState = runMapper.selectById(runId).getState();
-        if (Set.of(State.PENDING, State.SUBMITTED, State.CLEANING, State.CLEANED).contains(currentState)) {
+        if (Set.of(State.PENDING, State.SUBMITTED, State.CLEANING, State.CLEANED, State.FAILED).contains(currentState)) {
             log.warn("[{}] 当前状态 {} 不允许取消，忽略请求", runId, currentState);
             return;
         }

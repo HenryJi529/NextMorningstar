@@ -1,6 +1,7 @@
 package com.morningstar.dev.service.impl;
 
 import com.morningstar.dev.dao.mapper.ProjectMapper;
+import com.morningstar.dev.pojo.bo.ProjectDetail;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.pojo.vo.UpdateProjectRequestVo;
@@ -12,6 +13,9 @@ import com.morningstar.dev.util.GiteaUtil;
 import com.morningstar.dev.util.SonarUtil;
 import com.morningstar.infra.exception.BaseException;
 import com.morningstar.infra.response.ResponseCode;
+import com.morningstar.infra.util.CopyUtil;
+import com.morningstar.system.dao.mapper.UserMapper;
+import com.morningstar.system.pojo.po.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -32,9 +36,10 @@ public class ProjectServiceImpl implements ProjectService {
     private final SonarUtil sonarUtil;
     private final CommonSteps commonSteps;
     private final RunService runService;
+    private final UserMapper userMapper;
 
     @Override
-    public Project createProject(CreateProjectRequestVo vo) {
+    public ProjectDetail createProject(CreateProjectRequestVo vo) {
         giteaUtil.validateRepoAndBranch(vo.getLink(), vo.getBranchName());
 
         giteaUtil.addCollaborator(vo.getLink());
@@ -56,11 +61,11 @@ public class ProjectServiceImpl implements ProjectService {
         } catch (DuplicateKeyException e) {
             throw new BaseException(ResponseCode.DEV_PROJECT_LINK_DUPLICATE, vo.getLink());
         }
-        return project;
+        return toDetail(project);
     }
 
     @Override
-    public Project updateProject(UpdateProjectRequestVo vo) {
+    public ProjectDetail updateProject(UpdateProjectRequestVo vo) {
         Project dbProject = projectMapper.selectById(vo.getId());
         if (dbProject == null) {
             throw new BaseException(ResponseCode.DEV_PROJECT_NOT_FOUND, vo.getId());
@@ -95,7 +100,7 @@ public class ProjectServiceImpl implements ProjectService {
             giteaUtil.removeCollaborator(dbProject.getLink());
         }
 
-        return projectMapper.selectById(vo.getId());
+        return toDetail(projectMapper.selectById(vo.getId()));
     }
 
     @Override
@@ -127,16 +132,30 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Project getProjectById(UUID projectId) {
+    public ProjectDetail getProjectById(UUID projectId) {
         Project dbProject = projectMapper.selectById(projectId);
         if (dbProject == null) {
             throw new BaseException(ResponseCode.DEV_PROJECT_NOT_FOUND, projectId);
         }
-        return dbProject;
+        return toDetail(dbProject);
     }
 
     @Override
-    public List<Project> getAllProject() {
-        return projectMapper.selectList(null);
+    public List<ProjectDetail> listProject() {
+        return toDetails(projectMapper.selectList(null));
+    }
+
+    private ProjectDetail toDetail(Project project) {
+        ProjectDetail detail = new ProjectDetail();
+        CopyUtil.copyNonNullProperties(project, detail);
+        User admin = userMapper.selectById(project.getAdminId());
+        if (admin != null) {
+            detail.setAdminName(admin.getUsername());
+        }
+        return detail;
+    }
+
+    private List<ProjectDetail> toDetails(List<Project> projects) {
+        return projects.stream().map(this::toDetail).toList();
     }
 }

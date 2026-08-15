@@ -1,6 +1,6 @@
 package com.morningstar.dev.web.controller;
 
-import com.morningstar.dev.pojo.po.Run;
+import com.morningstar.dev.pojo.bo.RunDetail;
 import com.morningstar.dev.service.RunService;
 import com.morningstar.infra.response.R;
 import com.morningstar.system.util.AuthUtil;
@@ -21,20 +21,20 @@ public class RunController {
 
     @Operation(summary = "手动触发任务")
     @PostMapping
-    public R<Run> trigger(@RequestParam UUID projectId) {
+    public R<RunDetail> trigger(@RequestParam UUID projectId) {
         return R.ok(runService.triggerRun(projectId, AuthUtil.getUserId()));
     }
 
     @Operation(summary = "获取任务列表")
     @GetMapping("")
-    public R<List<Run>> list(@RequestParam(required = false) UUID projectId,
-                             @RequestParam(required = false) UUID adminId) {
+    public R<List<RunDetail>> list(@RequestParam(required = false) UUID projectId,
+                                   @RequestParam(required = false) UUID adminId) {
         return R.ok(runService.listRun(projectId, adminId));
     }
 
     @Operation(summary = "获取任务")
     @GetMapping("/{id}")
-    public R<Run> getById(@PathVariable UUID id) {
+    public R<RunDetail> getById(@PathVariable UUID id) {
         return R.ok(runService.getRun(id));
     }
 

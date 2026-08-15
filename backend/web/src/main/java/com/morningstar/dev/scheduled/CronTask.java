@@ -58,15 +58,7 @@ public class CronTask {
      */
     @Scheduled(cron = "${morningstar.app.dev.schedule.dispatch-cron}")
     public void dispatchPendingRuns() {
-        // 查当前有多少 run 正在执行中（非 PENDING 且非终态）
-        long activeCount = runMapper.selectCount(
-                new LambdaQueryWrapper<Run>()
-                        .notIn(Run::getState, Set.of(
-                                State.PENDING, State.CLEANED, State.FAILED
-                        ))
-        );
-
-        int availableSlots = maxConcurrency - (int) activeCount;
+        int availableSlots = maxConcurrency - runService.countExecutingRun();
         if (availableSlots <= 0) return;
 
         // 捞出 PENDING 的 run，按创建时间排队
@@ -93,7 +85,7 @@ public class CronTask {
                 new LambdaQueryWrapper<Run>()
                         .ge(Run::getCreateTime, LocalDateTime.now().minusHours(24))
                         .lt(Run::getUpdateTime, deadline)
-                        .notIn(Run::getState, Set.of(State.PENDING, State.CLEANED))
+                        .notIn(Run::getState, Set.of(State.PENDING, State.CLEANED, State.FAILED))
         );
 
         for (Run run : stuckRuns) {

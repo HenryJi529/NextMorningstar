@@ -1,6 +1,11 @@
 package com.morningstar.dev.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.morningstar.dev.dao.mapper.IssueMapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
+import com.morningstar.dev.dao.mapper.RunMapper;
+import com.morningstar.dev.pojo.bo.Stats;
+import com.morningstar.dev.pojo.po.Issue;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.service.AdminService;
@@ -13,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -21,6 +27,8 @@ import java.util.UUID;
 public class AdminServiceImpl implements AdminService {
     private final RunService runService;
     private final ProjectMapper projectMapper;
+    private final RunMapper runMapper;
+    private final IssueMapper issueMapper;
     private final StateMachineService stateMachineService;
 
     @Override
@@ -46,5 +54,25 @@ public class AdminServiceImpl implements AdminService {
         }
         projectMapper.updateById(Project.builder().id(projectId).enabled(false).build());
         log.info("管理员[{}]停用项目[{}({})]", AuthUtil.getUsername(), project.getName(), projectId);
+    }
+
+    @Override
+    public Stats getStats() {
+        List<UUID> succeededRunIds = runMapper.selectList(
+                        new LambdaQueryWrapper<Run>().eq(Run::getStatus, Run.Status.SUCCEEDED))
+                .stream().map(Run::getId).toList();
+        return Stats.builder()
+                .projectCount(Math.toIntExact(projectMapper.selectCount(null)))
+                .executingRunCount(runService.countExecutingRun())
+                .deliveredIssueCount(succeededRunIds.isEmpty() ? 0 : Math.toIntExact(issueMapper.selectCount(
+                        new LambdaQueryWrapper<Issue>()
+                                .in(Issue::getRunId, succeededRunIds)
+                                .in(Issue::getStatus, List.of(
+                                        Issue.Status.VERIFIED, Issue.Status.ACCEPTED, Issue.Status.REJECTED)))))
+                .prTotal(Math.toIntExact(runMapper.selectCount(
+                        new LambdaQueryWrapper<Run>().isNotNull(Run::getPrId))))
+                .prMerged(Math.toIntExact(runMapper.selectCount(
+                        new LambdaQueryWrapper<Run>().eq(Run::getPrStatus, Run.PrStatus.MERGED))))
+                .build();
     }
 }

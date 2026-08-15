@@ -78,3 +78,20 @@ export interface UpdateProjectRequestVo {
     maxAiIssuesPerRun?: number;
     enabled?: boolean;
 }
+
+/* BO */
+export interface ProjectDetail extends Project {
+    adminName?: string;
+}
+
+export interface RunDetail extends Run {
+    projectName?: string;
+}
+
+export interface Stats {
+    projectCount: number;
+    executingRunCount: number;
+    deliveredIssueCount: number;
+    prTotal: number;
+    prMerged: number;
+}
