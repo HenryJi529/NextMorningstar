@@ -10,12 +10,14 @@ import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.service.AdminService;
 import com.morningstar.dev.service.RunService;
+import com.morningstar.dev.statemachine.State;
 import com.morningstar.dev.statemachine.StateMachineService;
 import com.morningstar.infra.exception.BaseException;
 import com.morningstar.infra.response.ResponseCode;
 import com.morningstar.system.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,6 +32,9 @@ public class AdminServiceImpl implements AdminService {
     private final RunMapper runMapper;
     private final IssueMapper issueMapper;
     private final StateMachineService stateMachineService;
+
+    @Value("${morningstar.app.dev.schedule.max-concurrency}")
+    private int maxConcurrency;
 
     @Override
     public void cancelRun(UUID runId) {
@@ -66,7 +71,12 @@ public class AdminServiceImpl implements AdminService {
                 .stream().map(Run::getId).toList();
         return Stats.builder()
                 .projectCount(Math.toIntExact(projectMapper.selectCount(null)))
+                .enabledProjectCount(Math.toIntExact(projectMapper.selectCount(
+                        new LambdaQueryWrapper<Project>().eq(Project::getEnabled, true))))
                 .executingRunCount(runService.countExecutingRun())
+                .pendingRunCount(Math.toIntExact(runMapper.selectCount(
+                        new LambdaQueryWrapper<Run>().eq(Run::getState, State.PENDING))))
+                .maxConcurrency(maxConcurrency)
                 .deliveredIssueCount(succeededRunIds.isEmpty() ? 0 : Math.toIntExact(issueMapper.selectCount(
                         new LambdaQueryWrapper<Issue>()
                                 .in(Issue::getRunId, succeededRunIds)

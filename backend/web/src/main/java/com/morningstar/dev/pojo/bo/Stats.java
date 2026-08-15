@@ -8,7 +8,13 @@ import lombok.Data;
 public class Stats {
     private Integer projectCount;
 
+    private Integer enabledProjectCount;
+
     private Integer executingRunCount;
+
+    private Integer pendingRunCount;
+
+    private Integer maxConcurrency;
 
     /**
      * 成功结束的 run 交付的Issue总数(状态 VERIFIED/ACCEPTED/REJECTED)

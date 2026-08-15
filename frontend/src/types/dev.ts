@@ -124,7 +124,10 @@ export interface ActionAttemptBrief {
 
 export interface Stats {
     projectCount: number;
+    enabledProjectCount: number;
     executingRunCount: number;
+    pendingRunCount: number;
+    maxConcurrency: number;
     deliveredIssueCount: number;
     prTotal: number;
     prMerged: number;

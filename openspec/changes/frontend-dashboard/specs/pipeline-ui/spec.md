@@ -47,7 +47,7 @@
 #### Scenario: 平台总览
 
 - **WHEN** 管理员打开 `/dev/admin`
-- **THEN** 展示 KPI:接入仓库数、累计交付修复数(`deliveredIssueCount`)、PR 合并率、进行中占槽数(`executingRunCount`)
+- **THEN** 展示 KPI:接入仓库数(`projectCount`,附启用中 `enabledProjectCount`)、累计交付修复数(`deliveredIssueCount`)、PR 合并率(`prMerged`/`prTotal` 前端算百分比)、进行中占槽数(`executingRunCount`/`maxConcurrency`,附排队中 `pendingRunCount`)
 - **AND** KPI 与"正在运行"列表同口径(排除 PENDING)
 
 #### Scenario: 布局顺序
