@@ -38,7 +38,7 @@
 
 ```
 ScanAction:
-  ├─ Maven 构建: find pom.xml → mvn -q compile（阿里云镜像，|| true best-effort）
+  ├─ Maven 构建: find pom.xml → mvn -q compile（阿里云镜像;无 pom 才跳过,有 pom 编译失败即抛异常响亮失败——决策 50,否则 sonar 拿旧字节码分析新源码,门禁不可信）
   ├─ SonarQube 通道: sonar-scanner → RestClient 翻页拉 OPEN issue → /api/rules/show 拿规则描述
   │   └─ impacts 数组 → 三维 severity → InScopeSeverities.sonar 过滤 → 随机打乱截断
   └─ AI Discovery: heredoc 写 prompt + schema 文件 → claude --print --output-format json --json-schema
@@ -55,7 +55,7 @@ ScanAction:
 - AI prompt 从 `AiMetadata.Type` 枚举自动生成类型列表，从 `Issue.Severity` 生成取值列表，永不过期
 - 选择策略：随机打乱 → 截断，不做 severity 排序（避免每轮都是同一批老问题）、不做去重（双通道问题类型不同）、不做跨 run 排除（先验证修复能力）
 
-AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（21 种 AiIssueType 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
+AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（21 种 `AiMetadata.Type` 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
 
 ### 3.2 FixAction：统一 prompt + MCP 自查
 
@@ -74,11 +74,11 @@ VerifyAction:
   两道都过 → VERIFIED
 ```
 
-第一道是硬数字（数量对比检测回归：重扫 issue 数 > 原扫描数 - 已修复数 → 存在回归），第二道是语义判定。**SonarQube 做客观门槛，Claude 做语义评审**——不是"自己出题自己判"，而是各司其职。
+第一道是硬数字（数量对比检测回归：重扫 issue 数 > 原扫描数 - 已修复数 → 存在回归；失败时按 key 求差集记录明细——未修复 = 当前扫描 ∩ 本轮 FIXED，新引入 = 当前扫描 − 扫描基线，判定口径不变、明细只为排障），第二道是语义判定。**SonarQube 做客观门槛，Claude 做语义评审**——不是"自己出题自己判"，而是各司其职。
 
 **第二道不喂 diff，让 Claude 自己读代码。** 容器内 claude code CLI（working dir `/workspace/repo`）本就能 `cat` 文件，喂 diff 是冗余。改用 FixAction 留下的 `commitMessage`（`{subject,body}`）承载"修复思路"，第二道两维度判定：① commitMessage 描述的思路逻辑上能否解决原问题 ② 当前代码是否按该思路正确修改且真正消除问题。逐条 review + fail-fast 短路，任一判 `{"verified":false}` 整轮回退。
 
-**输出最小 JSON，砍 reason。** Claude 只回 `{"verified":true/false}`——失败即整轮回退（issue 回 SELECTED）+ 下轮自动排除，无人看 reason；调试看 `log.info(rawOutput)`。砍 reason 省 token、降复杂度，失败 message 用固定文案。
+**输出最小 JSON，砍 reason。** Claude 只回 `{"verified":true/false}`——失败即整轮回退（issue 回 SELECTED），无人看 reason；调试看 `log.info(rawOutput)`。砍 reason 省 token、降复杂度，失败 message 用固定文案。
 
 ### 3.4 SonarQube 对用户透明
 
@@ -103,7 +103,7 @@ maintainability_severity VARCHAR(16)    -- CODE_SMELL(代码异味)
 
 **三维 severity 独立**：SonarQube 的三质量维度（Reliability/Security/Maintainability）各自独立评分。一个 issue 可以同时是 BLOCKER 级别的安全漏洞和 MEDIUM 级别的代码异味——这不是反规范化，是正确建模。
 
-**AiIssueType 分类体系**：21 种 AI 可识别的代码问题类型，分六大类（架构/逻辑/安全/可维护/性能/并发）+ OTHER 兜底。每个类型带中文描述，既是 AI prompt 里的分类指引，也是 PR 报告里的用户可读标签。
+**`AiMetadata.Type` 分类体系**：21 种 AI 可识别的代码问题类型，分六大类（架构/逻辑/安全/可维护/性能/并发）+ OTHER 兜底。每个类型带中文描述，既是 AI prompt 里的分类指引，也是 PR 报告里的用户可读标签。
 
 **不做的事**：不加唯一约束——ScanAction 插入前删除本 run 旧数据，业务逻辑保证不重复。不设 `rule_key` 顶层列——对 AI Discovery 没用，对 SonarQube 存 metadata 里即可。
 
@@ -134,7 +134,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 **issue 状态机也因此精简到三态。** 既然整轮回退、不做 issue 级状态机，issue 的 `Status` 就只剩 `SELECTED → FIXED → VERIFIED` 的流转——任一阶段失败（fix 或 verify）都整轮回 `SELECTED`，不标 `FAILED`。fail-fast 下 `FAILED` 永无写入点（失败抛异常、不落状态），是死状态，直接从枚举删除。`ACCEPTED`/`REJECTED` 预留给 SUBMIT 后的人工终态。少一个永远不会出现的状态，枚举即文档——读代码的人不会困惑"这个状态什么时候出现"。
 
-**PR 结果也走字段，不进状态机。** run 提交 PR 后到 `CLEANED` 终态，但 PR 还在 Gitea 等人评审——合并或拒绝是几小时甚至几天后的事。这个"迟到的观测"不塞进状态机（`CLEANED` 是终态，后面再加 `MERGED`/`REJECTED` 会污染终态语义），而是用 `Run.prStatus` 字段（OPEN/MERGED/CLOSED）记录，定时任务轮询 Gitea API 回写；issue 的 `ACCEPTED`/`REJECTED` 终态也在此落定。观测归观测、流程归流程——状态机只管"下一步干什么"，不管"外部世界后来怎么了"。（8/13 已实现：`syncPrStatus(runId)` 抽成 service 方法，`sync-pr-status-cron` 定时遍历 + `getRun` 详情实时同步，回写 `ACCEPTED`/`REJECTED`。）
+**PR 结果也走字段，不进状态机。** run 提交 PR 后到 `CLEANED` 终态，但 PR 还在 Gitea 等人评审——合并或拒绝是几小时甚至几天后的事。这个"迟到的观测"不塞进状态机（`CLEANED` 是终态，后面再加 `MERGED`/`REJECTED` 会污染终态语义），而是用 `Run.prStatus` 字段（OPEN/MERGED/CLOSED）记录，定时任务轮询 Gitea API 回写；issue 的 `ACCEPTED`/`REJECTED` 终态也在此落定。观测归观测、流程归流程——状态机只管"下一步干什么"，不管"外部世界后来怎么了"。（8/13 已实现：`syncPrStatus(runId)` 抽成 service 方法，`sync-pr-status-cron` 定时遍历回写 `ACCEPTED`/`REJECTED`——仅 `VERIFIED` 的 issue 参与回写，不动其他状态；8/14 `getRun` 纯读化，移除详情实时同步副作用。）
 
 ---
 
@@ -151,7 +151,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 **但复杂度还是次要的——根本原因是回归。** 精准保留会跨轮拼接修复集：已保留的成功修复（上一轮）和这轮重修失败 issue 的修复，在不同基线、不同上下文产生，可能互相踩踏——重修 issue B 的改动覆盖或破坏上一轮 issue A 已修好的代码（同文件/同模块的 issue 尤甚），凭空引入新回归。全量回退则保证每个 PR 的修复集是**原子的**：每一轮从干净 `origin` 重新修所有 issue，所有修复在同一轮、同一基线、同一上下文产生，彼此协调一致，不存在"跨轮拼凑"的缝隙。宁可重修已修好的 issue 浪费算力，也不拼凑跨轮修复冒回归风险——夜间 AI 时间不稀缺，一个带回归的 PR 合进主干，代价远大于重修。
 
-**结论：** 逐 commit 保留不是"后面对齐再做"，而是评估后明确拒绝。**核心理由是质量**：全量回退保证修复集原子性、回归比例更低（跨轮拼凑的修复会互相踩踏）；其次是复杂度（状态机从编排引擎退化为业务决策引擎）和效率认知（节省的是夜间 AI 时间，不稀缺）；防线由决策 14（跨 run 记忆）和 `maxIssuesPerRun` 窗口承担。
+**结论：** 逐 commit 保留不是"后面对齐再做"，而是评估后明确拒绝。**核心理由是质量**：全量回退保证修复集原子性、回归比例更低（跨轮拼凑的修复会互相踩踏）；其次是复杂度（状态机从编排引擎退化为业务决策引擎）和效率认知（节省的是夜间 AI 时间，不稀缺）；防线由 `RestoredTrigger` 重试上限和 `maxIssuesPerRun` 窗口承担。
 
 ### 6.2 替代方案：三层防线，不改状态机
 
@@ -159,7 +159,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 |---|---|---|
 | 1 | AI 修复能力验证 | 8/2 预研三步全过，修复质量可靠 |
 | 2 | `maxIssuesPerRun` 窗口 | 能力下降时降低每批修复数——同一状态机，调参即可 |
-| 3 | 决策 14（跨 run 记忆） | 本轮修不了的 issue 下轮自动排除，不重复占用重试次数 |
+| 3 | `RestoredTrigger` 重试上限 | fix/verify 各有重试上限,耗尽整轮放弃转 FAILED——重试决策收敛于唯一分支点,不散落各 Action |
 
 **核心洞察：** `maxSonarIssuesPerRun` + `maxAiIssuesPerRun` 是复杂度调杆。设为 10+5 是典型模式，都设为 1 等效 issue 级隔离——状态机零改动。调参不用动架构。
 
@@ -261,3 +261,5 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | Run 触发方式入 PO | dev-plan 决策 48 | `triggerType`(MANUAL/SCHEDULED）是真实属性不进 Detail；写入点收敛 `createRun`,调用方用 enum 声明 |
 | 前端三页 IA 与可视化定稿 | dev-plan 决策 49 | 我的项目/系统管理/平台说明；历史任务单表不拆 PR；回退环弧线表达 RESTORING 回路；失败徽章/耗时由 actionAttemptBriefs 前端聚合 |
 | Verify 门禁 key 明细与防跨文件回归 | dev-plan 决策 50 | key 差集明细只为排障，判定口径仍是数量对比；mavenBuild 不吞编译失败（否则旧字节码分析新源码，门禁不可信）；重试反馈提示词方案放弃（受众错位 + 回滚后位置失效 + 自检已够） |
+| 节约人天量化口径 | dev-plan 决策 51 | `savedPersonDays` = Σ ACCEPTED issue 估算工时 ÷ 480,SQL 一步换算(`ROUND(COALESCE(SUM,0)/480.0,1)`);写死 'ACCEPTED' 不设参数——"节约人天"概念只绑已采纳,参数是无意义自由度 |
+| RunDetail 漏斗四值 | dev-plan 决策 51 | 扫描发现(最新 SUCCEEDED SCAN attempt 的 result 反序列化)/本轮入选/已修复/验证通过;已修复与验证通过用累计口径(含其后状态),保漏斗单调不减 |

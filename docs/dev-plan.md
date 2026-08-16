@@ -100,7 +100,7 @@
 | 24 | **FIX/VERIFY 重试收敛到 RestoredTrigger**(8/7 定) | `FixingStateTransition`、`VerifyingStateTransition` 无条件 `FIX_FAILED`/`VERIFY_FAILED → RESTORING`,不再注入 `ActionAttemptMapper`/`MaxAttemptsProperties`/`CancelTracker`。所有重试决策收敛到 `RestoredTrigger`:通过 `latestFix`/`latestVerify` 时间戳判断最新失败来源,按对应重试上限(`fix`/`verify`)决定续修(`Event.FIX`)或放弃(`FIX_FAILED`/`VERIFY_FAILED → FAILED`)。取消检查(`cancelTracker.contains()`)嵌入重试条件,取消时自动走对应失败事件。`RestoredStateTransition` 新增 `FIX_FAILED`/`VERIFY_FAILED → FAILED` |
 | 25 | **git commit 身份配置**(8/7 定) | 后续 FixAction commit 需要 `user.name`/`user.email`,否则 git 报 "Committer identity unknown"。SyncAction 在 clone/fetch 之后设 repo 级 `git config`(落 volume `.git/config`,后续临时容器可读):`user.name` 取 `GiteaProperties.botUsername`、`user.email` 取 `GiteaProperties.botEmail`(8/7 `GiteaProperties` 新增字段)。每次 sync 都重写,不依赖上次值——bot 身份变更下次跑即生效。不设 `--global`(容器临时),不拼进 clone URL(不走 volume) |
 | 26 | **后端容器化 + docker.sock**(8/7 定) | 生产后端运行在容器内,需操控宿主机 Docker daemon(起/停 sandbox 和临时 alpine/git 容器)。**Dockerfile**:多阶段构建,从 `docker:cli` 镜像 COPY `docker` 二进制(`~25MB`,Go 纯静态、零系统依赖)到 `eclipse-temurin:17-jre`,比 apt repo 干净。**docker-compose**:springboot 服务挂载 `/var/run/docker.sock:/var/run/docker.sock`(默认 root 运行,无权限问题)。网络保持域名直连(sandbox 容器用真实域名访问 Gitea/SonarQube,不与 docker-compose 网络绑定——demo 部署在一起,但后续可能拆分) |
-| 27 | **`sonar.java.binaries` 动态 find**(8/10 定) | `find /workspace/repo -type d -name classes -path */target/*` 显式拼接逗号分隔目录列表，不用 `**/target/classes` 通配——sonar-scanner 不认该语法，报 `No files nor directories matching`；多模块无 `target/classes` 时传空字符串，Java 分析器自动降级为纯 AST |
+| 27 | **`sonar.java.binaries` 动态 find**(8/10 定) | `find /workspace/repo -type d -name classes -path */target/*` 显式拼接逗号分隔目录列表，不用 `**/target/classes` 通配——sonar-scanner 不认该语法，报 `No files nor directories matching`；多模块无 `target/classes` 时传空字符串，Java 分析器自动降级为纯 AST。**8/16 核查：线上代码实际仍是 `**/target/classes` 通配（CommonSteps.sonarScan）且全链路实测通过——本决策的动态 find 未落地，以代码为准** |
 | 28 | **ScanAction 选择策略**(8/10 定) | **随机打乱 → 截断**。不做 severity 排序（避免每轮总是选同一批最严重的老问题，PR reviewer 疲劳）、不做规则黑名单（随机分散风险）、不做去重（双通道问题类型不同，重叠概率极低）、永不做跨 run 排除 FAILED（先验证修复能力，不应回避困难） |
 | 29 | **AI JSON 输出解析**(8/10 定,8/12 更新) | 使用 `claude --json-schema` + `--output-format json` structured output 机制，Claude Code 通过 tool use 输出结构化 JSON，后端从 `structured_output` 字段反序列化。不再需要括号深度计数和手动转义——schema 文件定义在 `src/main/resources/schemas/`。`purifyLLMOutputAsArray`/`purifyLLMOutputAsJSON` 已弃用。Claude 输出异常时整体 FAILED |
 | 30 | **Maven 阿里云镜像**(8/10 定) | Dockerfile COPY `dev-sandbox/config/maven/settings.xml` 到 `/workspace/maven-settings.xml`，mvn compile 时通过 `-s /workspace/maven-settings.xml` 显式指定 |
@@ -407,7 +407,7 @@ morningstar.app.dev:
 
 ### 阶段 9 · 联调 + demo 真跑(~10h)— *8/14–8/16*
 - [x] ~~造 demo 仓库:埋 sonar 真问题 + 设计缺陷~~ → 8/14 改配置 5 个真实项目仓库:纯前端、前后端分离架构的前端、后端、前后端一体、NextMorningstar 自身（真实仓库已验证有可修 issue;"平台修复自身"作压轴叙事）
-- [x] 演示数据造数(8/16):经 `StateMachineServiceTest` 全链路真实跑出(非手插 SQL)——5 项目/6 run(含 2 失败行)/三用户归属(henry/sherry/SpiderMan),PR 合并/关闭/开放三态由人工在 Gitea 操作后 cron 回写;坏仓库(gaas-backend 编译失败)留作失败样本
+- [x] 演示数据造数(8/16):经 `StateMachineServiceTest` 全链路真实跑出(非手插 SQL)——5 项目/6 run(含 2 失败行)/三用户归属(henry/sherry/SpiderMan),PR 合并/关闭/开放三态由人工在 Gitea 操作后 cron 回写**已验证**(ACCEPTED/REJECTED 落库,KPI 有数),演示账号 `dev_admin` 权限点已确认;坏仓库(gaas-backend 编译失败)留作失败样本
 - [ ] 用 NextMorningstar backend 自己跑一轮（真实价值演示）
 - [ ] 跑通夜间定时真实触发
 - [x] 修边界:并发、超时、取消、单 run 挂不影响其他（8/14 review 闭环,决策 40-42:triggerRun 单飞/超时排除排队态/cancelRun 守卫/syncPrStatus try-catch)
