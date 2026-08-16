@@ -31,7 +31,7 @@
 - **AND** 可视化数据来自 `RunDetail.actionAttemptBriefs` 阶段执行流水(`actionType`/`attemptNo`/`status`/起止时间):节点耗时 = attempt 的 createTime→updateTime,RESTORE 条数即回退环激活次数
 - **AND** 头部展示阶段失败徽章(如"同步失败 ×1",流水中 FAILED 按 actionType 分组计数)
 - **AND** 流水线下方展示回退环弧线(验证→修复):休眠时淡虚线,RESTORING 激活时虚线流动动画
-- **AND** 漏斗计数条展示"扫描发现 / 本轮入选 / 已修复 / 验证通过"(本轮入选 = 经 maxIssuesPerRun 截断的入选数)
+- **AND** 漏斗计数条展示"扫描发现 / 本轮入选 / 已修复 / 验证通过"(数据源 `RunDetail.scannedIssueCount`/`selectedIssueCount`/`currentFixedIssueCount`/`currentVerifiedIssueCount`;已修复/验证通过为累计口径——含其后状态,漏斗单调不减;scannedIssueCount 仅 SCAN 成功后非 null,此前显示 —)
 - **WHEN** 无活跃 run
 - **THEN** 该区块不渲染
 
@@ -47,7 +47,7 @@
 #### Scenario: 平台总览
 
 - **WHEN** 管理员打开 `/dev/admin`
-- **THEN** 展示 KPI:接入仓库数(`projectCount`,附启用中 `enabledProjectCount`)、累计交付修复数(`deliveredIssueCount`)、PR 合并率(`prMerged`/`prTotal` 前端算百分比)、进行中占槽数(`executingRunCount`/`maxConcurrency`,附排队中 `pendingRunCount`)
+- **THEN** 展示 KPI:接入仓库数(`projectCount`,附启用中 `enabledProjectCount`)、累计交付修复数(`deliveredIssueCount`,附已采纳 `acceptedIssueCount`)、累计节约人天(`savedPersonDays`,按已采纳修复的估算工时)、PR 合并率(`prMerged`/`prTotal` 前端算百分比)、进行中占槽数(`executingRunCount`/`maxConcurrency`,附排队中 `pendingRunCount`)
 - **AND** KPI 与"正在运行"列表同口径(排除 PENDING)
 
 #### Scenario: 布局顺序
