@@ -7,6 +7,7 @@ import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.service.ProjectService;
 import com.morningstar.dev.service.RunService;
+import com.morningstar.infra.util.RandomUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,18 +44,86 @@ class StateMachineServiceTest {
 //                            .name("智慧工会")
 //                            .link(repoLink)
 //                            .branchName("master")
+//                            .maxAiIssuesPerRun(1)
+//                            .maxSonarIssuesPerRun(2)
 //                            .description("test-description")
 //                            .adminId(UUID.randomUUID())
 //                            .build()
 //            );
 //        }
-//        this.run = runService.createRun(project.getId());
+//        this.run = runService.createRun(project.getId(), Run.TriggerType.SCHEDULED);
+//        log.info("当前run: {}", run.getId());
+//    }
+
+//    @BeforeEach
+//    void setUp() {
+//        String repoLink = "http://127.0.0.1:7001/SpiderMan/AMLDashboard";
+//        Project project = projectMapper.selectOne(
+//                new LambdaQueryWrapper<Project>()
+//                        .eq(Project::getLink, repoLink));
+//        if (project == null) {
+//            project = projectService.createProject(
+//                    CreateProjectRequestVo
+//                            .builder()
+//                            .name("反洗钱驾驶舱")
+//                            .link(repoLink)
+//                            .branchName("main")
+//                            .description("这是个反洗钱驾驶舱")
+//                            .adminId(UUID.randomUUID())
+//                            .build()
+//            );
+//        }
+//        this.run = runService.createRun(project.getId(), Run.TriggerType.MANUAL);
+//        log.info("当前run: {}", run.getId());
+//    }
+
+//    @BeforeEach
+//    void setUp() {
+//        String repoLink = "http://127.0.0.1:7001/SpiderMan/gaas-frontend";
+//        Project project = projectMapper.selectOne(
+//                new LambdaQueryWrapper<Project>()
+//                        .eq(Project::getLink, repoLink));
+//        if (project == null) {
+//            project = projectService.createProject(
+//                    CreateProjectRequestVo
+//                            .builder()
+//                            .name("SGS前端")
+//                            .link(repoLink)
+//                            .branchName("main")
+//                            .description(RandomUtil.getChineseString(100))
+//                            .adminId(UUID.randomUUID())
+//                            .build()
+//            );
+//        }
+//        this.run = runService.createRun(project.getId(), Run.TriggerType.MANUAL);
+//        log.info("当前run: {}", run.getId());
+//    }
+
+    //    @BeforeEach
+//    void setUp() {
+//        String repoLink = "http://127.0.0.1:7001/SpiderMan/gaas-backend";
+//        Project project = projectMapper.selectOne(
+//                new LambdaQueryWrapper<Project>()
+//                        .eq(Project::getLink, repoLink));
+//        if (project == null) {
+//            project = projectService.createProject(
+//                    CreateProjectRequestVo
+//                            .builder()
+//                            .name("SGS后端")
+//                            .link(repoLink)
+//                            .branchName("main")
+//                            .description(RandomUtil.getChineseString(100))
+//                            .adminId(UUID.randomUUID())
+//                            .build()
+//            );
+//        }
+//        this.run = runService.createRun(project.getId(), Run.TriggerType.MANUAL);
 //        log.info("当前run: {}", run.getId());
 //    }
 
     @BeforeEach
     void setUp() {
-        String repoLink = "http://127.0.0.1:7001/SpiderMan/AMLDashboard";
+        String repoLink = "http://127.0.0.1:7001/SpiderMan/OldSpringBackend";
         Project project = projectMapper.selectOne(
                 new LambdaQueryWrapper<Project>()
                         .eq(Project::getLink, repoLink));
@@ -62,10 +131,10 @@ class StateMachineServiceTest {
             project = projectService.createProject(
                     CreateProjectRequestVo
                             .builder()
-                            .name("反洗钱驾驶舱")
+                            .name("Java8后端")
                             .link(repoLink)
                             .branchName("main")
-                            .description("这是个反洗钱驾驶舱")
+                            .description(RandomUtil.getChineseString(100))
                             .adminId(UUID.randomUUID())
                             .build()
             );
