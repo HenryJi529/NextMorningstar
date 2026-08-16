@@ -13,9 +13,12 @@ import com.morningstar.dev.pojo.po.Issue;
 import com.morningstar.dev.pojo.po.Project;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.service.RunService;
+import com.morningstar.dev.statemachine.Action;
 import com.morningstar.dev.statemachine.Event;
 import com.morningstar.dev.statemachine.State;
 import com.morningstar.dev.statemachine.StateMachineService;
+import com.morningstar.dev.statemachine.result.ActionResult;
+import com.morningstar.dev.statemachine.result.ScanResult;
 import com.morningstar.dev.util.GiteaUtil;
 import com.morningstar.infra.exception.BaseException;
 import com.morningstar.infra.response.ResponseCode;
@@ -25,13 +28,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class RunServiceImpl implements RunService {
+    private static final Set<Issue.Status> FIXED_AND_BEYOND = EnumSet.of(
+            Issue.Status.FIXED, Issue.Status.VERIFIED, Issue.Status.ACCEPTED, Issue.Status.REJECTED);
+    private static final Set<Issue.Status> VERIFIED_AND_BEYOND = EnumSet.of(
+            Issue.Status.VERIFIED, Issue.Status.ACCEPTED, Issue.Status.REJECTED);
+
     private final ProjectMapper projectMapper;
     private final RunMapper runMapper;
     private final StateMachineService stateMachineService;
@@ -187,12 +197,25 @@ public class RunServiceImpl implements RunService {
                 detail.setPrLink(giteaUtil.getPrLink(project.getLink(), run.getPrId()));
             }
         }
+        List<Issue.Status> issueStatuses = issueMapper.selectList(
+                        new LambdaQueryWrapper<Issue>()
+                                .select(Issue::getStatus)
+                                .eq(Issue::getRunId, run.getId()))
+                .stream().map(Issue::getStatus).toList();
+        detail.setSelectedIssueCount(issueStatuses.size());
+        /* 已修复Issue状态：FIXED 及之后 */
+        detail.setCurrentFixedIssueCount(Math.toIntExact(issueStatuses.stream()
+                .filter(FIXED_AND_BEYOND::contains).count()));
+        /* 已验证Issue状态：VERIFIED 及之后 */
+        detail.setCurrentVerifiedIssueCount(Math.toIntExact(issueStatuses.stream()
+                .filter(VERIFIED_AND_BEYOND::contains).count()));
         if (run.getStatus() == Run.Status.SUCCEEDED) {
-            detail.setDeliveredIssueCount(Math.toIntExact(
-                    issueMapper.selectCount(
-                            new LambdaQueryWrapper<Issue>()
-                                    .eq(Issue::getRunId, run.getId())
-                                    .in(Issue::getStatus, Issue.Status.VERIFIED, Issue.Status.ACCEPTED, Issue.Status.REJECTED))));
+            detail.setDeliveredIssueCount(detail.getCurrentVerifiedIssueCount());
+        }
+        ActionAttempt latestScanAttempt = actionAttemptMapper.selectLatestActionAttempt(run.getId(), Action.Type.SCAN);
+        if (latestScanAttempt != null && latestScanAttempt.getResult() instanceof ScanResult scanResult
+                && scanResult.getStatus() == ActionResult.Status.SUCCEEDED) {
+            detail.setScannedIssueCount(scanResult.getScannedSonarIssueNum() + scanResult.getScannedAiIssueNum());
         }
         detail.setActionAttemptBriefs(listAttemptBriefs(run.getId()));
         return detail;

@@ -111,6 +111,10 @@ export interface RunDetail extends Run {
     projectName?: string;
     prLink?: string;
     deliveredIssueCount?: number;
+    scannedIssueCount?: number;
+    selectedIssueCount?: number;
+    currentFixedIssueCount?: number;
+    currentVerifiedIssueCount?: number;
     actionAttemptBriefs?: ActionAttemptBrief[];
 }
 

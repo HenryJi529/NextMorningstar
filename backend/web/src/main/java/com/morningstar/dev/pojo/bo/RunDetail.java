@@ -16,5 +16,9 @@ public class RunDetail extends Run {
     private String projectName;
     private String prLink;
     private Integer deliveredIssueCount;
+    private Integer scannedIssueCount;
+    private Integer selectedIssueCount;
+    private Integer currentFixedIssueCount;
+    private Integer currentVerifiedIssueCount;
     private List<ActionAttemptBrief> actionAttemptBriefs;
 }
