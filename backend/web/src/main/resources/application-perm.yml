@@ -38,9 +38,9 @@ morningstar:
       - tag: "proxy:node:manage"
         status: true
         name: "代理节点管理权限"
-      - tag: "dev:project:disable"
+      - tag: "dev:project:schedule"
         status: true
-        name: "工坊项目禁用权限"
+        name: "工坊项目调度启停权限"
       - tag: "dev:run:cancel"
         status: true
         name: "工坊任务取消权限"
@@ -57,5 +57,5 @@ morningstar:
         - "proxy:sub:manage"
         - "proxy:node:manage"
       dev_admin:
-        - "dev:project:disable"
+        - "dev:project:schedule"
         - "dev:run:cancel"

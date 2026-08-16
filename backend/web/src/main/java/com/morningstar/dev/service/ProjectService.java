@@ -3,8 +3,8 @@ package com.morningstar.dev.service;
 import com.morningstar.dev.pojo.bo.ProjectDetail;
 import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.pojo.vo.UpdateProjectRequestVo;
+import com.morningstar.infra.response.PageResult;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface ProjectService {
@@ -16,5 +16,5 @@ public interface ProjectService {
 
     ProjectDetail getProjectById(UUID projectId);
 
-    List<ProjectDetail> listProject();
+    PageResult<ProjectDetail> listProject(int pageNum, int pageSize);
 }

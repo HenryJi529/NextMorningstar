@@ -3,6 +3,8 @@ package com.morningstar.dev.pojo.bo;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalTime;
+
 @Data
 @Builder
 public class Stats {
@@ -15,6 +17,16 @@ public class Stats {
     private Integer pendingRunCount;
 
     private Integer maxConcurrency;
+
+    /**
+     * 夜间调度开始时间
+     */
+    private LocalTime scheduledStartTime;
+
+    /**
+     * 夜间调度结束时间
+     */
+    private LocalTime scheduledEndTime;
 
     /**
      * 成功结束的 run 交付的Issue总数(状态 VERIFIED/ACCEPTED/REJECTED)

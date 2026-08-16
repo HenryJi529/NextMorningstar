@@ -32,11 +32,11 @@ public class AdminController {
         return R.ok();
     }
 
-    @Operation(summary = "停用项目")
-    @PostMapping("/project/{id}/disable")
-    @PreAuthorize("hasAuthority('dev:project:disable')")
-    public R<Object> disableProject(@PathVariable UUID id) {
-        adminService.disableProject(id);
+    @Operation(summary = "切换调度启停")
+    @PostMapping("/project/{id}/schedule")
+    @PreAuthorize("hasAuthority('dev:project:schedule')")
+    public R<Object> toggleSchedule(@PathVariable UUID id) {
+        adminService.toggleSchedule(id);
         return R.ok();
     }
 }

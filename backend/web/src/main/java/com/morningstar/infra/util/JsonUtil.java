@@ -5,12 +5,15 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import com.morningstar.infra.util.desensitize.SensitiveSerializerModifier;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 
@@ -38,6 +41,14 @@ public class JsonUtil {
         return module;
     }
 
+    private static SimpleModule getLocalTimeModule() {
+        SimpleModule module = new SimpleModule();
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_TIME;
+        module.addSerializer(LocalTime.class, new LocalTimeSerializer(formatter));
+        module.addDeserializer(LocalTime.class, new LocalTimeDeserializer(formatter));
+        return module;
+    }
+
     private static SimpleModule getSensitiveModule() {
         SimpleModule module = new SimpleModule();
         module.setSerializerModifier(new SensitiveSerializerModifier());
@@ -56,6 +67,8 @@ public class JsonUtil {
         mapper.registerModule(getLocalDateTimeModule());
         // 设置LocalDate的序列化与反序列化
         mapper.registerModule(getLocalDateModule());
+        // 设置LocalTime的序列化与反序列化
+        mapper.registerModule(getLocalTimeModule());
 
         // 设置脱敏模块
         mapper.registerModule(getSensitiveModule());

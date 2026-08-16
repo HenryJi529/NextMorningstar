@@ -32,7 +32,7 @@ morningstar:
         cleanup-cron: "0 0 6 * * ?"
         sync-pr-status-cron: "30 */5 * * * ?"
         run-timeout-minutes: 120
-        max-concurrency: 2
+        max-concurrency: 4
       sandbox:
         image: morningstar-dev-sandbox:latest
         container-name-prefix: morningstar_dev_sandbox_

@@ -1,18 +1,22 @@
 import axios from './index';
 import type { AxiosResponse } from 'axios';
-import type { R } from '@/types/common';
+import type { PageResult, R } from '@/types/common';
 import type {
     CreateProjectRequestVo,
     ProjectDetail,
     RunDetail,
+    RunStatus,
     Stats,
     UpdateProjectRequestVo,
 } from '@/types/dev';
 
 /* 项目 */
 const API_PROJECT = '/dev/project';
-export const listProject = (): Promise<AxiosResponse<R<ProjectDetail[]>>> => {
-    return axios.get(API_PROJECT);
+export const listProject = (params: {
+    pageNum: number;
+    pageSize: number;
+}): Promise<AxiosResponse<R<PageResult<ProjectDetail>>>> => {
+    return axios.get(API_PROJECT, { params });
 };
 export const getProjectById = (id: string): Promise<AxiosResponse<R<ProjectDetail>>> => {
     return axios.get(`${API_PROJECT}/${id}`);
@@ -42,11 +46,14 @@ export const deleteProject = (id: string): Promise<AxiosResponse<R<void>>> => {
 
 /* 任务 */
 const API_RUN = '/dev/run';
-export const getAllRun = (params?: {
+export const getAllRun = (params: {
     projectId?: string;
-    adminId?: string;
-}): Promise<AxiosResponse<R<RunDetail[]>>> => {
-    return axios.get(API_RUN, { params });
+    statuses?: RunStatus[];
+    pageNum: number;
+    pageSize: number;
+}): Promise<AxiosResponse<R<PageResult<RunDetail>>>> => {
+    // statuses 逗号拼接,Spring 按逗号分隔绑定 List<枚举>
+    return axios.get(API_RUN, { params: { ...params, statuses: params.statuses?.join(',') } });
 };
 export const triggerRun = (projectId: string): Promise<AxiosResponse<R<RunDetail>>> => {
     return axios({
@@ -70,6 +77,6 @@ export const getStats = (): Promise<AxiosResponse<R<Stats>>> => {
 export const adminCancelRun = (id: string): Promise<AxiosResponse<R<void>>> => {
     return axios.delete(`${API_ADMIN}/run/${id}`);
 };
-export const adminDisableProject = (id: string): Promise<AxiosResponse<R<void>>> => {
-    return axios.post(`${API_ADMIN}/project/${id}/disable`);
+export const adminToggleSchedule = (id: string): Promise<AxiosResponse<R<void>>> => {
+    return axios.post(`${API_ADMIN}/project/${id}/schedule`);
 };

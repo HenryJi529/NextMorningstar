@@ -7,7 +7,7 @@ import java.util.UUID;
 public interface AdminService {
     void cancelRun(UUID runId);
 
-    void disableProject(UUID projectId);
+    void toggleSchedule(UUID projectId);
 
     Stats getStats();
 }

@@ -2,6 +2,7 @@ package com.morningstar.dev.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.morningstar.dev.dao.mapper.ActionAttemptMapper;
 import com.morningstar.dev.dao.mapper.IssueMapper;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
@@ -21,6 +22,7 @@ import com.morningstar.dev.statemachine.result.ActionResult;
 import com.morningstar.dev.statemachine.result.ScanResult;
 import com.morningstar.dev.util.GiteaUtil;
 import com.morningstar.infra.exception.BaseException;
+import com.morningstar.infra.response.PageResult;
 import com.morningstar.infra.response.ResponseCode;
 import com.morningstar.infra.util.CopyUtil;
 import lombok.RequiredArgsConstructor;
@@ -101,21 +103,14 @@ public class RunServiceImpl implements RunService {
     }
 
     @Override
-    public List<RunDetail> listRun(UUID projectId, UUID adminId) {
+    public PageResult<RunDetail> listRun(UUID projectId, List<Run.Status> statuses, int pageNum, int pageSize) {
         LambdaQueryWrapper<Run> wrapper = new LambdaQueryWrapper<>();
         if (projectId != null) {
             wrapper.eq(Run::getProjectId, projectId);
         }
-        if (adminId != null) { // dev_run 无 admin_id 列,先查归属项目再过滤
-            List<UUID> adminProjectIds = projectMapper.selectList(
-                            new LambdaQueryWrapper<Project>().eq(Project::getAdminId, adminId))
-                    .stream().map(Project::getId).toList();
-            if (adminProjectIds.isEmpty()) {
-                return List.of();
-            }
-            wrapper.in(Run::getProjectId, adminProjectIds);
-        }
-        return toDetails(runMapper.selectList(wrapper.orderByDesc(Run::getCreateTime)));
+        wrapper.in(statuses != null && !statuses.isEmpty(), Run::getStatus, statuses);
+        Page<Run> page = runMapper.selectPage(new Page<>(pageNum, pageSize), wrapper.orderByDesc(Run::getCreateTime));
+        return new PageResult<>(toDetails(page.getRecords()), pageNum, pageSize, page.getTotal());
     }
 
     @Override
@@ -197,25 +192,25 @@ public class RunServiceImpl implements RunService {
                 detail.setPrLink(giteaUtil.getPrLink(project.getLink(), run.getPrId()));
             }
         }
-        List<Issue.Status> issueStatuses = issueMapper.selectList(
-                        new LambdaQueryWrapper<Issue>()
-                                .select(Issue::getStatus)
-                                .eq(Issue::getRunId, run.getId()))
-                .stream().map(Issue::getStatus).toList();
-        detail.setSelectedIssueCount(issueStatuses.size());
-        /* 已修复Issue状态：FIXED 及之后 */
-        detail.setCurrentFixedIssueCount(Math.toIntExact(issueStatuses.stream()
-                .filter(FIXED_AND_BEYOND::contains).count()));
-        /* 已验证Issue状态：VERIFIED 及之后 */
-        detail.setCurrentVerifiedIssueCount(Math.toIntExact(issueStatuses.stream()
-                .filter(VERIFIED_AND_BEYOND::contains).count()));
-        if (run.getStatus() == Run.Status.SUCCEEDED) {
-            detail.setDeliveredIssueCount(detail.getCurrentVerifiedIssueCount());
-        }
         ActionAttempt latestScanAttempt = actionAttemptMapper.selectLatestActionAttempt(run.getId(), Action.Type.SCAN);
         if (latestScanAttempt != null && latestScanAttempt.getResult() instanceof ScanResult scanResult
                 && scanResult.getStatus() == ActionResult.Status.SUCCEEDED) {
             detail.setScannedIssueCount(scanResult.getScannedSonarIssueNum() + scanResult.getScannedAiIssueNum());
+            List<Issue.Status> issueStatuses = issueMapper.selectList(
+                            new LambdaQueryWrapper<Issue>()
+                                    .select(Issue::getStatus)
+                                    .eq(Issue::getRunId, run.getId()))
+                    .stream().map(Issue::getStatus).toList();
+            detail.setSelectedIssueCount(issueStatuses.size());
+            /* 已修复Issue状态：FIXED 及之后 */
+            detail.setCurrentFixedIssueCount(Math.toIntExact(issueStatuses.stream()
+                    .filter(FIXED_AND_BEYOND::contains).count()));
+            /* 已验证Issue状态：VERIFIED 及之后 */
+            detail.setCurrentVerifiedIssueCount(Math.toIntExact(issueStatuses.stream()
+                    .filter(VERIFIED_AND_BEYOND::contains).count()));
+            if (run.getStatus() == Run.Status.SUCCEEDED) {
+                detail.setDeliveredIssueCount(detail.getCurrentVerifiedIssueCount());
+            }
         }
         detail.setActionAttemptBriefs(listAttemptBriefs(run.getId()));
         return detail;

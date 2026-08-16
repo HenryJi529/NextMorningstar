@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +36,20 @@ public class AdminServiceImpl implements AdminService {
 
     @Value("${morningstar.app.dev.schedule.max-concurrency}")
     private int maxConcurrency;
+
+    @Value("${morningstar.app.dev.schedule.create-cron}")
+    private String createCron;
+
+    @Value("${morningstar.app.dev.schedule.cleanup-cron}")
+    private String cleanupCron;
+
+    /**
+     * 从定时 cron(秒 分 时 …)中取时/分，拼出每日触发时刻
+     */
+    private static LocalTime convertCronToLocalTime(String cron) {
+        String[] fields = cron.split(" ");
+        return LocalTime.of(Integer.parseInt(fields[2]), Integer.parseInt(fields[1]));
+    }
 
     @Override
     public void cancelRun(UUID runId) {
@@ -52,16 +67,15 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public void disableProject(UUID projectId) {
+    public void toggleSchedule(UUID projectId) {
         Project project = projectMapper.selectById(projectId);
         if (project == null) {
             throw new BaseException(ResponseCode.DEV_PROJECT_NOT_FOUND, projectId);
         }
-        if (Boolean.FALSE.equals(project.getEnabled())) {
-            return;
-        }
-        projectMapper.updateById(Project.builder().id(projectId).enabled(false).build());
-        log.info("管理员[{}]停用项目[{}({})]", AuthUtil.getUsername(), project.getName(), projectId);
+        boolean enabled = !project.getEnabled();
+        projectMapper.updateById(Project.builder().id(projectId).enabled(enabled).build());
+        log.info("管理员[{}]{}项目[{}({})]的调度", AuthUtil.getUsername(), enabled ? "启用" : "停用",
+                project.getName(), projectId);
     }
 
     @Override
@@ -77,6 +91,8 @@ public class AdminServiceImpl implements AdminService {
                 .pendingRunCount(Math.toIntExact(runMapper.selectCount(
                         new LambdaQueryWrapper<Run>().eq(Run::getState, State.PENDING))))
                 .maxConcurrency(maxConcurrency)
+                .scheduledStartTime(convertCronToLocalTime(createCron))
+                .scheduledEndTime(convertCronToLocalTime(cleanupCron))
                 .deliveredIssueCount(succeededRunIds.isEmpty() ? 0 : Math.toIntExact(issueMapper.selectCount(
                         new LambdaQueryWrapper<Issue>()
                                 .in(Issue::getRunId, succeededRunIds)

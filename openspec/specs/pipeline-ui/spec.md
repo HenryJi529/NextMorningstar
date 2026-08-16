@@ -4,7 +4,7 @@
 
 提供流水线的项目操作入口(/dev 我的项目,项目管理员)、平台级运行观测(/dev/admin 平台运维,平台管理员)与平台叙事说明(/dev/about)。状态机可视化组件我的项目页/平台运维页共用。
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: 我的项目(项目管理员)
 

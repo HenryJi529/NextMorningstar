@@ -1,11 +1,14 @@
 package com.morningstar.dev.web.controller;
 
 import com.morningstar.dev.pojo.bo.RunDetail;
+import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.service.RunService;
+import com.morningstar.infra.response.PageResult;
 import com.morningstar.infra.response.R;
 import com.morningstar.system.util.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,9 +30,11 @@ public class RunController {
 
     @Operation(summary = "获取任务列表")
     @GetMapping("")
-    public R<List<RunDetail>> list(@RequestParam(required = false) UUID projectId,
-                                   @RequestParam(required = false) UUID adminId) {
-        return R.ok(runService.listRun(projectId, adminId));
+    public R<PageResult<RunDetail>> list(@RequestParam(required = false) UUID projectId,
+                                         @RequestParam(required = false) List<Run.Status> statuses,
+                                         @RequestParam("pageNum") @Positive(message = "pageNum必须大于0") int pageNum,
+                                         @RequestParam("pageSize") @Positive(message = "pageSize必须大于0") int pageSize) {
+        return R.ok(runService.listRun(projectId, statuses, pageNum, pageSize));
     }
 
     @Operation(summary = "获取任务")

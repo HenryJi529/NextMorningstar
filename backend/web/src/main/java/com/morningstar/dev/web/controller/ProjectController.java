@@ -5,16 +5,17 @@ import com.morningstar.dev.pojo.vo.CreateProjectRequestVo;
 import com.morningstar.dev.pojo.vo.UpdateProjectRequestVo;
 import com.morningstar.dev.service.ProjectService;
 import com.morningstar.infra.exception.BaseException;
+import com.morningstar.infra.response.PageResult;
 import com.morningstar.infra.response.R;
 import com.morningstar.infra.response.ResponseCode;
 import com.morningstar.system.util.AuthUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @Tag(name = "工坊项目相关接口定义")
@@ -56,7 +57,9 @@ public class ProjectController {
 
     @Operation(summary = "获取项目列表")
     @GetMapping("")
-    public R<List<ProjectDetail>> listAll() {
-        return R.ok(projectService.listProject());
+    public R<PageResult<ProjectDetail>> listAll(
+            @RequestParam("pageNum") @Positive(message = "pageNum必须大于0") int pageNum,
+            @RequestParam("pageSize") @Positive(message = "pageSize必须大于0") int pageSize) {
+        return R.ok(projectService.listProject(pageNum, pageSize));
     }
 }

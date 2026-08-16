@@ -200,13 +200,13 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ## 十、平台管理员：熔断权与所有权分离
 
-平台跑起来后会出现归属人处理不了的运维场景：run 卡死占着并发槽（全局仅 2 个）、项目配置错误每晚反复失败刷表。这要求存在一个"超级用户"——但超级用户该有多大权力，是一道边界设计题。
+平台跑起来后会出现项目管理员处理不了的运维场景：run 卡死占着并发槽（全局仅 4 个,8/16 调）、项目配置错误每晚反复失败刷表。这要求存在一个"超级用户"——但超级用户该有多大权力，是一道边界设计题。
 
-**设计定稿：管理员只有熔断权，没有所有权。** 角色 `dev_admin` 能做的事恰好两件：取消**任何**正在运行的 run、停用**任何**项目（只写 `enabled=false`)。不能做的事同样明确：无 enable 端点（恢复权归 owner，避免"管理员停用 ↔ owner 启用"的拉锯）、无配置编辑权、不级联取消进行中 run（停用只挡未来调度，不打断现场）。
+**设计定稿：管理员只有熔断权与调度权，没有所有权。** 角色 `dev_admin` 能做的事恰好两件：取消**任何**正在运行的 run、切换**任何**项目的调度启停（`toggleSchedule` 双向切换 `enabled`,8/16 从单向"仅停用"调整为双向——管理员工具箱里启停本是一体,恢复不再绕回 owner)。不能做的事同样明确：无配置编辑权、不级联取消进行中 run（停用只挡未来调度，不打断现场）。
 
-**实现上零新体系。** 直接复用平台既有权限框架：`application-perm.yml` 声明角色与权限点（`dev:run:cancel`/`dev:project:disable`)，启动时 insert-if-absent 同步，登录时装入 authorities，接口上一个 `@PreAuthorize` 注解收尾。管理员接口独立 `/dev/admin/**` 命名空间，不改造 owner 接口——owner 的取消/停用逻辑一行没动，两套入口各管各的校验。
+**实现上零新体系。** 直接复用平台既有权限框架：`application-perm.yml` 声明角色与权限点（`dev:run:cancel`/`dev:project:schedule`)，启动时 insert-if-absent 同步，登录时装入 authorities，接口上一个 `@PreAuthorize` 注解收尾。管理员接口独立 `/dev/admin/**` 命名空间，不改造 owner 接口——owner 的取消/停用逻辑一行没动，两套入口各管各的校验。
 
-**三层身份分离。** owner（项目归属人，平台自跑项目归专门服务账号 `morningstar-nightly`)/ bot(Gitea 侧提交 PR 的 HaibaraAi369)/ 平台管理员（熔断者）各司其职，任一身份被攻破或滥用，爆炸半径都被限制在自己的职责内——与第二节"最小权限"一脉相承。
+**三层身份分离。** owner（项目管理员，平台自跑项目归专门服务账号 `morningstar-nightly`)/ bot(Gitea 侧提交 PR 的 HaibaraAi369)/ 平台管理员（熔断者）各司其职，任一身份被攻破或滥用，爆炸半径都被限制在自己的职责内——与第二节"最小权限"一脉相承。
 
 **弃了什么：** 独立的权限体系（重复造轮子）、`disabled_by` 字段（MVP 不需要区分"谁停的")、级联取消（越权且危险）、审计表（降级为 `log.info` 留痕，表结构在 admin-operations design 留档，出现争议再升级）。管理员角色也不被禁止创建项目——那是无用守卫，真实约束来自接口语义而非身份封锁。
 
@@ -259,7 +259,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | FAILED 一律算活跃 | dev-plan 决策 46 | 躺平 FAILED 容器现场未知，必须占槽+挡触发，防同项目双 run 抢 volume |
 | Detail bo 展示扩充 | dev-plan 决策 47 | PO 不沾染展示字段；`@SuperBuilder` 继承 + 统一 `toDetail`，前端类型同构继承；RunDetail 含 actionAttemptBriefs 阶段流水（可视化数据源），CopyUtil 健壮化支持跨类同名拷贝 |
 | Run 触发方式入 PO | dev-plan 决策 48 | `triggerType`(MANUAL/SCHEDULED）是真实属性不进 Detail；写入点收敛 `createRun`,调用方用 enum 声明 |
-| 前端三页 IA 与可视化定稿 | dev-plan 决策 49 | 我的项目/系统管理/平台说明；历史任务单表不拆 PR；回退环弧线表达 RESTORING 回路；失败徽章/耗时由 actionAttemptBriefs 前端聚合 |
+| 前端三页 IA 与可视化定稿 | dev-plan 决策 49 | 我的项目/平台运维/平台介绍；历史任务单表不拆 PR；回退环弧线表达 RESTORING 回路；失败徽章/耗时由 actionAttemptBriefs 前端聚合 |
 | Verify 门禁 key 明细与防跨文件回归 | dev-plan 决策 50 | key 差集明细只为排障，判定口径仍是数量对比；mavenBuild 不吞编译失败（否则旧字节码分析新源码，门禁不可信）；重试反馈提示词方案放弃（受众错位 + 回滚后位置失效 + 自检已够） |
 | 节约人天量化口径 | dev-plan 决策 51 | `savedPersonDays` = Σ ACCEPTED issue 估算工时 ÷ 480,SQL 一步换算(`ROUND(COALESCE(SUM,0)/480.0,1)`);写死 'ACCEPTED' 不设参数——"节约人天"概念只绑已采纳,参数是无意义自由度 |
 | RunDetail 漏斗四值 | dev-plan 决策 51 | 扫描发现(最新 SUCCEEDED SCAN attempt 的 result 反序列化)/本轮入选/已修复/验证通过;已修复与验证通过用累计口径(含其后状态),保漏斗单调不减 |

@@ -1,5 +1,7 @@
 package com.morningstar.dev.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.morningstar.dev.dao.mapper.ProjectMapper;
 import com.morningstar.dev.pojo.bo.ProjectDetail;
 import com.morningstar.dev.pojo.po.Project;
@@ -12,6 +14,7 @@ import com.morningstar.dev.statemachine.action.CommonSteps;
 import com.morningstar.dev.util.GiteaUtil;
 import com.morningstar.dev.util.SonarUtil;
 import com.morningstar.infra.exception.BaseException;
+import com.morningstar.infra.response.PageResult;
 import com.morningstar.infra.response.ResponseCode;
 import com.morningstar.infra.util.CopyUtil;
 import com.morningstar.system.dao.mapper.UserMapper;
@@ -144,8 +147,10 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public List<ProjectDetail> listProject() {
-        return toDetails(projectMapper.selectList(null));
+    public PageResult<ProjectDetail> listProject(int pageNum, int pageSize) {
+        Page<Project> page = projectMapper.selectPage(new Page<>(pageNum, pageSize),
+                new LambdaQueryWrapper<Project>().orderByDesc(Project::getCreateTime));
+        return new PageResult<>(toDetails(page.getRecords()), pageNum, pageSize, page.getTotal());
     }
 
     private ProjectDetail toDetail(Project project) {

@@ -132,6 +132,8 @@ export interface Stats {
     executingRunCount: number;
     pendingRunCount: number;
     maxConcurrency: number;
+    scheduledStartTime: string;
+    scheduledEndTime: string;
     deliveredIssueCount: number;
     acceptedIssueCount: number;
     prTotal: number;
