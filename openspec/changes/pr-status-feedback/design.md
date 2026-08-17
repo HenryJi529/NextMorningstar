@@ -19,7 +19,7 @@ PR 是整体合并单元（Gitea 不部分合并）。`merged` → 本 run 全�
 
 ### 决策 3:定时轮询，达终态即停
 
-新增 cron（每 5min，复用 schedule 配置体系 `sync-pr-status-cron`）。只扫 `prId` 非空 + `prStatus=OPEN` 的 run（不限 `state`——CLEANED 后仍轮询）。PR 一旦 `MERGED`/`CLOSED` 即回写并停止轮询该 run。幂等：重复查同状态无副作用。
+新增 cron（初始每 5min，8/17 调为 30s——演示时合并/拒绝后页面滞后 5min 太难受；`15/30` 第 15s 起跑，与 `*/30` 的 dispatch 错开半拍；每周期每个 OPEN PR 仅一次 Gitea API 调用，负载可忽略；复用 schedule 配置体系 `sync-pr-status-cron`）。只扫 `prId` 非空 + `prStatus=OPEN` 的 run（不限 `state`——CLEANED 后仍轮询）。PR 一旦 `MERGED`/`CLOSED` 即回写并停止轮询该 run。幂等：重复查同状态无副作用。
 
 ### 决策 4:兑现 issue 终态 ACCEPTED/REJECTED
 

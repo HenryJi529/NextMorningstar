@@ -107,7 +107,7 @@
 | 31 | **issue 状态机简化**(8/10 定) | `Issue.Status` 删 `FAILED`。fail-fast 下 issue 只走 `SELECTED → FIXED → VERIFIED`，失败一律整轮回 `SELECTED`(不标 FAILED)；`ACCEPTED`/`REJECTED` 预留 SUBMIT 后终态。verify 同 fix 一样 fail-fast：验不过直接抛异常整轮回退，不逐条标 FAILED。永不做跨 run 排除(强化决策 28) |
 | 32 | **FixAction 无 per-action 超时**(8/10 定) | 砍掉单 issue `--max-turns` + 整 run wall-clock + CancelTracker（原 claude-issue-fix design 决策 3）。复用全局 `CronTask.cancelTimeoutRuns`(120min + 每 5min 检测)兜底卡死。catch 只兜 `ProcessExecutionException`(+ FixAction 的 `JsonProcessingException`)，不补 `DataAccessException`(DB 失败概率极低，靠 CronTask) |
 | 33 | **FixResult 双计数**(8/10 定) | `FixResult` 记 `fixedSonarIssueNum`/`fixedAiIssueNum`(非单一 `fixedIssueNum`)。失败时 message 带卡住的 issue + 已修双计数，便于诊断卡在哪种 source |
-| 34 | **PR 状态反馈(submit 后续管理)**(8/10 定,8/13 已实现) | 定时任务(`sync-pr-status-cron`,每 5min)轮询 `prId` 非空 + `prStatus=OPEN` 的 run 的 Gitea PR 状态:`merged` → 本 run `VERIFIED` issue `ACCEPTED` + `prStatus=MERGED`;`closed&!merged` → `REJECTED` + `CLOSED`;`open` → 续轮询,达终态即停。PR 整体映射不做 issue 级部分。`Run` 新增 `prStatus`(OPEN/MERGED/CLOSED,与 `prId` 配套),**不扩 `state`**(CLEANED 终态)不扩 `status`(执行观测)。兑现 `ACCEPTED`/`REJECTED` 终态(dev-plan 决策 31 删 FAILED 时预留)。`syncPrStatus(runId)` 抽成 service 方法:cron 遍历调用(批量回写,最长滞后 5min)。8/14:`getRun` 纯读化,移除详情实时同步副作用。见 pr-status-feedback change |
+| 34 | **PR 状态反馈(submit 后续管理)**(8/10 定,8/13 已实现) | 定时任务(`sync-pr-status-cron`;**8/17 由每 5min 调为 30s**——演示时合并/拒绝后页面滞后 5min 太难受,每周期每个 OPEN PR 仅一次 Gitea API 调用,负载可忽略;`15/30` 第 15s 起跑,与 `*/30` 的 dispatch 错开半拍不同刻齐发)轮询 `prId` 非空 + `prStatus=OPEN` 的 run 的 Gitea PR 状态:`merged` → 本 run `VERIFIED` issue `ACCEPTED` + `prStatus=MERGED`;`closed&!merged` → `REJECTED` + `CLOSED`;`open` → 续轮询,达终态即停。PR 整体映射不做 issue 级部分。`Run` 新增 `prStatus`(OPEN/MERGED/CLOSED,与 `prId` 配套),**不扩 `state`**(CLEANED 终态)不扩 `status`(执行观测)。兑现 `ACCEPTED`/`REJECTED` 终态(dev-plan 决策 31 删 FAILED 时预留)。`syncPrStatus(runId)` 抽成 service 方法:cron 遍历调用(批量回写,最长滞后一个轮询周期)。8/14:`getRun` 纯读化,移除详情实时同步副作用。见 pr-status-feedback change |
 | 35 | **severity scope 分通道**(8/11 定,8/12 更新) | SonarQube 和 AI 通道**各自独立**的 in-scope severity 过滤——`InScopeSeverities` 独立配置类（`morningstar.app.dev.in-scope-severities.sonar/ai`），Sonar 保留 `[BLOCKER,HIGH,MEDIUM]`，AI 加 `LOW`（AI 识别更精准、误报率低）。用 **set 成员判定**（非 floor/threshold）免给 severity 排序 |
 | 36 | **CommonSteps 共享件抽取**(8/11 定) | 跨 Scan/Fix/Verify 的共享步骤抽到 `CommonSteps`：`getContainerName`/`getVolumeName`（命名确定性）、`getHeadCommitSha`（Fix/Restore/Sync 共用取证 commitSha）、`getSonarProjectKey`（从 Project 解析 `owner:repo`，不再拼 runId）、`mavenBuild`/`sonarScan`（scan+verify 共用，sonarScan 返回 in-scope 过滤后结果）、`runClaude(ClaudeInput, Run, Class<T>)`（scan/fix/verify 共用，内含 `--json-schema` + `--output-format json` + `structured_output` 拆封，泛型输出参数决定反序列化类型）。定位"共享步骤枢纽"，方法参数避免裸 String |
 | 37 | **AbstractAction 兜底 try-catch**(8/11 定) | `execute()` 把 `doExecute(runId)` 包 `catch(Exception)`：任意意外异常（SonarUtil 返回 null→NPE、强转失败、拆箱等）转 FAILED result，走既有"标 attempt FAILED + sendEvent(failureEvent)"路径，**不再卡死**。动机：原 doExecute 未捕获异常冒泡（AbstractAction 无兜底）→ attempt 停 RUNNING + 状态机收不到失败事件 → run 静默挂死等 120min 超时。`catch Exception` 不 catch `Throwable`（Error 让进程崩）；message 用 `e.toString()`（兜无消息 NPE）；`log.error(...,e)` 留完整栈。SonarUtil 的 null 返回暂不改（兜底已盖住风险） |
@@ -324,7 +324,7 @@ morningstar.app.dev:
     dispatch-cron: "*/30 * * * * ?"      # 每 30s 从 PENDING 队列分发
     timeout-cron: "0 */5 * * * ?"        # 每 5min 超时检测
     cleanup-cron: "0 0 6 * * ?"          # 次日 6:00 清晨清理
-    sync-pr-status-cron: "30 */5 * * * ?" # 每 5min 同步 PR 状态(第 30s 错峰,合并/拒绝结果回写)
+    sync-pr-status-cron: "15/30 * * * * ?"  # 每 30s 同步 PR 状态(8/17 由 5min 调快:演示等不起;第 15s 起跑与 dispatch 错开半拍;每周期每个 OPEN PR 仅一次 Gitea API 调用)
     run-timeout-minutes: 120             # 超过 120min 无响应视为超时(8/10 调整)
     max-concurrency: 4                   # 并发槽位数(Fix 是模型 I/O 为主;8/16 演示机 12 核/36G 调为 4)
 ```
@@ -395,7 +395,7 @@ morningstar.app.dev:
 ### 阶段 7 · SubmitAction + PR 状态反馈 ⭐(~10h)— *8/12–8/13* ✅ 全部完成
 - [x] 后端通过临时 alpine/git 容器推修复分支 → 调 Gitea API 开 PR（8/13 实测通过）
 - [x] 统一格式诊断报告作为 PR body：每条 issue 分 Sonar/AI 分支——title + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description，SonarQube 对用户透明
-- [x] PR 状态反馈：`Run.prStatus`(OPEN/MERGED/CLOSED)，定时任务(每 5min)轮询 Gitea PR → merged 全 VERIFIED issue ACCEPTED / closed 全 REJECTED，达终态即停；`syncPrStatus(runId)` 抽成 service 方法，cron 遍历 + `getRun` 详情实时同步（决策 34 / pr-status-feedback，8/13 实测通过）
+- [x] PR 状态反馈：`Run.prStatus`(OPEN/MERGED/CLOSED)，定时任务(每 30s,8/17 由 5min 调快)轮询 Gitea PR → merged 全 VERIFIED issue ACCEPTED / closed 全 REJECTED，达终态即停；`syncPrStatus(runId)` 抽成 service 方法，cron 遍历 + `getRun` 详情实时同步（决策 34 / pr-status-feedback，8/13 实测通过）
 - **验收**:✅ Gitea 出现含统一格式诊断报告的 PR（8/13 端到端实测）；✅ PR 状态反馈实测通过（merge/close 回写 issue 终态 + run.prStatus）
 
 > 🎉 **后端端到端闭环已于 8/13 跑通**:Scan→Fix→Verify→Submit→PR 状态反馈 全链路实测通过。剩前端。
@@ -439,7 +439,7 @@ morningstar.app.dev:
 | 8/14 | 五 | 5h ✅ | review 加固 + 前端起步 | ✅ 后端多轮 review 修复闭环(决策 40-43:单飞/配置入口校验/超时时序/契约对齐)+ 5 真实 demo 仓库配置;余:Tab1/SSE/录屏 |
 | 8/15 | 六 | 10h ✅ | 前端打磨 + 交付 | ✅ run 列表/Stats/Detail 扩充/triggerType/原型定稿(决策 45-49);录屏与材料顺延 8/16 |
 | 8/16 | 日 | 10h | 前端三页 + 录屏(死线 24:00) | ✅ Stats 已采纳/节约人天 + RunDetail 漏斗四值(决策 51)+ Stats 调度时段(决策 52);✅ 演示数据造数(StateMachineServiceTest 全链路,5 项目/6 run/三用户);✅ 前端三页实现(决策 49 落地,vue-tsc/eslint 双零)+ openspec 主 specs 同步(pipeline-ui 新建);进行中:录屏 |
-| 8/17 | 一 | — | 收尾加固 | ✅ list 接口分页 + statuses 过滤(决策 53):run/project 列表必填 pageNum/pageSize 返回 PageResult,前端三表(历史任务/项目列表/最近完成)同款 PageSwitcher,馈给改大页快照;mvn compile + vue-tsc/eslint 双零 + openspec 同步 |
+| 8/17 | 一 | — | 收尾加固 | ✅ list 接口分页 + statuses 过滤(决策 53):run/project 列表必填 pageNum/pageSize 返回 PageResult,前端三表(历史任务/项目列表/最近完成)同款 PageSwitcher,馈给改大页快照;✅ `sync-pr-status-cron` 5min→30s(`15/30` 与 dispatch 错峰,决策 34);mvn compile + vue-tsc/eslint 双零 + openspec 同步 |
 
 ### 8/2 缓冲日建议(可选,不写平台代码,只做风险前置) — ✅ 8/2 已完成,三步全通过
 

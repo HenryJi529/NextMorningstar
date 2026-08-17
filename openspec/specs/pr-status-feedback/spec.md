@@ -18,7 +18,7 @@
 
 #### 场景：扫描待跟踪的 PR
 
-- **WHEN** 到达轮询间隔（`sync-pr-status-cron`，默认每 5min）
+- **WHEN** 到达轮询间隔（`sync-pr-status-cron`，初始默认每 5min，8/17 调为 30s——演示场景缩短人工裁决的页面滞后,`15/30` 与 dispatch 错开半拍）
 - **THEN** 查询所有 `prId` 非空且 `prStatus=OPEN` 的 run（不限 `state`，CLEANED 后仍轮询）
 - **AND** 对每个 run 调 Gitea API `GET /repos/{owner}/{repo}/pulls/{prId}` 取 `merged`/`state`（单 run 同步失败 try-catch 不中断批量；PR 404/项目已删幂等跳过）
 

@@ -6,7 +6,7 @@
 
 ## 2. 定时轮询任务
 
-- [x] 2.1 新增 cron 配置 `sync-pr-status-cron`（每 5min）。
+- [x] 2.1 新增 cron 配置 `sync-pr-status-cron`（每 5min；8/17 调为 30s,`15/30` 与 dispatch 错峰）。
 - [x] 2.2 扫描 `prId` 非空 + `prStatus=OPEN` 的 run（不限 `state`，CLEANED 后仍轮询）。
 - [x] 2.3 调 Gitea API `GET /repos/{owner}/{repo}/pulls/{prId}` 取 `merged`/`state`（`GiteaUtil.getPullRequest`）。
 

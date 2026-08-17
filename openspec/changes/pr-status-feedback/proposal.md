@@ -4,7 +4,7 @@ PR 提交后是否被人工合并/拒绝，是修复价值的最终裁决，需�
 
 ## 变更内容
 
-- 新增定时任务（建议每 5min）：扫描 `prId` 非空且 `prStatus=OPEN` 的 run。
+- 新增定时任务（初始每 5min，8/17 调为 30s,`15/30` 第 15s 起跑与 dispatch 错峰）：扫描 `prId` 非空且 `prStatus=OPEN` 的 run。
 - 调 Gitea API `GET /repos/{owner}/{repo}/pulls/{prId}` 取 `merged`/`state`。
 - 状态映射：
   - `merged=true` → 本 run 全部 issue.Status=`ACCEPTED`，run.prStatus=`MERGED`
