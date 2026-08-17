@@ -211,6 +211,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD}
+      SONARQUBE_TOKEN: ${SONARQUBE_TOKEN}
     depends_on:
       - es
       - mysql
