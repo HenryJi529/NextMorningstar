@@ -395,7 +395,7 @@ morningstar.app.dev:
 ### 阶段 7 · SubmitAction + PR 状态反馈 ⭐(~10h)— *8/12–8/13* ✅ 全部完成
 - [x] 后端通过临时 alpine/git 容器推修复分支 → 调 Gitea API 开 PR（8/13 实测通过）
 - [x] 统一格式诊断报告作为 PR body：每条 issue 分 Sonar/AI 分支——title + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description，SonarQube 对用户透明
-- [x] PR 状态反馈：`Run.prStatus`(OPEN/MERGED/CLOSED)，定时任务(每 30s,8/17 由 5min 调快)轮询 Gitea PR → merged 全 VERIFIED issue ACCEPTED / closed 全 REJECTED，达终态即停；`syncPrStatus(runId)` 抽成 service 方法，cron 遍历 + `getRun` 详情实时同步（决策 34 / pr-status-feedback，8/13 实测通过）
+- [x] PR 状态反馈：`Run.prStatus`(OPEN/MERGED/CLOSED)，定时任务(每 30s,8/17 由 5min 调快)轮询 Gitea PR → merged 全 VERIFIED issue ACCEPTED / closed 全 REJECTED，达终态即停；`syncPrStatus(runId)` 抽成 service 方法，cron 遍历调用（决策 34 / pr-status-feedback，8/13 实测通过；8/14 getRun 纯读化后无详情同步副作用，决策 42）
 - **验收**:✅ Gitea 出现含统一格式诊断报告的 PR（8/13 端到端实测）；✅ PR 状态反馈实测通过（merge/close 回写 issue 终态 + run.prStatus）
 
 > 🎉 **后端端到端闭环已于 8/13 跑通**:Scan→Fix→Verify→Submit→PR 状态反馈 全链路实测通过。剩前端。

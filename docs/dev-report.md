@@ -237,7 +237,9 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | 优先级排序 | 夜间窗口资源充足，先到先修即可 |
 | GitLab 适配 | 演示用 Gitea 已就绪；生产替换时再实现 |
 | 管理员操作审计表 | `dev_admin_operation` 表结构已在 admin-operations design 决策 6 留档；MVP 降级为 `log.info` 留痕，出现争议再升级 |
-| 管理员 enable 端点 | 熔断权 vs 所有权分离：管理员只写 `enabled=false`，恢复权归 owner；拉锯风险 MVP 接受 |
+| ~~管理员 enable 端点~~ | 已失效——8/16 调整为双向 `toggleSchedule`，见第十节 |
+| ~~SSE/WS 实时推送~~ | 8/18 决定不做：3s 轮询演示与实际使用均够用，场景是夜间跑白天看，无高频实时观看需求；SSE 属"技术更优雅但用户无感"，不值得为此加连接管理复杂度 |
+| ~~高频缺陷 Top~~ | 8/18 决定不做：无合适落位（KPI 五格叙事链不扩、单项目数据薄、介绍页不放数据）；隐含前提是长期大量 issue 数据的聚合分析，MVP 5 仓库量级"Top"仅三五条，属数据规模未到时提前建设 |
 
 ---
 
@@ -281,3 +283,5 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 | Verify 门禁 key 明细与防跨文件回归 | dev-plan 决策 50 | key 差集明细只为排障，判定口径仍是数量对比；mavenBuild 不吞编译失败（否则旧字节码分析新源码，门禁不可信）；重试反馈提示词方案放弃（受众错位 + 回滚后位置失效 + 自检已够） |
 | 节约人天量化口径 | dev-plan 决策 51 | `savedPersonDays` = Σ ACCEPTED issue 估算工时 ÷ 480,SQL 一步换算(`ROUND(COALESCE(SUM,0)/480.0,1)`);写死 'ACCEPTED' 不设参数——"节约人天"概念只绑已采纳,参数是无意义自由度 |
 | RunDetail 漏斗四值 | dev-plan 决策 51 | 扫描发现(最新 SUCCEEDED SCAN attempt 的 result 反序列化)/本轮入选/已修复/验证通过;已修复与验证通过用累计口径(含其后状态),保漏斗单调不减 |
+| Stats 调度时段两字段 | dev-plan 决策 52 | 后端解析 cron 下发 `scheduledStartTime/EndTime`,调度时段唯一展示点是顶栏胶囊——调 cron 不产生文案漂移;破"cron 不进 Stats"例的是用户可见语义而非运维调参 |
+| list 接口分页 + statuses 过滤 | dev-plan 决策 53 | run/project 列表必填 pageNum/pageSize 返回 PageResult;statuses 是分页正确性配套(终态视图必须 SQL 层过滤,否则进行中 run 混入首页致缺行/空页);adminId 过滤因无调用方删除 |
