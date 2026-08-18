@@ -10,6 +10,7 @@ import {
     stateToStep,
     triggerLabel,
 } from '@/libs/dev';
+import CopyableId from '@/views/dev/components/CopyableId.vue';
 
 const props = withDefaults(
     defineProps<{
@@ -132,7 +133,10 @@ const funnelItem = (value?: number) => value ?? '—';
             <div class="flex items-center gap-3">
                 <h2 class="text-base font-semibold text-slate-800">当前任务</h2>
                 <template v-if="run">
-                    <span class="font-mono text-xs text-slate-400">{{ run.id.slice(0, 8) }}…</span>
+                    <copyable-id
+                        class="text-xs text-slate-400"
+                        :value="run.id"
+                        :display="`${run.id.slice(0, 8)}…`" />
                     <span class="text-xs text-slate-400">{{ triggerLabel(run.triggerType) }}</span>
                     <span
                         v-for="f in failures"

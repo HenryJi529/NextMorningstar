@@ -11,6 +11,7 @@ import PipelineStateMachine from '@/views/dev/components/PipelineStateMachine.vu
 import RunStatusBadge from '@/views/dev/components/RunStatusBadge.vue';
 import PrStatusBadge from '@/views/dev/components/PrStatusBadge.vue';
 import PageSwitcher from '@/views/dev/components/PageSwitcher.vue';
+import CopyableId from '@/views/dev/components/CopyableId.vue';
 
 const loaded = ref(false);
 const stats = ref<Stats>();
@@ -322,7 +323,8 @@ const onToggleSchedule = (project: ProjectDetail) => {
                                 {{ r.projectName }}
                             </div>
                             <div class="font-mono text-[10px] text-slate-400 mt-0.5">
-                                {{ r.id.slice(0, 8) }} · {{ triggerLabel(r.triggerType) }}
+                                <copyable-id :value="r.id" :display="r.id.slice(0, 8)" />
+                                · {{ triggerLabel(r.triggerType) }}
                             </div>
                         </div>
                         <button
@@ -365,25 +367,29 @@ const onToggleSchedule = (project: ProjectDetail) => {
             </div>
             <table class="w-full text-sm table-fixed">
                 <colgroup>
-                    <col class="w-[14%]" />
+                    <col class="w-[15%]" />
+                    <col class="w-[12%]" />
+                    <col class="w-[7%]" />
                     <col class="w-[8%]" />
                     <col class="w-[9%]" />
-                    <col class="w-[10%]" />
-                    <col class="w-[10%]" />
-                    <col class="w-[13%]" />
-                    <col class="hidden xl:table-column w-[13%]" />
-                    <col class="hidden xl:table-column w-[13%]" />
-                    <col class="w-[10%]" />
+                    <col class="w-[9%]" />
+                    <col class="w-[9%]" />
+                    <col class="hidden xl:table-column w-[11%]" />
+                    <col class="hidden xl:table-column w-[11%]" />
+                    <col class="w-[9%]" />
                 </colgroup>
                 <thead>
                     <tr class="text-[11px] text-slate-400 border-b border-slate-100">
                         <th class="text-center font-medium px-5 py-2.5">项目</th>
+                        <th class="text-center font-medium px-3 py-2.5" title="点击可复制完整 runId">
+                            任务编号
+                        </th>
                         <th class="text-center font-medium px-3 py-2.5">触发方式</th>
                         <th class="text-center font-medium px-3 py-2.5">运行结果</th>
                         <th
                             class="text-center font-medium px-3 py-2.5"
                             title="本次任务扫描发现的问题总数(SonarQube + AI)">
-                            扫描发现问题数
+                            发现问题数
                         </th>
                         <th
                             class="text-center font-medium px-3 py-2.5"
@@ -417,6 +423,9 @@ const onToggleSchedule = (project: ProjectDetail) => {
                                 title="项目已删除，任务记录保留作为历史存档">
                                 已删除项目
                             </span>
+                        </td>
+                        <td class="px-3 py-3 text-center">
+                            <copyable-id :value="r.id" :display="r.id.slice(0, 8)" />
                         </td>
                         <td class="px-3 py-3 text-center text-xs text-slate-500 whitespace-nowrap">
                             {{ triggerLabel(r.triggerType) }}
@@ -452,7 +461,7 @@ const onToggleSchedule = (project: ProjectDetail) => {
                         </td>
                     </tr>
                     <tr v-if="recentRuns.length === 0">
-                        <td colspan="9" class="px-5 py-10 text-center text-xs text-slate-300">
+                        <td colspan="10" class="px-5 py-10 text-center text-xs text-slate-300">
                             暂无已完成任务
                         </td>
                     </tr>

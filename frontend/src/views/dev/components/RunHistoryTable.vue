@@ -3,6 +3,7 @@ import type { RunDetail } from '@/types/dev';
 import { fmtDuration, fmtTime, triggerLabel } from '@/libs/dev';
 import RunStatusBadge from '@/views/dev/components/RunStatusBadge.vue';
 import PrStatusBadge from '@/views/dev/components/PrStatusBadge.vue';
+import CopyableId from '@/views/dev/components/CopyableId.vue';
 
 defineProps<{
     runs: RunDetail[];
@@ -30,7 +31,7 @@ defineProps<{
                 <th
                     class="text-center font-medium px-3 py-2.5"
                     title="本次任务扫描发现的问题总数(SonarQube + AI)">
-                    扫描发现问题数
+                    发现问题数
                 </th>
                 <th class="text-center font-medium px-3 py-2.5" title="成功任务交付的修复问题数">
                     已交付修复数
@@ -48,8 +49,8 @@ defineProps<{
                 v-for="run in runs"
                 :key="run.id"
                 class="border-b border-slate-50 last:border-0 hover:bg-orange-50/40">
-                <td class="px-5 py-3 text-center font-mono text-xs text-slate-500" :title="run.id">
-                    {{ run.id.slice(0, 8) }}
+                <td class="px-5 py-3 text-center text-xs text-slate-500" :title="run.id">
+                    <copyable-id :value="run.id" :display="run.id.slice(0, 8)" />
                 </td>
                 <td class="px-3 py-3 text-center text-xs text-slate-500 whitespace-nowrap">
                     {{ triggerLabel(run.triggerType) }}
