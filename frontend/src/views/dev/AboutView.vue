@@ -45,7 +45,7 @@ const identities = [
     {
         role: '平台管理员',
         who: 'admin · 熔断者',
-        desc: '只有熔断权没有所有权：可取消任何 run、停用任何项目；不能恢复、不能改配置',
+        desc: '只有熔断权没有所有权：可取消任何任务、启停任何项目的调度；不能改配置',
         style: 'border-amber-200 bg-amber-50/50',
         titleColor: 'text-amber-600',
     },

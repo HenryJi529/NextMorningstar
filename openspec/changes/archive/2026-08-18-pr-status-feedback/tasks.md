@@ -18,7 +18,7 @@
 
 ## 4. 前端
 
-- [ ] 4.1 run 列表/详情展示 PR 状态（OPEN/MERGED/CLOSED）。
+- [x] 4.1 run 列表/详情展示 PR 状态（OPEN/MERGED/CLOSED）。(8/18 确认已交付:`PrStatusBadge` 挂历史任务表 `RunHistoryTable` 与平台运维最近完成表 `AdminView`,run 记录无 prStatus 时显示占位徽章)
 
 ## 5. 验证
 
