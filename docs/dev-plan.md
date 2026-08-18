@@ -412,7 +412,7 @@ morningstar.app.dev:
 - [x] 演示数据造数(8/16):经 `StateMachineServiceTest` 全链路真实跑出(非手插 SQL)——5 项目/6 run(含 2 失败行)/三用户归属(henry/sherry/SpiderMan),PR 合并/关闭/开放三态由人工在 Gitea 操作后 cron 回写**已验证**(ACCEPTED/REJECTED 落库,KPI 有数),演示账号 `dev_admin` 权限点已确认;坏仓库(gaas-backend 编译失败)留作失败样本
 - [x] 用 NextMorningstar backend 自己跑一轮（真实价值演示）(8/18 实测通过,"平台修复自身"压轴叙事闭环)
 - [x] 跑通夜间定时真实触发（8/18 云服务器实测:5 仓库夜间定时,并发 4 先跑完、第 5 个排队后自动补位;同日活数据联调与云部署验证通过）
-- [x] 修边界:并发、超时、取消、单 run 挂不影响其他（8/14 review 闭环,决策 40-42:triggerRun 单飞/超时排除排队态/cancelRun 守卫/syncPrStatus try-catch)
+- [x] 修边界:并发、超时、取消、单 run 挂不影响其他（8/14 review 闭环,决策 40-42:triggerRun 单飞/超时排除排队态/cancelRun 守卫/syncPrStatus try-catch;**8/18 实测覆盖**:5 仓库夜间定时并发 4+排队补位、手动取消、`run-timeout-minutes=2` 在 `timeout-cron` 周期内触发 cancel)
 
 ### 阶段 10 · 交付素材(~10h)— *8/15–8/16*
 - [ ] 作品录屏（端到端全过程;8/16 录制,策略:触发只录开头几秒,状态机流转用存量 run 流水演示,不等真实速率）
@@ -440,7 +440,7 @@ morningstar.app.dev:
 | 8/15 | 六 | 10h ✅ | 前端打磨 + 交付 | ✅ run 列表/Stats/Detail 扩充/triggerType/原型定稿(决策 45-49);录屏与材料顺延 8/16 |
 | 8/16 | 日 | 10h | 前端三页 + 录屏(死线 24:00) | ✅ Stats 已采纳/节约人天 + RunDetail 漏斗四值(决策 51)+ Stats 调度时段(决策 52);✅ 演示数据造数(StateMachineServiceTest 全链路,5 项目/6 run/三用户);✅ 前端三页实现(决策 49 落地,vue-tsc/eslint 双零)+ openspec 主 specs 同步(pipeline-ui 新建);进行中:录屏 |
 | 8/17 | 一 | — | 收尾加固 | ✅ list 接口分页 + statuses 过滤(决策 53):run/project 列表必填 pageNum/pageSize 返回 PageResult,前端三表(历史任务/项目列表/最近完成)同款 PageSwitcher,馈给改大页快照;✅ `sync-pr-status-cron` 5min→30s(`15/30` 与 dispatch 错峰,决策 34);mvn compile + vue-tsc/eslint 双零 + openspec 同步 |
-| 8/18 | 二 | — | 真跑验证收官 | ✅ 活数据联调 + 云服务器部署验证通过;✅ 夜间定时真实触发实测(5 仓库,并发 4 先跑完、第 5 个排队补位);✅ NextMorningstar 自跑一轮通过(阶段 9 全清,压轴叙事闭环);✅ 归档 pr-status-feedback(4.1 PrStatusBadge 已交付);AboutView 平台管理员口径改双向启停;余:录屏 + 介绍材料(阶段 10) |
+| 8/18 | 二 | — | 真跑验证收官 | ✅ 活数据联调 + 云服务器部署验证通过;✅ 夜间定时真实触发实测(5 仓库,并发 4 先跑完、第 5 个排队补位);✅ NextMorningstar 自跑一轮通过(阶段 9 全清,压轴叙事闭环);✅ 单 run 超时/取消/并发调度边界实测通过;✅ 归档 pr-status-feedback(4.1 PrStatusBadge 已交付);AboutView 平台管理员口径改双向启停;进行中:frontend-dashboard/nightly-unattended-run 归档;余:录屏 + 介绍材料(阶段 10) |
 
 ### 8/2 缓冲日建议(可选,不写平台代码,只做风险前置) — ✅ 8/2 已完成,三步全通过
 

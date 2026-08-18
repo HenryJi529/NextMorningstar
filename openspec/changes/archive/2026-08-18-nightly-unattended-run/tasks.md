@@ -11,4 +11,4 @@
 
 ## 3. 边界
 
-- [ ] 3.1 并发调度、单 run 超时、取消、窗口硬停的稳定性。（8/14 已加固:超时查询排除 PENDING——排队不算超时;`triggerRun` 单飞守卫;`hasActiveRun` 口径三处统一)
+- [x] 3.1 并发调度、单 run 超时、取消、窗口硬停的稳定性。（8/14 已加固:超时查询排除 PENDING——排队不算超时;`triggerRun` 单飞守卫;`hasActiveRun` 口径三处统一)**8/18 实测覆盖并发调度/取消/超时**:5 仓库夜间定时并发 4+排队补位;手动取消正常;超时(`run-timeout-minutes=2`)在 `timeout-cron` 周期内被检测到并 cancel。窗口硬停为 `cleanup-cron` 批量触发同一套 cancel/deleteById 路径,逻辑已覆盖,演示后不再单列压测)**
