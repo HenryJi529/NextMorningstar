@@ -12,7 +12,7 @@ morningstar:
       excerpt-max-visual-length: 300
     dev:
       in-scope-severities:
-        sonar: [ BLOCKER, HIGH, MEDIUM ]
+        sonar: [ BLOCKER, HIGH ]
         ai: [ BLOCKER, HIGH, MEDIUM, LOW ]
       git:
         fix-branch-prefix: "fix/"
