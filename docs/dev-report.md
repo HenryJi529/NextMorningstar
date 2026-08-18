@@ -12,6 +12,8 @@
 
 **开发时：人主导 + AI 辅助。** 本项目自身由"人 + Claude Code"协作构建。核心 Action 与状态机代码由人牢牢握住，AI 承担样板/调试/验收/review。这两层合作互为镜像，使产品自身即为方法论的证明。
 
+**前后端把控程度不同，是刻意分工。** 后端（Java/Spring Boot/状态机）由开发者严格掌控：状态机流转、Action 边界、安全模型、权限点、数据一致性这些决定产品能否正确且安全地改代码，bug 成本极高（可能越权、写坏仓库、状态机死锁），必须由人把住。AI 在后端只承担样板代码、单测骨架、调试辅助、review 提示。前端（Vue3/TypeScript/Tailwind）则让 AI 承担更多实现工作：页面布局、组件组装、样式微调、轮询与分页逻辑；人负责 IA 定稿、关键交互拍板、视觉方向把关。原因有三：一是开发顺序上后端接口/状态机/数据契约先固定，前端从 UI 还原开始、按已定契约一步一步调通——后端是前端的前置依赖，先把住后端才能保证前端调试有稳定靶子；二是前端迭代快、体验导向、回滚调整成本低，适合把人的精力省下来投入后端核心；三是开发者的主战场在后端，前端交给 AI 快速落地是符合个人技术栈优势的理性选择。这并不意味着前端不重要，而是说在 MVP 时间和认知资源约束下，把“不可外包的判断”放在后端，把“可快速修正的表达”放在前端。
+
 > **汇报金句：** 用「人主导 + AI 辅助」的方式，开发出一个「AI 自主 + 人工门」的产品——这本身即证明 AI 不替代人，而是在人划定的边界内，把人从重复劳动中解放出来。
 
 ---
@@ -32,9 +34,60 @@
 
 ---
 
-## 三、双通道发现 + 两道防线验证
+## 三、后端实现演进：从状态机骨架到真实 Action
 
-### 3.1 ScanAction：双通道并行扫描
+汇报时如果只讲最终架构，会掩盖这个项目最值得一说的工程过程。**后端不是一次性写成的，而是按“先编排、再重试、再填真实动作”的节奏逐步长大的**，每一步都有明确目的。
+
+### 3.1 阶段一：用 MockAction 跑通基础状态机
+
+先搭一条最简主链：`PENDING → STARTING → STARTED → SYNCING → SYNCED → SCANNING → SCANNED → FIXING → FIXED → VERIFYING → VERIFIED → SUBMITTING → SUBMITTED → CLEANING → CLEANED`。每个 Action 先继承 `MockAction`，随机返回成功或失败。目标只有一个：**验证状态机编排本身正确**——事件怎么发、Trigger 怎么接、状态怎么落表、DB 与内存是否一致。此时不 care 真实修复能力，只 care 流程能走通。
+
+### 3.2 阶段二：加入重试与回退环
+
+基础链跑通后，立刻暴露一个问题：Fix 或 Verify 失败怎么办？直接 FAILED 太浪费，应该回滚到修复前现场再试。于是引入 `RESTORING → RESTORED` 回退环和 `RestoredTrigger`：
+- Fix 失败 → `RESTOREING` 回滚代码 → `RESTORED` → 重新 `FIXING`
+- Verify 失败 → 同样回滚 → 重新 `FIXING`
+- 每轮重试计数，耗尽后才会进入 `FAILED`
+
+`RestoredTrigger` 是整个状态机唯一的分支点，通过时间戳区分失败来源、检查重试上限。这条环让状态机从“单程票”变成“可回滚的流水线”。
+
+### 3.3 阶段三：逐个替换 MockAction
+
+状态机和重试环稳定后，才开始把 MockAction 替换成真实实现。替换顺序由依赖关系决定：**前面的 Action 是后面 Action 的前置条件**。
+
+| 顺序 | Action | 真实化内容 |
+|---|---|---|
+| 1 | `StartAction` | 起 Docker sandbox 容器，准备 `/workspace/repo` 和 bot 用户 |
+| 2 | `SyncAction` | 临时 alpine/git 容器 clone 代码，用 bot token 注入 |
+| 3 | `ScanAction` | 双通道扫描：SonarQube 规则引擎 + Claude AI Discovery |
+| 4 | `FixAction` | 统一 prompt 调用 Claude 修复，MCP `analyze_code_snippet` 自查 |
+| 5 | `VerifyAction` | SonarQube 重扫客观判定 + Claude 语义评审 |
+| 6 | `SubmitAction` | 推修复分支、调 Gitea API 开 PR、写统一格式诊断报告 |
+| 7 | `CleanAction` | 清理容器和 volume |
+
+每替换一个就跑端到端验证，确保状态机仍然能正确驱动新动作。这种“骨架先行、血肉后填”的方式，让真实 Action 的开发不会被状态机 bug 阻塞。
+
+### 3.4 阶段四：PR 状态反馈（提交后的独立生命周期）
+
+Run 到 `CLEANED` 后，PR 还在 Gitea 等人评审。于是新增 `Run.prStatus`（OPEN/MERGED/CLOSED）和独立定时任务 `sync-pr-status-cron`，轮询 Gitea API：
+- `merged=true` → 本 run 全部 `VERIFIED` issue 置 `ACCEPTED`
+- `closed & !merged` → 全部 `REJECTED`
+- `open` → 继续轮询
+
+这一步不污染状态机（`CLEANED` 仍是终态），把“人工裁决”作为提交后的独立观测生命周期处理。
+
+### 为什么这样演进
+
+1. **先验证编排正确，再验证动作真实**：如果状态机本身有 bug，真实 Action 失败后无法判断是动作错了还是编排错了；Mock 阶段把编排风险先清掉。
+2. **重试环必须在真实 Action 之前定稿**：真实修复动作一定会失败，没有回退环就要么一次废要么逻辑到处补。
+3. **每个 Action 有稳定前置**：Scan 依赖 Sync 的代码、Fix 依赖 Scan 的 issue、Verify 依赖 Fix 的 commit，顺序替换避免多变量同时爆炸。
+4. **人把住 Action 边界和状态机，AI 填动作内部**：状态机流转、Action 出入口、错误处理由人设计；prompt 模板、DTO 解析、日志打印等内部实现大量交给 AI。
+
+---
+
+## 四、双通道发现 + 两道防线验证
+
+### 4.1 ScanAction：双通道并行扫描
 
 ```
 ScanAction:
@@ -57,15 +110,15 @@ ScanAction:
 
 AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（21 种 `AiMetadata.Type` 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
 
-### 3.2 FixAction：统一 prompt + MCP 自查
+### 4.2 FixAction：统一 prompt + MCP 自查
 
 ScanAction 阶段已把全部诊断信息存入 issue 字段。FixAction 对所有 issue 使用同一 prompt 模板——Claude 从 `title`/`codeSnippet`/`metadata` 获取上下文即修，修复完成后调用 sonarqube MCP 的 `analyze_code_snippet` 自查修改文件，确保不引入新 issue。
 
 **commit_message 只让 AI 做它该做的。** Claude 修复后吐 `{subject, body}` 两字段 JSON——subject 一句话总结、body 修复思路，后端拼成 `subject\n\nbody` 交 git commit。曾考虑让 AI 同时输出 `verification`（自述怎么验证）和 `risk`（修复风险），都砍掉：验证是 VerifyAction 的职责，AI 自述验证不可靠又越权（活没干完就 preemptive 描述怎么验收）；risk 同理——同一模型刚改完代码就评自己的风险，没有信息增量。模板内嵌代码（text block），不引用外部模板文件，少一个运行时依赖。
 
-**失败要能诊断卡在哪。** `FixResult` 不记单一 `fixedIssueNum`，而是按 source 双计数 `fixedSonarIssueNum`/`fixedAiIssueNum`——失败时一眼看出修了几个、卡在 SonarQube 通道还是 AI 通道。任一 issue 失败即整轮 `FIX_FAILED`，不做逐 commit 精准保留（理由见第六节）。
+**失败要能诊断卡在哪。** `FixResult` 不记单一 `fixedIssueNum`，而是按 source 双计数 `fixedSonarIssueNum`/`fixedAiIssueNum`——失败时一眼看出修了几个、卡在 SonarQube 通道还是 AI 通道。任一 issue 失败即整轮 `FIX_FAILED`，不做逐 commit 精准保留（理由见第七节）。
 
-### 3.3 VerifyAction：两道防线
+### 4.3 VerifyAction：两道防线
 
 ```
 VerifyAction:
@@ -80,13 +133,13 @@ VerifyAction:
 
 **输出最小 JSON，砍 reason。** Claude 只回 `{"verified":true/false}`——失败即整轮回退（issue 回 SELECTED），无人看 reason；调试看 `log.info(rawOutput)`。砍 reason 省 token、降复杂度，失败 message 用固定文案。
 
-### 3.4 SonarQube 对用户透明
+### 4.4 SonarQube 对用户透明
 
 issue 入库后不再区分来源。PR body 统一格式：title + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description。用户看不到 SonarQube 原始 API 数据，只看到结构化的中文诊断报告。
 
 ---
 
-## 四、数据模型：Source 区分器 + 三维 Severity
+## 五、数据模型：Source 区分器 + 三维 Severity
 
 `dev_issue` 承载所有问题记录，无论来自 SonarQube 还是 AI Discovery：
 
@@ -109,7 +162,7 @@ maintainability_severity VARCHAR(16)    -- CODE_SMELL(代码异味)
 
 ---
 
-## 五、18 态状态机：一条主链、一个回退环、一个终态
+## 六、18 态状态机：一条主链、一个回退环、一个终态
 
 每两个状态形成一个 Action 的执行区间（`...ING → ...ED`），Trigger 自动驱动：
 
@@ -138,9 +191,9 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 六、不浪费 AI 算力的正确方式：三层防线而非扭曲状态机
+## 七、不浪费 AI 算力的正确方式：三层防线而非扭曲状态机
 
-### 6.1 一度想做的方案（评估后明确拒绝）
+### 7.1 一度想做的方案（评估后明确拒绝）
 
 曾考虑 **逐 commit 精准保留**：Verify 失败时 `git reset --hard <最早失败 commit^>` 保留修好的 commit → 只重修失败的 issue → 重试耗尽后强制 SUBMIT 已有成果。这个方向会引入链式复杂度：
 
@@ -153,7 +206,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 **结论：** 逐 commit 保留不是"后面对齐再做"，而是评估后明确拒绝。**核心理由是质量**：全量回退保证修复集原子性、回归比例更低（跨轮拼凑的修复会互相踩踏）；其次是复杂度（状态机从编排引擎退化为业务决策引擎）和效率认知（节省的是夜间 AI 时间，不稀缺）；防线由 `RestoredTrigger` 重试上限和 `maxIssuesPerRun` 窗口承担。
 
-### 6.2 替代方案：三层防线，不改状态机
+### 7.2 替代方案：三层防线，不改状态机
 
 | 层 | 机制 | 作用 |
 |---|---|---|
@@ -163,13 +216,13 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 **核心洞察：** `maxSonarIssuesPerRun` + `maxAiIssuesPerRun` 是复杂度调杆。设为 10+5 是典型模式，都设为 1 等效 issue 级隔离——状态机零改动。调参不用动架构。
 
-### 6.3 分支方案悖论
+### 7.3 分支方案悖论
 
 每个 issue 独立验证需要 `mvn compile + sonar-scanner`，整个 Scan 也是 `mvn compile + sonar-scanner`。一个发现 N 个问题，一个验证 1 个问题——两者同代价。发现比验证还便宜，这是反直觉的架构异味。整轮回退恰好避开了这个悖论。
 
 ---
 
-## 七、命名确定性：不把 Docker 状态存入数据库
+## 八、命名确定性：不把 Docker 状态存入数据库
 
 容器名 `morningstar_dev_sandbox_<runId>` 和 volume 名 `morningstar_dev_repo_<projectId>` 均由 ID 确定性推导。数据库中不存 `container_id`——DB 是冗余副本，Docker daemon 才是真实数据源，两者会漂移。能推导就不存。
 
@@ -177,7 +230,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 八、Gitea 双视角地址
+## 九、Gitea 双视角地址
 
 同一 Gitea 实例，不同消费者看不同的地址：
 
@@ -190,7 +243,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 九、故障隔离：CleanAction 的破环逻辑
+## 十、故障隔离：CleanAction 的破环逻辑
 
 `FailedTrigger` 中有一个反直觉的判断：FAILED 状态如果来自 CLEANING 阶段，不再发 CLEAN 事件。**否则 CLEAN 失败 → FAILED → 自动再发 CLEAN → 再失败 → ... 无限循环刷 `action_attempt` 表。**
 
@@ -198,7 +251,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 十、平台管理员：熔断权与所有权分离
+## 十一、平台管理员：熔断权与所有权分离
 
 平台跑起来后会出现项目管理员处理不了的运维场景：run 卡死占着并发槽（全局仅 4 个,8/16 调）、项目配置错误每晚反复失败刷表。这要求存在一个"超级用户"——但超级用户该有多大权力，是一道边界设计题。
 
@@ -212,7 +265,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 十一、平台运维 KPI：五格一条叙事链
+## 十二、平台运维 KPI：五格一条叙事链
 
 平台运维页的 KPI 行不是五个孤立计数，而是一条递进的叙事链，五格刚好构成完整闭环、一环不缺：
 
@@ -230,14 +283,14 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
 
 ---
 
-## 十二、演进路径：MVP 刻意放过的
+## 十三、演进路径：MVP 刻意放过的
 
 | MVP 不做 | 理由 |
 |---|---|
 | 优先级排序 | 夜间窗口资源充足，先到先修即可 |
 | GitLab 适配 | 演示用 Gitea 已就绪；生产替换时再实现 |
 | 管理员操作审计表 | `dev_admin_operation` 表结构已在 admin-operations design 决策 6 留档；MVP 降级为 `log.info` 留痕，出现争议再升级 |
-| ~~管理员 enable 端点~~ | 已失效——8/16 调整为双向 `toggleSchedule`，见第十节 |
+| ~~管理员 enable 端点~~ | 已失效——8/16 调整为双向 `toggleSchedule`，见第十一节 |
 | ~~SSE/WS 实时推送~~ | 8/18 决定不做：3s 轮询演示与实际使用均够用，场景是夜间跑白天看，无高频实时观看需求；SSE 属"技术更优雅但用户无感"，不值得为此加连接管理复杂度 |
 | ~~高频缺陷 Top~~ | 8/18 决定不做：无合适落位（KPI 五格叙事链不扩、单项目数据薄、介绍页不放数据）；隐含前提是长期大量 issue 数据的聚合分析，MVP 5 仓库量级"Top"仅三五条，属数据规模未到时提前建设 |
 
