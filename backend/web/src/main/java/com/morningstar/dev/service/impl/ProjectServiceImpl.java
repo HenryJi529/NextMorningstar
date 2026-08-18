@@ -82,13 +82,6 @@ public class ProjectServiceImpl implements ProjectService {
             giteaUtil.validateRepoAndBranch(dbProject.getLink(), vo.getBranchName());
         }
 
-        boolean enabling = Boolean.TRUE.equals(vo.getEnabled()) && !Boolean.TRUE.equals(dbProject.getEnabled());
-        boolean disabling = Boolean.FALSE.equals(vo.getEnabled()) && Boolean.TRUE.equals(dbProject.getEnabled());
-
-        if (enabling) {
-            giteaUtil.addCollaborator(dbProject.getLink());
-        }
-
         projectMapper.updateById(Project.builder()
                 .id(vo.getId())
                 .name(vo.getName())
@@ -98,10 +91,6 @@ public class ProjectServiceImpl implements ProjectService {
                 .maxAiIssuesPerRun(vo.getMaxAiIssuesPerRun())
                 .enabled(vo.getEnabled())
                 .build());
-
-        if (disabling) {
-            giteaUtil.removeCollaborator(dbProject.getLink());
-        }
 
         return toDetail(projectMapper.selectById(vo.getId()));
     }

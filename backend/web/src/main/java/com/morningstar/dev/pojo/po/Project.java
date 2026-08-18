@@ -31,6 +31,7 @@ public class Project {
 
     private String description;
 
+    // NOTE: 是否启用调度，不是是否启用项目
     private Boolean enabled;
 
     private Integer maxSonarIssuesPerRun;
