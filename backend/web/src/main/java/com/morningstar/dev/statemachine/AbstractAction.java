@@ -49,6 +49,8 @@ public abstract class AbstractAction implements Action {
                     .build();
         }
         currentActionAttempt.setResult(actionResult);
+        /* 复用 insert 实体时 updateTime 已被 insertFill 打上非空值(strictFill 不再覆盖) → 显式置空,让 updateFill 重新打上真实的结束时间 */
+        currentActionAttempt.setUpdateTime(null);
         if (actionResult.getStatus() == ActionResult.Status.SUCCEEDED) {
             currentActionAttempt.setStatus(ActionStatus.SUCCEEDED);
             actionAttemptMapper.updateById(currentActionAttempt);
