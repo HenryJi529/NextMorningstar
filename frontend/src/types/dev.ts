@@ -56,6 +56,11 @@ export enum ActionStatus {
     RUNNING = 'RUNNING',
 }
 
+export enum SortDir {
+    ASC = 'ASC',
+    DESC = 'DESC',
+}
+
 /* PO */
 export interface Project {
     id: string;

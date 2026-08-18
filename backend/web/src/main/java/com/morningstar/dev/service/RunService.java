@@ -1,6 +1,7 @@
 package com.morningstar.dev.service;
 
 import com.morningstar.dev.pojo.bo.RunDetail;
+import com.morningstar.dev.pojo.bo.SortDir;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.infra.response.PageResult;
 
@@ -14,7 +15,7 @@ public interface RunService {
 
     RunDetail getRun(UUID runId);
 
-    PageResult<RunDetail> listRun(UUID projectId, List<Run.Status> statuses, int pageNum, int pageSize);
+    PageResult<RunDetail> listRun(UUID projectId, List<Run.Status> statuses, int pageNum, int pageSize, SortDir sortDir);
 
     void cancelRun(UUID runId, UUID adminId);
 

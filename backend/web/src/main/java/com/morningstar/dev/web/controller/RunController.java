@@ -1,6 +1,7 @@
 package com.morningstar.dev.web.controller;
 
 import com.morningstar.dev.pojo.bo.RunDetail;
+import com.morningstar.dev.pojo.bo.SortDir;
 import com.morningstar.dev.pojo.po.Run;
 import com.morningstar.dev.service.RunService;
 import com.morningstar.infra.response.PageResult;
@@ -33,8 +34,9 @@ public class RunController {
     public R<PageResult<RunDetail>> list(@RequestParam(required = false) UUID projectId,
                                          @RequestParam(required = false) List<Run.Status> statuses,
                                          @RequestParam("pageNum") @Positive(message = "pageNum必须大于0") int pageNum,
-                                         @RequestParam("pageSize") @Positive(message = "pageSize必须大于0") int pageSize) {
-        return R.ok(runService.listRun(projectId, statuses, pageNum, pageSize));
+                                         @RequestParam("pageSize") @Positive(message = "pageSize必须大于0") int pageSize,
+                                         @RequestParam("sortDir") SortDir sortDir) {
+        return R.ok(runService.listRun(projectId, statuses, pageNum, pageSize, sortDir));
     }
 
     @Operation(summary = "获取任务")

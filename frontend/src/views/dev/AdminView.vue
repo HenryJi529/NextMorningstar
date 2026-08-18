@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Modal as AModal, message } from 'ant-design-vue';
 import { adminCancelRun, adminToggleSchedule, getAllRun, getStats, listProject } from '@/axios/dev';
 import { ResponseCode } from '@/constants/response';
-import { RunState, RunStatus, type ProjectDetail, type RunDetail, type Stats } from '@/types/dev';
+import { RunState, RunStatus, SortDir, type ProjectDetail, type RunDetail, type Stats } from '@/types/dev';
 import { hasAnyPermission } from '@/utils/permission';
 import { Permission } from '@/constants/auth';
 import { fmtDuration, fmtTime, repoShort, triggerLabel } from '@/libs/dev';
@@ -19,7 +19,8 @@ const projects = ref<ProjectDetail[]>([]);
 const projectPageNum = ref(1);
 const projectTotalPageNum = ref(1);
 const PROJECT_PAGE_SIZE = 10;
-/* 当前任务 = 进行中 run(RUNNING/CANCELING,含 PENDING 排队),取大页快照覆盖并发槽+排队 */
+/* 当前任务 = 进行中 run(RUNNING/CANCELING,含 PENDING 排队),取大页快照覆盖并发槽+排队;
+   按创建时间从早到晚(asc)排序,先创建的先跑/先排,贴合分发顺序 */
 const runningRuns = ref<RunDetail[]>([]);
 const RUNNING_PAGE_SIZE = 50;
 /* 最近完成 = 终态 run,服务端 statuses 过滤后分页,计数精确 */
@@ -110,6 +111,7 @@ const loadRunningRuns = async () => {
         statuses: [RunStatus.RUNNING, RunStatus.CANCELING],
         pageNum: 1,
         pageSize: RUNNING_PAGE_SIZE,
+        sortDir: SortDir.ASC,
     });
     if (response.data.code === ResponseCode.SUCCESS) {
         runningRuns.value = response.data.data.records;
@@ -121,6 +123,7 @@ const loadRecentRuns = async (): Promise<void> => {
         statuses: [RunStatus.SUCCEEDED, RunStatus.FAILED, RunStatus.CANCELED],
         pageNum: recentPageNum.value,
         pageSize: RECENT_PAGE_SIZE,
+        sortDir: SortDir.DESC,
     });
     if (response.data.code !== ResponseCode.SUCCESS) {
         return;

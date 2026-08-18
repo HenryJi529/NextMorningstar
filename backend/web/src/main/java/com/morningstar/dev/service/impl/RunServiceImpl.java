@@ -9,6 +9,7 @@ import com.morningstar.dev.dao.mapper.ProjectMapper;
 import com.morningstar.dev.dao.mapper.RunMapper;
 import com.morningstar.dev.pojo.bo.ActionAttemptBrief;
 import com.morningstar.dev.pojo.bo.RunDetail;
+import com.morningstar.dev.pojo.bo.SortDir;
 import com.morningstar.dev.pojo.po.ActionAttempt;
 import com.morningstar.dev.pojo.po.Issue;
 import com.morningstar.dev.pojo.po.Project;
@@ -103,13 +104,16 @@ public class RunServiceImpl implements RunService {
     }
 
     @Override
-    public PageResult<RunDetail> listRun(UUID projectId, List<Run.Status> statuses, int pageNum, int pageSize) {
+    public PageResult<RunDetail> listRun(UUID projectId, List<Run.Status> statuses, int pageNum, int pageSize, SortDir sortDir) {
         LambdaQueryWrapper<Run> wrapper = new LambdaQueryWrapper<>();
         if (projectId != null) {
             wrapper.eq(Run::getProjectId, projectId);
         }
         wrapper.in(statuses != null && !statuses.isEmpty(), Run::getStatus, statuses);
-        Page<Run> page = runMapper.selectPage(new Page<>(pageNum, pageSize), wrapper.orderByDesc(Run::getCreateTime));
+        Page<Run> page = runMapper.selectPage(new Page<>(pageNum, pageSize),
+                sortDir == SortDir.ASC
+                        ? wrapper.orderByAsc(Run::getCreateTime)
+                        : wrapper.orderByDesc(Run::getCreateTime));
         return new PageResult<>(toDetails(page.getRecords()), pageNum, pageSize, page.getTotal());
     }
 

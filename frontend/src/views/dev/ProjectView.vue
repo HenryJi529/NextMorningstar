@@ -10,7 +10,7 @@ import {
     updateProject,
 } from '@/axios/dev';
 import { ResponseCode } from '@/constants/response';
-import { RunState, RunStatus, type ProjectDetail, type RunDetail } from '@/types/dev';
+import { RunState, RunStatus, SortDir, type ProjectDetail, type RunDetail } from '@/types/dev';
 import { useUserStore } from '@/stores/users';
 import { repoShort } from '@/libs/dev';
 import PipelineStateMachine from '@/views/dev/components/PipelineStateMachine.vue';
@@ -57,7 +57,7 @@ const loadActiveRun = async () => {
         activeRun.value = undefined;
         return;
     }
-    const response = await getAllRun({ projectId: selectedId.value, pageNum: 1, pageSize: 1 });
+    const response = await getAllRun({ projectId: selectedId.value, pageNum: 1, pageSize: 1, sortDir: SortDir.DESC });
     if (response.data.code !== ResponseCode.SUCCESS) {
         return;
     }
@@ -78,6 +78,7 @@ const loadHistory = async (): Promise<void> => {
         statuses: TERMINAL_STATUSES,
         pageNum: historyPageNum.value,
         pageSize: HISTORY_PAGE_SIZE,
+        sortDir: SortDir.DESC,
     });
     if (response.data.code !== ResponseCode.SUCCESS) {
         return;
