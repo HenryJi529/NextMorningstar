@@ -110,6 +110,24 @@ const STATE_LABEL: Record<RunState, string> = {
 
 export const stateLabel = (state: RunState): string => STATE_LABEL[state];
 
+const RUN_STATUS_LABEL: Record<RunStatus, string> = {
+    [RunStatus.RUNNING]: '运行中',
+    [RunStatus.SUCCEEDED]: '成功',
+    [RunStatus.FAILED]: '失败',
+    [RunStatus.CANCELING]: '取消中',
+    [RunStatus.CANCELED]: '已取消',
+};
+
+export const runStatusLabel = (status: RunStatus): string => RUN_STATUS_LABEL[status];
+
+const PR_STATUS_LABEL: Record<RunPrStatus, string> = {
+    [RunPrStatus.OPEN]: '待评审',
+    [RunPrStatus.MERGED]: '已合并',
+    [RunPrStatus.CLOSED]: '已关闭',
+};
+
+export const prStatusLabel = (status: RunPrStatus): string => PR_STATUS_LABEL[status];
+
 export const triggerLabel = (triggerType: RunTriggerType): string => {
     return {
         [RunTriggerType.MANUAL]: '手动',

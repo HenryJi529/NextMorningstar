@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RunStatus } from '@/types/dev';
-import { runStatusBadgeClass } from '@/libs/dev';
+import { runStatusBadgeClass, runStatusLabel } from '@/libs/dev';
 
 defineProps<{
     status: RunStatus;
@@ -9,6 +9,6 @@ defineProps<{
 
 <template>
     <span class="px-2 py-0.5 rounded text-xs border" :class="runStatusBadgeClass(status)">
-        {{ status }}
+        {{ runStatusLabel(status) }}
     </span>
 </template>

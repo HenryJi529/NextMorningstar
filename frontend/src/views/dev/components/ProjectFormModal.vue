@@ -163,7 +163,7 @@ const inputClass =
                 <div>
                     <label class="block text-xs text-slate-500 mb-1.5">Sonar 上限/轮</label>
                     <input
-                        v-model="form.maxSonarIssuesPerRun"
+                        v-model.number="form.maxSonarIssuesPerRun"
                         type="number"
                         min="1"
                         step="1"
@@ -172,7 +172,7 @@ const inputClass =
                 <div>
                     <label class="block text-xs text-slate-500 mb-1.5">AI 上限/轮</label>
                     <input
-                        v-model="form.maxAiIssuesPerRun"
+                        v-model.number="form.maxAiIssuesPerRun"
                         type="number"
                         min="1"
                         step="1"

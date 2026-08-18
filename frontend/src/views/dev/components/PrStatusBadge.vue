@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RunPrStatus } from '@/types/dev';
-import { prStatusBadgeClass, prStatusDividerClass } from '@/libs/dev';
+import { prStatusBadgeClass, prStatusDividerClass, prStatusLabel } from '@/libs/dev';
 
 defineProps<{
     prId: number;
@@ -21,7 +21,7 @@ defineProps<{
         #{{ prId }}
         <template v-if="prStatus">
             <span class="w-px h-2.5 opacity-40" :class="prStatusDividerClass(prStatus)"></span>
-            {{ prStatus }}
+            {{ prStatusLabel(prStatus) }}
         </template>
     </a>
 </template>
