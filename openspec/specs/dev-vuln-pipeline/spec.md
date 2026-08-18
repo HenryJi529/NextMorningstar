@@ -66,24 +66,30 @@
 
 ### 需求：启用仓库自动授权
 
-#### 场景：启用项目
+#### 场景：创建项目并授权
 
-- **WHEN** 创建项目（默认 `enabled=true`）或启用一个已禁用项目
+- **WHEN** 创建项目（默认 `enabled=true`）
 - **THEN** 平台先经 `GiteaUtil.validateRepoAndBranch` 校验仓库与分支存在（404 分别报 `DEV_PROJECT_REPO_NOT_FOUND`/`DEV_PROJECT_BRANCH_NOT_FOUND`，先校验后变更零副作用）
-- **AND** 用授权 token 把 bot 加为该仓库 collaborator（`write`）
-- **AND** 授权成功后才持久化 `enabled=true`
+- **AND** 用 admin token 把 bot 加为该仓库 collaborator（`write`）
+- **AND** 授权成功后才持久化项目记录
 - **AND** AI 后续仅对该仓库拥有写权限
 
-#### 场景：授权失败阻止启用
+#### 场景：启停项目不动授权
 
-- **WHEN** 启用时仓库不存在（Gitea 返回 404）
-- **THEN** 报错并阻止本次启用，`enabled` 不被持久化
+- **WHEN** 项目被启用（重新启用已禁用项目）或停用
+- **THEN** 仅持久化 `enabled` 翻转，不增删 bot 协作者——bot 权限随项目生命周期（创建/删除）收放，避免停用后 bot 克隆/调度失败（Gitea 对无权限私有仓库统一返回 `Repository not found`）
+- **AND** 管理员 `toggleSchedule` 与 owner 编辑走同一语义，仅切 `enabled`，不管理 collaborator
 
-#### 场景：禁用或删除项目
+#### 场景：删除项目并回收授权
 
-- **WHEN** 项目被禁用或删除
+- **WHEN** 项目被删除
 - **THEN** 移除 bot 对该仓库的访问权限
 - **AND** 删除项目额外守卫：存在非终态 run（`state != CLEANED`）即拒绝（`DEV_PROJECT_HAS_ACTIVE_RUN`）
+
+#### 场景：校验失败阻止变更
+
+- **WHEN** 创建或改分支时仓库/分支不存在（Gitea 返回 404）
+- **THEN** 报错并阻止本次变更，字段不持久化
 
 #### 场景：同一仓库只能对应一个项目
 
