@@ -125,13 +125,10 @@ public class ImageUtil {
         // 创建 Graphics2D 对象
         Graphics2D g2d = rotatedImage.createGraphics();
 
-        // 进行旋转
+        // 在旋转后的画布上绘制原图像
         g2d.translate(newWidth / 2, newHeight / 2);
         g2d.rotate(Math.PI / 2);
         g2d.drawImage(originalImage, -newHeight / 2, -newWidth / 2, null);
-
-        // 在旋转后的画布上绘制原图像
-        g2d.drawImage(originalImage, 0, -newHeight, null);
 
         // 释放资源
         g2d.dispose();
