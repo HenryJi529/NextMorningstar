@@ -15,7 +15,8 @@ RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
 ENV TZ=Asia/Shanghai
 
 # ===== 系统依赖 =====
-RUN DEBIAN_FRONTEND=noninteractive apt-get update \
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
     && apt-get install -y --no-install-recommends vim curl ca-certificates unzip python3 python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
