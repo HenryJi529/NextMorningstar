@@ -134,6 +134,7 @@ public class Issue {
             // ===== 安全漏洞 =====
             MISSING_RATE_LIMIT("缺少限流", "接口或操作未限制调用频率，可被滥用"),
             INSECURE_DESERIALIZATION("不安全反序列化", "反序列化未做类型白名单校验"),
+            SENSITIVE_DATA_EXPOSURE("敏感数据泄露", "日志或响应中泄露敏感信息（卡号、密码、个人隐私等）"),
 
             // ===== 可维护性 =====
             DUPLICATE_LOGIC("语义重复", "不同位置的代码做同一件事，但非字面重复"),

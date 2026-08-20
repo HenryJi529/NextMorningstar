@@ -48,11 +48,13 @@
 
 扫描按三维质量维度给每个问题打标（一个 issue 可同时多标签）——**Security（安全漏洞）/ Reliability（逻辑缺陷）/ Maintainability（代码异味）**。
 
-落到真实修复场景，典型是三类：
+Sonar 规则引擎能稳定识别的，是**规则化问题**，落到真实修复场景典型三类：
 
-1. **逻辑缺陷**：资源泄漏、线程安全问题、空指针风险、类型转换异常。
-2. **安全漏洞**：敏感信息/卡号打日志、使用过时的加密套件 MD5、未使用 PreparedStatement 拼接 SQL。
+1. **逻辑缺陷**：资源泄漏、空指针风险、除零。
+2. **安全漏洞**：硬编码凭证、使用过时的加密套件 MD5、未使用 PreparedStatement 拼接 SQL。
 3. **代码异味**：废弃 API、方法复杂度过高、重复代码块。
+
+但 Sonar 只能抓"规则化"的模式，语义层面的问题——竞态条件、死锁风险、N+1 查询、上帝类、语义重复、敏感数据泄露——它抓不到，这正是需要 **AI Discovery（Claude）** 作第二通道补齐的原因（见 4.2）。
 
 ---
 
@@ -167,7 +169,7 @@ ScanAction:
 - AI prompt 从 `AiMetadata.Type` 枚举自动生成类型列表，从 `Issue.Severity` 生成取值列表，永不过期
 - 选择策略：随机打乱 → 截断，不做 severity 排序（避免每轮都是同一批老问题）、不做去重（双通道问题类型不同）、不做跨 run 排除（先验证修复能力）
 
-AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（21 种 `AiMetadata.Type` 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
+AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（22 种 `AiMetadata.Type` 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
 
 ### 4.3 FixAction：统一 prompt + MCP 自查
 
@@ -215,7 +217,7 @@ maintainability_severity VARCHAR(16)    -- CODE_SMELL(代码异味)
 
 **三维 severity 独立**：SonarQube 的三质量维度（Reliability/Security/Maintainability）各自独立评分。一个 issue 可以同时是 BLOCKER 级别的安全漏洞和 MEDIUM 级别的代码异味——这不是反规范化，是正确建模。
 
-**`AiMetadata.Type` 分类体系**：21 种 AI 可识别的代码问题类型，分六大类（架构/逻辑/安全/可维护/性能/并发）+ OTHER 兜底。每个类型带中文描述，既是 AI prompt 里的分类指引，也是 PR 报告里的用户可读标签。
+**`AiMetadata.Type` 分类体系**：22 种 AI 可识别的代码问题类型，分六大类（架构/逻辑/安全/可维护/性能/并发）+ OTHER 兜底。每个类型带中文描述，既是 AI prompt 里的分类指引，也是 PR 报告里的用户可读标签。
 
 **不做的事**：不加唯一约束——ScanAction 插入前删除本 run 旧数据，业务逻辑保证不重复。不设 `rule_key` 顶层列——对 AI Discovery 没用，对 SonarQube 存 metadata 里即可。
 
