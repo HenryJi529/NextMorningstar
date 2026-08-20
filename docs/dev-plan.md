@@ -414,9 +414,16 @@ morningstar.app.dev:
 - [x] 跑通夜间定时真实触发（8/18 云服务器实测:5 仓库夜间定时,并发 4 先跑完、第 5 个排队后自动补位;同日活数据联调与云部署验证通过）
 - [x] 修边界:并发、超时、取消、单 run 挂不影响其他（8/14 review 闭环,决策 40-42:triggerRun 单飞/超时排除排队态/cancelRun 守卫/syncPrStatus try-catch;**8/18 实测覆盖**:5 仓库夜间定时并发 4+排队补位、手动取消、`run-timeout-minutes=2` 在 `timeout-cron` 周期内触发 cancel)
 
-### 阶段 10 · 交付素材(~10h)— *8/15–8/16*
-- [ ] 作品录屏（端到端全过程;8/16 录制,策略:触发只录开头几秒,状态机流转用存量 run 流水演示,不等真实速率）
-- [ ] 详细介绍材料（汇报 PPT:架构图/流程图/安全模型/成果数据,演示后完善）
+### 阶段 10 · 交付素材 — *8/20–8/30*（deadline 8/30）
+
+> 8/20 重排：交付冲刺按「材料梳理 → 架构图 → about 页 → 汇报材料 → PPT → 视频」顺序推进，8/30 前全部完成。
+
+- [ ] 10.1 梳理手头现有材料（demo 数据 / 架构报告 `dev-report` / 演示账号 / 分镜方案）
+- [ ] 10.2 用 drawio 完善架构图（系统拓扑）
+- [ ] 10.3 优化前端 about 页面（`/dev/about` 平台介绍）
+- [ ] 10.4 编写汇报材料（利用整理好的资料：元叙事 / 安全模型 / KPI 叙事链 / 未来规划）
+- [ ] 10.5 编写 PPT
+- [ ] 10.6 视频录制和剪辑（分镜 9 镜头已定，8/20 方案；旁白逐字稿待写）
 
 ---
 
@@ -441,6 +448,7 @@ morningstar.app.dev:
 | 8/16 | 日 | 10h | 前端三页 + 录屏(死线 24:00) | ✅ Stats 已采纳/节约人天 + RunDetail 漏斗四值(决策 51)+ Stats 调度时段(决策 52);✅ 演示数据造数(StateMachineServiceTest 全链路,5 项目/6 run/三用户);✅ 前端三页实现(决策 49 落地,vue-tsc/eslint 双零)+ openspec 主 specs 同步(pipeline-ui 新建);进行中:录屏 |
 | 8/17 | 一 | — | 收尾加固 | ✅ list 接口分页 + statuses 过滤(决策 53):run/project 列表必填 pageNum/pageSize 返回 PageResult,前端三表(历史任务/项目列表/最近完成)同款 PageSwitcher,馈给改大页快照;✅ `sync-pr-status-cron` 5min→30s(`15/30` 与 dispatch 错峰,决策 34);mvn compile + vue-tsc/eslint 双零 + openspec 同步 |
 | 8/18 | 二 | — | 真跑验证收官 | ✅ 活数据联调 + 云服务器部署验证通过;✅ 夜间定时真实触发实测(5 仓库,并发 4 先跑完、第 5 个排队补位);✅ NextMorningstar 自跑一轮通过(阶段 9 全清,压轴叙事闭环);✅ 单 run 超时/取消/并发调度边界实测通过;✅ 归档 pr-status-feedback(4.1 PrStatusBadge 已交付);AboutView 平台管理员口径改双向启停;✅ runId 复制排错(`CopyableId` 四处置入:历史表/当前任务头部/管理页运行卡/最近完成)+ 最近完成新增任务编号列(列宽 15/12/7/8/9/9/9/11/11/9)+ 两张表"扫描发现问题数"改"发现问题数";进行中:frontend-dashboard/nightly-unattended-run 归档;余:录屏 + 介绍材料(阶段 10);✅ run 列表加必传 `sortDir` 枚举(ASC/DESC),平台当前任务按创建时间升序贴合分发顺序(commit ada5041) |
+| 8/20–8/30 | — | — | 阶段 10 交付冲刺 | 按 10.1→10.6 推进：材料梳理→drawio 架构图→about 页优化→汇报材料→PPT→视频录制剪辑；deadline 8/30 |
 
 ### 8/2 缓冲日建议(可选,不写平台代码,只做风险前置) — ✅ 8/2 已完成,三步全通过
 
