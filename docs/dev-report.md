@@ -1,4 +1,6 @@
-# NextMorningstar · AI 代码质量优化平台 — 架构精彩设计报告
+# 代码工坊 · AI 自动值守的代码质量优化流水线
+
+> **概念:** 程序员下班，AI 上班 —— 夜间无感清洗技术债，早上看 PR 决定是否合并。
 
 > **目标:** 梳理值得在汇报中重点展示的设计决策与架构取舍。每一条都有"为什么"和"弃了什么"。
 
@@ -16,6 +18,42 @@
 
 > **汇报金句：** 用「人主导 + AI 辅助」的方式，开发出一个「AI 自主 + 人工门」的产品——这本身即证明 AI 不替代人，而是在人划定的边界内，把人从重复劳动中解放出来。
 
+### 1.1 使用场景
+
+**痛点**
+
+1. 白天时间紧迫，开发人员为赶进度只关注核心业务逻辑是否跑通，留下一堆编译警告、未处理的边界异常，直接下班回家。
+2. 每个团队的系统里都堆积着大量"不影响运行、但看着难受"的技术债：废弃的 API 调用、不规范的日志格式、缺少判空的潜在隐患。开发人员没有时间（和意愿）去修。
+
+**用法**
+
+1. 夜间"无感清洗"（Nightly Clean-up）——程序员下班，AI 上班。
+2. 早上上班，开发人员第一件事就是看 PR，决定是否合并。
+
+### 1.2 为什么做「代码质量优化」流水线，而不是完整流水线
+
+**愿景是完整流水线**：需求拆解 → UI 生成/还原 → 代码生成 → 自动测试（循环迭代、人工评审、代码落地、测试脚本真实运行）→ 代码质量优化。但在当前 AI 技术节点，无论 OpenHands、Devin、SWE-agent 还是其他 Agent，都无法真正全自动、闭环、妥善地完成需求开发。收敛到「代码质量优化」这一环，是因为它是整条链里**唯一满足「确定性」要求的环节**，其余环节在现阶段都卡在：
+
+- **需求侧发散**——需求本身是发散的，没有「绝对确定」的输入。
+- **确定性要求**——流水线需要输入和判定标准都绝对确定；AI 逻辑推理不稳定，但编译器和测试框架绝对诚实、绝对稳定。
+- **质量基础设施不足**——单元测试覆盖率低，缺少诚实的自动化裁判。
+- **Agent 能力暂不够**——上下文膨胀与迷失、「烟囱式」乱写代码。
+- **环境复杂**——沙盒难以适用真实开发环境。
+- **生产敬畏**——人不经手的代码难以真正发现隐患（与「人工门」一脉相承）。
+- **资源约束**——行内模型资源有限，复杂任务更耗 token，且需要及时人机协同的只能在工时做，模型资源更撑不住。
+
+所以不是「不想做完整流水线」，而是「代码质量优化是当前唯一能把 AI 自主跑起来的确定性环节」——sonar 既出题又阅卷，恰好补上 AI 推理不稳的短板。这也正是「AI 自主 + 人工门」能成立的前提。
+
+### 1.3 可以扫描出哪些问题
+
+扫描按三维质量维度给每个问题打标（一个 issue 可同时多标签）——**Security（安全漏洞）/ Reliability（逻辑缺陷）/ Maintainability（代码异味）**。
+
+落到真实修复场景，典型是三类：
+
+1. **逻辑缺陷**：资源泄漏、线程安全问题、空指针风险、类型转换异常。
+2. **安全漏洞**：敏感信息/卡号打日志、使用过时的加密套件 MD5、未使用 PreparedStatement 拼接 SQL。
+3. **代码异味**：废弃 API、方法复杂度过高、重复代码块。
+
 ---
 
 ## 二、安全模型：「能改仓库代码的凭证，绝不进 AI 容器」
@@ -28,7 +66,7 @@
 
 **第三层：网络出站白名单。** 容器只放行 Gitea/SonarQube/DeepSeek 三个目标，其余挡死。即使容器内凭证（sonar token、model key）被偷，也外传不出。
 
-**实现细节：** 所有 git 操作由后端通过 `docker run --rm` 起临时 alpine/git 容器执行。clone URL 用无凭证形式（`<host>/<owner>/<repo>.git`），token 通过 `git -c http.extraHeader=Authorization: token <value>` 当次生效——**不拼进 remote URL**。如果拼进去，git 会把 token 原样写入 volume 里的 `.git/config`，持久化泄露。容器用完即毁（`--rm`），token 物理上不可恢复。所有 git 命令统一加 `-c safe.directory=/workspace/repo`——volume 属主是 bot 用户，但 git 容器以 root 运行，git 安全检查会报 "dubious ownership"。
+**实现细节：** 所有 git 操作由后端通过 `docker run --rm` 起临时 alpine/git 容器执行。clone URL 用无凭证形式（`<host>/<owner>/<repo>.git`），token 通过 `git -c http.extraHeader=Authorization: token <value>` 当次生效——**不拼进 remote URL**。如果拼进去，git 会把 token 原样写入 volume 里的 `.git/config`，持久化泄露。容器用完即毁（`--rm`），token 物理上不可恢复。所有 git 命令统一加 `-c safe.directory=/workspace/repo`——volume 属主是 bot 用户，但 git 容器以 root 运行，git 安全检查会报 "dubious ownership"。配套地，`ProcessUtil` 对命令日志与异常 message 统一脱敏——`MODEL_API_KEY`/`SONARQUBE_TOKEN`/`sonar.token`/`Authorization: token` 的值一律 `***`，凭证不进日志、也不随失败异常落 `action_attempt.result`。
 
 **唯一不得不的让步：** DeepSeek API key 必须进容器（AI 要在容器内跑，调 API 就要 key）。但这是可独立轮换的非代码权限，非 git 凭证。
 
@@ -87,7 +125,28 @@ Run 到 `CLEANED` 后，PR 还在 Gitea 等人评审。于是新增 `Run.prStatu
 
 ## 四、双通道发现 + 两道防线验证
 
-### 4.1 ScanAction：双通道并行扫描
+### 4.1 扫描工具选型：SonarQube 而非 PMD/SpotBugs
+
+扫描通道的选型，核心不是"谁扫得更准"，而是"谁能让后续的 Fix/Verify 环节有料可依"。整条链路需要扫描工具提供三样东西：**规则描述**（喂给 FixAction 的修复提示）、**server 端状态**（喂给 VerifyAction 的重扫比对）、**MCP**（喂给 FixAction 的修复自查）。
+
+- **PMD、SpotBugs ❌**
+  ```bash
+  mvn compile com.github.spotbugs:spotbugs-maven-plugin:4.10.3.0:check
+  mvn org.apache.maven.plugins:maven-pmd-plugin:3.28.0:check
+  ```
+  - 只有告警、缺修复提示——规则名 + 触发点，没有"为什么是问题、怎么修"的指导，FixAction 的统一 prompt 拿不到可用的诊断上下文。
+  - 纯离线工具、无 server 端状态——扫完即散，无法翻页拉取 issue、无法"重扫后数量对比"判定回归（VerifyAction 第一道防线依赖这个）。
+  - 无 MCP 通道——FixAction 修复后要靠 sonarqube MCP 的 `analyze_code_snippet` 自查是否引入新 issue，这条链 PMD/SpotBugs 接不上。
+
+- **SonarScanner + SonarServer ☑️**
+  - 规则描述完整：`/api/rules/show` 拿到规则文档（问题是什么 + 怎么修），直接喂给 FixAction 统一 prompt。
+  - 三维 severity 独立：Reliability / Security / Maintainability 三质量维度，天然映射 `dev_issue` 的三维 severity 数据模型（见第五节）。
+  - 既出题又阅卷：verify 用 sonar-scanner 重扫、按 issue 数量对比判定是否消除（决策 2）。
+  - 有 MCP：`analyze_code_snippet` 供 FixAction 自查修改文件。
+
+**结论：** SonarQube 被选中，不是因为它比 PMD/SpotBugs 扫得更多，而是因为只有它把"扫描 → 修复 → 验证"串成了一个可喂给 AI 的闭环——规则描述喂 Fix、重扫喂 Verify、MCP 喂自查。PMD/SpotBugs 三样都缺，即便告警更精确也用不上。
+
+### 4.2 ScanAction：双通道并行扫描
 
 ```
 ScanAction:
@@ -110,7 +169,7 @@ ScanAction:
 
 AI Discovery 产出的问题自带诊断——`description`（为什么是问题）、`suggestion`（怎么修）、`type`（21 种 `AiMetadata.Type` 分类，从 GOD_CLASS 到 RACE_CONDITION）。信息自包含，不需要外部知识库。
 
-### 4.2 FixAction：统一 prompt + MCP 自查
+### 4.3 FixAction：统一 prompt + MCP 自查
 
 ScanAction 阶段已把全部诊断信息存入 issue 字段。FixAction 对所有 issue 使用同一 prompt 模板——Claude 从 `title`/`codeSnippet`/`metadata` 获取上下文即修，修复完成后调用 sonarqube MCP 的 `analyze_code_snippet` 自查修改文件，确保不引入新 issue。
 
@@ -118,7 +177,7 @@ ScanAction 阶段已把全部诊断信息存入 issue 字段。FixAction 对所�
 
 **失败要能诊断卡在哪。** `FixResult` 不记单一 `fixedIssueNum`，而是按 source 双计数 `fixedSonarIssueNum`/`fixedAiIssueNum`——失败时一眼看出修了几个、卡在 SonarQube 通道还是 AI 通道。任一 issue 失败即整轮 `FIX_FAILED`，不做逐 commit 精准保留（理由见第七节）。
 
-### 4.3 VerifyAction：两道防线
+### 4.4 VerifyAction：两道防线
 
 ```
 VerifyAction:
@@ -133,7 +192,7 @@ VerifyAction:
 
 **输出最小 JSON，砍 reason。** Claude 只回 `{"verified":true/false}`——失败即整轮回退（issue 回 SELECTED），无人看 reason；调试看 `log.info(rawOutput)`。砍 reason 省 token、降复杂度，失败 message 用固定文案。
 
-### 4.4 SonarQube 对用户透明
+### 4.5 SonarQube 对用户透明
 
 issue 入库后不再区分来源。PR body 统一格式：title + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description。用户看不到 SonarQube 原始 API 数据，只看到结构化的中文诊断报告。
 
@@ -147,7 +206,7 @@ issue 入库后不再区分来源。PR body 统一格式：title + 三维 severi
 source                   VARCHAR(16)   -- SONAR / AI
 metadata                 JSON           -- SonarMetadata 或 AiMetadata（@JsonTypeInfo 多态）
 title                    VARCHAR(1024)
-reliability_severity     VARCHAR(16)    -- BUG(缺陷)
+reliability_severity     VARCHAR(16)    -- BUG(逻辑缺陷)
 security_severity        VARCHAR(16)    -- VULNERABILITY(安全漏洞)
 maintainability_severity VARCHAR(16)    -- CODE_SMELL(代码异味)
 ```
@@ -303,6 +362,16 @@ MVP 没做的功能分两类：**后置**（时机未到，条件成熟再做，
 |---|---|
 | SSE/WS 实时推送 | 3s 轮询演示与实际使用均够用，场景是夜间跑白天看，无高频实时观看需求；SSE 属"技术更优雅但用户无感"，不值得为此加连接管理复杂度 |
 | 管理员 enable 端点 | 已失效——8/16 调整为双向 `toggleSchedule`，见第十一节 |
+
+---
+
+## 十四、项目价值
+
+- **自动化闭环，解放人力**：将「扫描 → 修复 → 验证」的繁琐流程转化为后台无感进程，大幅节省排查空指针、资源泄漏等琐碎问题的时间。
+- **专注业务，消灭技术债**：由 AI 在后台自主修复低级技术债，使开发人员全身心聚焦核心业务逻辑的研发。
+- **极低成本，极致利用**：充分利用行内既有的闲时算力，几乎不新增额外硬件成本。
+- **渐进式演进，远景可期**：架构上具备良好的扩展性，未来条件成熟时可无缝接入完整的研发流水线。
+- **严控风险，守住合规底线**：恪守合规要求，绝不赋予 AI 生产环境发布或主干代码合并的权限，确保代码安全可控。
 
 ---
 

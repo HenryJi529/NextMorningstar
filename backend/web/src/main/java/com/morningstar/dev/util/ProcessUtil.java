@@ -20,7 +20,7 @@ public class ProcessUtil {
      */
     public String run(String... command) {
         List<String> commandList = List.of(command);
-        log.info("执行命令: {}", String.join(" ", commandList));
+        log.info("执行命令: {}", maskSensitive(String.join(" ", commandList)));
         try {
             Process process = new ProcessBuilder(commandList).start();
             ByteArrayOutputStream stderrBuffer = new ByteArrayOutputStream();
@@ -62,14 +62,22 @@ public class ProcessUtil {
         }
     }
 
+    private static String maskSensitive(String cmd) {
+        return cmd
+                .replaceAll("(MODEL_API_KEY=)\\S+", "$1***")
+                .replaceAll("(SONARQUBE_TOKEN=)\\S+", "$1***")
+                .replaceAll("(-Dsonar\\.token=)\\S+", "$1***")
+                .replaceAll("(Authorization: token )\\S+", "$1***");
+    }
+
     public static class ProcessExecutionException extends RuntimeException {
         public ProcessExecutionException(List<String> command, int exitCode, String stderr) {
-            super("命令执行失败(exit " + exitCode + "): " + String.join(" ", command)
+            super("命令执行失败(exit " + exitCode + "): " + maskSensitive(String.join(" ", command))
                     + (stderr.isBlank() ? "" : "\n" + stderr.trim()));
         }
 
         public ProcessExecutionException(List<String> command, Throwable cause) {
-            super("命令执行异常: " + String.join(" ", command), cause);
+            super("命令执行异常: " + maskSensitive(String.join(" ", command)), cause);
         }
     }
 }

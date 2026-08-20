@@ -1,4 +1,4 @@
-# NextMorningstar · AI 代码质量优化平台 — 开发计划
+# 代码工坊 · AI 自动值守的代码质量优化流水线 — 开发计划
 
 > **概念**:程序员下班,AI 上班 —— 夜间无感清洗技术债,早上看 PR 决定是否合并。
 >
@@ -77,9 +77,9 @@
 | 1 | **容器策略** | 预构建 `morningstar-dev-sandbox` 镜像(jdk+maven+node+python+**claude CLI**+sonar-scanner + 配置模板 settings.json/mcp.json 占位符打进镜像,**不装 git**),每 run 起一个独立容器,**只跑 claude 改文件 + maven/sonar 构建**。代码用 **named volume**(fix-runtime-container 决策 9)互通,git 由后端执行(决策 13)。容器以非 root bot 用户运行(fix-runtime-container 决策 8),隔离并发 |
 | 2 | **verify 本质** | **不是"编译通过",而是"sonar 重扫后 issue 消失"**。Java build 只为产 `target/classes` 喂给 scanner。sonar 既出题又阅卷 |
 | 3 | **scan 方式** | 用 `sonar-scanner` 自己扫。`sonar.java.binaries` 设为 `**/target/classes`（单模块项目使用通配即可）。`sonarqube.containerOrigin` 与 `backendOrigin` 分离（与 Gitea 双视角同模式）。Maven 阿里云镜像通过 Dockerfile COPY `settings.xml` 到 `/workspace/maven-settings.xml`，mvn compile 时通过 `-s` 显式指定。mvn compile 末尾 `\|\| true` best-effort |
-| 4 | **新增 `dev_issue` 表** | 一漏洞一记录、一漏洞一 commit 的载体。Fix→Verify→Submit 串联的关键,**必加** |
+| 4 | **新增 `dev_issue` 表** | 一 issue 一记录、一 issue 一 commit 的载体。Fix→Verify→Submit 串联的关键,**必加** |
 | 5 | **优先级** | 本版**不加**,定时任务直接遍历 `enabled` project |
-| 6 | **commit 归临时容器 git** | claude 只改文件;后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器 `add -A && commit`(纯本地操作,不需凭证),保证"一漏洞一 commit" + 规范 message,可控 |
+| 6 | **commit 归临时容器 git** | claude 只改文件;后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器 `add -A && commit`(纯本地操作,不需凭证),保证"一 issue 一 commit" + 规范 message,可控 |
 | 7 | **claude 认证** | 容器内 `/home/bot/.claude/settings.json` 配 **deepseek(国产模型)** 连接,不用 claude 登录态 |
 | 8 | **claude 修复模式** | **统一 prompt，读 issue 字段即修**（title/codeSnippet/metadata）；要求 Claude 修复后调用 sonarqube MCP 的 `analyze_code_snippet` 自查修改文件，确保不引入新 issue |
 | 9 | ~~密钥规则排除~~ → 决策 28 | 不做规则黑名单——随机选择天然分散风险，凭据类 issue 不会每轮反复出现 |
@@ -146,7 +146,7 @@ PENDING
               → 容器内 claude --json-schema --output-format json 自由探索 → 后端解析 structured_output → InScopeSeverities.ai 过滤 → 随机打乱截断
               → 双通道 issue 落 dev_issue 表
  → FIX ⭐     逐 issue:容器内 claude 读 issue 字段修复(named volume) → 调 sonarqube MCP analyze_code_snippet 自查
-              → 后端 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git add -A && commit`   # 临时容器,一漏洞一 commit
+              → 后端 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git add -A && commit`   # 临时容器,一 issue 一 commit
  → VERIFY     ①SonarQube 重扫（数量对比检测回归）→ ②Claude review（语义验证）
               → 两道全过=VERIFIED;任一失败 → 整轮 VERIFY_FAILED → RestoreAction 整轮回退(issue 回 SELECTED,不标 FAILED,决策 31)
  → SUBMIT     后端 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git push` 修复分支 → 调 Gitea API 开 PR(head=fix/<runId>, base=源分支) + body 附统一格式诊断报告(Sonar/AI 分分支)
@@ -177,7 +177,7 @@ ScanAction 已把 SonarQube rule 描述和 AI 诊断全存进 issue 字段。Fix
 docker exec -w /workspace/repo <c> bash -c 'claude --dangerously-skip-permissions --print "$(cat /tmp/fix_prompt.txt)" --output-format json --json-schema "$(cat /tmp/fix_schema.json)"'
 # 2. 后端从 envelope 提取 structured_output → objectMapper 反序列化 Issue.CommitMessage → 拼 "subject\n\nbody"
 # 3. git status --porcelain 判断是否有改动（无改动跳过 commit——该问题已被前序修复连带解决）
-# 4. 临时 alpine/git 容器 git commit（一漏洞一 commit，纯本地——commit 不走远端，不需 token）
+# 4. 临时 alpine/git 容器 git commit（一 issue 一 commit，纯本地——commit 不走远端，不需 token）
 docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git \
   -c safe.directory=/workspace/repo -C /workspace/repo add -A
 docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo alpine/git \
@@ -381,7 +381,7 @@ morningstar.app.dev:
 - [x] 基础设施:FixResult 双计数 / Issue.CommitMessage {subject,body} + CommitMessageTypeHandler / Issue.Status 删 FAILED / FixAction 骨架(5 依赖,删 ProjectMapper)
 - [x] RestoreAction 补 issue 状态还原（FIXED/VERIFIED → SELECTED，清 commit 字段）
 - [x] 切修复分支 `switch -C fix/<runId>` → 遍历 SELECTED issue → 统一 prompt(内嵌 text block)读字段修复，不区分 source；修复完成后 MCP `analyze_code_snippet` 自查
-- [x] 平台 git commit（一漏洞一 commit，两个 `-m`），回写 `commit_sha` + `commit_message`(JSON {subject,body}) + status=FIXED
+- [x] 平台 git commit（一 issue 一 commit，两个 `-m`），回写 `commit_sha` + `commit_message`(JSON {subject,body}) + status=FIXED
 - [x] JsonTypeHandler null 修复（`getNullableResult` 判空）
 - ~~单 issue / 整 run 超时~~（砍掉，复用全局 CronTask，决策 32）
 - **验收**:两种 source 的 issue 都能修掉并产出 commit ✅
