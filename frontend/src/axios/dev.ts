@@ -52,7 +52,6 @@ export const getAllRun = (params: {
     statuses?: RunStatus[];
     pageNum: number;
     pageSize: number;
-    /** 排序方向(必传):ASC 从早到晚(当前任务贴合分发顺序);DESC 最新在前(历史/最近完成/活跃探测) */
     sortDir: SortDir;
 }): Promise<AxiosResponse<R<PageResult<RunDetail>>>> => {
     // statuses 逗号拼接,Spring 按逗号分隔绑定 List<枚举>

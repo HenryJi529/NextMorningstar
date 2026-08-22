@@ -112,8 +112,8 @@ public class RunServiceImpl implements RunService {
         wrapper.in(statuses != null && !statuses.isEmpty(), Run::getStatus, statuses);
         Page<Run> page = runMapper.selectPage(new Page<>(pageNum, pageSize),
                 sortDir == SortDir.ASC
-                        ? wrapper.orderByAsc(Run::getCreateTime)
-                        : wrapper.orderByDesc(Run::getCreateTime));
+                        ? wrapper.orderByAsc(Run::getCreateTime).orderByAsc(Run::getUpdateTime)
+                        : wrapper.orderByDesc(Run::getUpdateTime).orderByDesc(Run::getCreateTime));
         return new PageResult<>(toDetails(page.getRecords()), pageNum, pageSize, page.getTotal());
     }
 

@@ -434,4 +434,4 @@ MVP 没做的功能分两类：**后置**（时机未到，条件成熟再做，
 | 节约人天量化口径 | dev-plan 决策 51 | `savedPersonDays` = Σ ACCEPTED issue 估算工时 ÷ 480,SQL 一步换算(`ROUND(COALESCE(SUM,0)/480.0,1)`);写死 'ACCEPTED' 不设参数——"节约人天"概念只绑已采纳,参数是无意义自由度 |
 | RunDetail 漏斗四值 | dev-plan 决策 51 | 扫描发现(最新 SUCCEEDED SCAN attempt 的 result 反序列化)/本轮入选/已修复/验证通过;已修复与验证通过用累计口径(含其后状态),保漏斗单调不减 |
 | Stats 调度时段两字段 | dev-plan 决策 52 | 后端解析 cron 下发 `scheduledStartTime/EndTime`,调度时段唯一展示点是顶栏胶囊——调 cron 不产生文案漂移;破"cron 不进 Stats"例的是用户可见语义而非运维调参 |
-| list 接口分页 + statuses 过滤 | dev-plan 决策 53 | run/project 列表必填 pageNum/pageSize 返回 PageResult;statuses 是分页正确性配套(终态视图必须 SQL 层过滤,否则进行中 run 混入首页致缺行/空页);adminId 过滤因无调用方删除 |
+| list 接口分页 + statuses 过滤 | dev-plan 决策 53 | run/project 列表必填 pageNum/pageSize 返回 PageResult;statuses 是分页正确性配套(终态视图必须 SQL 层过滤,否则进行中 run 混入首页致缺行/空页);adminId 过滤因无调用方删除;排序键按方向取各自语义:ASC createTime 主序贴合分发顺序,DESC updateTime 主序按完成时间排——否则"先创建后完成"的 run 沉底 |
