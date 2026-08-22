@@ -83,7 +83,7 @@
 | 9 | ~~密钥规则排除~~ → 决策 28 | 不做规则黑名单——随机选择天然分散风险，凭据类 issue 不会每轮反复出现 |
 | 10 | **volume 持久化** | volume 命名 `morningstar_dev_repo_<projectId>` 绑定项目(非 run),SyncAction 首次 clone 后续 `fetch + switch -C + clean -fdx` 增量更新;CleanAction 只删容器不删 volume,仅项目删除时才清理(决策一起更新) |
 | 11 | **代码托管平台** | 演示(8/14)用 **Gitea**(已就绪);生产内网用 **GitLab**,留待内网部署阶段独立实现。**不做抽象层**(YAGNI)——届时目标单一,直接把 Gitea 调用替换为 GitLab;真到两套长期并存再抽接口 |
-| 12 | **仓库授权(双 token)** ⭐ | **bot token(`repo write`)通过 git `http.extraHeader` 传入临时 alpine/git 容器**(日常 git 凭证,不落盘);**admin token 仅"加/删 collaborator"瞬间用、用完即弃**。**bot 协作者随项目生命周期收放:接入时加 write、删除项目时移除;启停调度(`updateProject`/`toggleSchedule`)均不动 collaborator**(8/18 修复:启停曾误删协作者,导致停用后 bot 克隆报 `Repository not found`)。凭证仅存在临时容器内、用完即毁 → 爆炸半径最小 |
+| 12 | **仓库授权(双 token)** ⭐ | **bot token(Gitea 账号级,写权限随协作者身份收放)通过 git `http.extraHeader` 传入临时 alpine/git 容器**(日常 git 凭证,不落盘);**admin token 仅项目接入/改配置时用(校验仓库与分支、加 collaborator),流水线运行全程不用**。**bot 协作者随项目生命周期收放:接入时加 write、删除项目时移除;启停调度(`updateProject`/`toggleSchedule`)均不动 collaborator**(8/18 修复:启停曾误删协作者,导致停用后 bot 克隆报 `Repository not found`)。凭证仅存在临时容器内、用完即毁 → 爆炸半径最小 |
 | 13 | **git 归临时容器** ⭐ | git clone/commit/push/reset 由后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器执行(**镜像名写死**,不进配置),用完即毁。clone/fetch URL 一律**无凭证形式**,token 走 `-c http.extraHeader` 当次生效,**不落 volume 里 `.git/config`**。代码互通靠 named volume(fix-runtime-container 决策 9)。**prompt injection 偷不到 git 凭证**。MVP 不处理子模块(clone 无 `--recursive`,决策 22) |
 | 14 | ~~失败 issue 跨 run 记忆~~ → 决策 28 | 不做跨 run 排除——当前阶段应先验证修复能力而非回避困难 issue |
 | 15 | **资源池 + 夜间窗口** ⭐ | 并发度可配(`schedule.max-concurrency`,**默认 2,8/16 演示环境调为 4**(12 核/36G 无压力,且 5 项目 4 槽必现排队态,演示"排队中")——Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;Scan/Verify 才 CPU 密集且短)。夜间 21:00 自动创建 PENDING run,次日 **6:00 清晨清理**:`cancelOvernightRuns` 取消所有非终态活跃 run(PENDING 直接 `deleteById`——从未启动不留记录,8/14 改;其余走 `requestCancel`)。另每 5min 超时检测(120min 无状态流转即判超时,8/10 调整;8/13 排除 CLEANED 终态;**8/14 再排除 PENDING 排队态**——排队等待不算超时,dispatch 起跑时状态流转刷新 `updateTime`,执行预算从起跑重计;查询为 `notIn(PENDING, CLEANED)`,24h 窗口给"取消不掉的僵尸"(如 CLEANING 卡死被 `requestCancel` 拒绝)设放弃期限)+ 每 30s 分发调度 |
@@ -106,7 +106,7 @@
 | 32 | **FixAction 无 per-action 超时**(8/10 定) | 砍掉单 issue `--max-turns` + 整 run wall-clock + CancelTracker（原 claude-issue-fix design 决策 3）。复用全局 `CronTask.cancelTimeoutRuns`(120min + 每 5min 检测)兜底卡死。catch 只兜 `ProcessExecutionException`(+ FixAction 的 `JsonProcessingException`)，不补 `DataAccessException`(DB 失败概率极低，靠 CronTask) |
 | 33 | **FixResult 双计数**(8/10 定) | `FixResult` 记 `fixedSonarIssueNum`/`fixedAiIssueNum`(非单一 `fixedIssueNum`)。失败时 message 带卡住的 issue + 已修双计数，便于诊断卡在哪种 source |
 | 34 | **PR 状态反馈(submit 后续管理)**(8/10 定,8/13 已实现) | 定时任务(`sync-pr-status-cron`;**8/17 由每 5min 调为 30s**——演示时合并/拒绝后页面滞后 5min 太难受,每周期每个 OPEN PR 仅一次 Gitea API 调用,负载可忽略;`15/30` 第 15s 起跑,与 `*/30` 的 dispatch 错开半拍不同刻齐发)轮询 `prId` 非空 + `prStatus=OPEN` 的 run 的 Gitea PR 状态:`merged` → 本 run `VERIFIED` issue `ACCEPTED` + `prStatus=MERGED`;`closed&!merged` → `REJECTED` + `CLOSED`;`open` → 续轮询,达终态即停。PR 整体映射不做 issue 级部分。`Run` 新增 `prStatus`(OPEN/MERGED/CLOSED,与 `prId` 配套),**不扩 `state`**(CLEANED 终态)不扩 `status`(执行观测)。兑现 `ACCEPTED`/`REJECTED` 终态(dev-plan 决策 31 删 FAILED 时预留)。`syncPrStatus(runId)` 抽成 service 方法:cron 遍历调用(批量回写,最长滞后一个轮询周期)。8/14:`getRun` 纯读化,移除详情实时同步副作用。见 pr-status-feedback change |
-| 35 | **severity scope 分通道**(8/11 定,8/12 更新) | SonarQube 和 AI 通道**各自独立**的 in-scope severity 过滤——`InScopeSeverities` 独立配置类（`morningstar.app.dev.in-scope-severities.sonar/ai`），Sonar 保留 `[BLOCKER,HIGH,MEDIUM]`，AI 加 `LOW`（AI 识别更精准、误报率低）。用 **set 成员判定**（非 floor/threshold）免给 severity 排序 |
+| 35 | **severity scope 分通道**(8/11 定,8/12 更新) | SonarQube 和 AI 通道**各自独立**的 in-scope severity 过滤——`InScopeSeverities` 独立配置类（`morningstar.app.dev.in-scope-severities.sonar/ai`），Sonar 保留 `[BLOCKER,HIGH]`（8/20 提高判定标准，原含 MEDIUM），AI 加 `LOW`（AI 识别更精准、误报率低）。用 **set 成员判定**（非 floor/threshold）免给 severity 排序 |
 | 36 | **CommonSteps 共享件抽取**(8/11 定) | 跨 Scan/Fix/Verify 的共享步骤抽到 `CommonSteps`：`getContainerName`/`getVolumeName`（命名确定性）、`getHeadCommitSha`（Fix/Restore/Sync 共用取证 commitSha）、`getSonarProjectKey`（从 Project 解析 `owner:repo`，不再拼 runId）、`mavenBuild`/`sonarScan`（scan+verify 共用，sonarScan 返回 in-scope 过滤后结果）、`runClaude(ClaudeInput, Run, Class<T>)`（scan/fix/verify 共用，内含 `--json-schema` + `--output-format json` + `structured_output` 拆封，泛型输出参数决定反序列化类型）。定位"共享步骤枢纽"，方法参数避免裸 String |
 | 37 | **AbstractAction 兜底 try-catch**(8/11 定) | `execute()` 把 `doExecute(runId)` 包 `catch(Exception)`：任意意外异常（SonarUtil 返回 null→NPE、强转失败、拆箱等）转 FAILED result，走既有"标 attempt FAILED + sendEvent(failureEvent)"路径，**不再卡死**。动机：原 doExecute 未捕获异常冒泡（AbstractAction 无兜底）→ attempt 停 RUNNING + 状态机收不到失败事件 → run 静默挂死等 120min 超时。`catch Exception` 不 catch `Throwable`（Error 让进程崩）；message 用 `e.toString()`（兜无消息 NPE）；`log.error(...,e)` 留完整栈。SonarUtil 的 null 返回暂不改（兜底已盖住风险） |
 | 38 | **读公开、写私有权限模型**(8/13 定) | 读接口去 `adminId` 校验、登录即可看:配置参考页要看别人怎么填、仪表盘要看所有 run——`getProjectById(id)`/`getRun(id)` 去掉 adminId 参数,`list` 改 `getAllProject()` 返回所有项目(不过滤 enabled)。写接口保留 `adminId`:`create`/`update`/`delete`/`trigger`/`cancel` 均校验。连锁:`deleteProject` 原借 `getProjectById` 校验,去校验后需**显式补** adminId 判断;`cancelRun` 同理(原借 `getRun`)。`deleteProject` 加活跃 run 守卫:`ne(state, CLEANED)` 有非终态 run 即拒绝删除(响应码 `DEV_PROJECT_HAS_ACTIVE_RUN`)——真终态只有 CLEANED(FAILED/RESTORED 还有出边) |
@@ -228,17 +228,17 @@ ___
 
 | 凭证 | 位置 | 用途 | 风险 |
 |---|---|---|---|
-| Gitea **admin token** | 后端,用完即弃 | 加/删 collaborator | 高,但瞬间 |
-| Gitea **bot token**(git) | 后端内存(yml) | git clone/push(临时 alpine/git 容器 `-e` 注入) | 高 → 用完即毁 |
+| Gitea **admin token** | 后端,仅接入/改配置时用 | 校验仓库与分支、加 collaborator | 高,但流水线零使用 |
+| Gitea **bot token**(git) | 后端内存(yml) | git clone/push(临时 alpine/git 容器 `http.extraHeader` 注入) | 高 → 用完即毁 |
 | Sonar token | **容器内(env 注入)** | sonar-scanner | 中(非代码权限) |
 | deepseek key | **容器内(env 注入)** | claude 调模型 | 中(可独立轮换) |
 
 **三层防御:**
 1. **凭证隔离**:git 凭证只在后端,AI 容器内没有 → prompt injection 偷不到代码仓库写权限
-2. **网络出站白名单**:容器只放行 gitea/sonar/deepseek,其余挡死 → 即使容器内 sonar/deepseek 凭证被偷也外传不出
-3. **bot token 最小权限**:单仓库 write,后端凭证文件若泄漏也只限已授权仓库
+2. **凭证脱敏**:`ProcessUtil` 对命令日志与异常 message 中的 `MODEL_API_KEY`/`SONARQUBE_TOKEN`/`sonar.token`/`Authorization: token` 值统一打 `***` → 凭证不进日志、不落 `action_attempt.result`
+3. **bot token 最小权限**:Gitea 账号级 token,写权限随 collaborator 身份按仓库收放(接入授权/删项目回收),只覆盖已接入仓库
 
-**为什么 deepseek key 必须进容器(唯一不得不的让步):** claude 必须容器内跑(隔离 AI,不能放后端直接操作),调模型就要 key——以**运行时 env 注入**(`MODEL_API_KEY`,entrypoint 替换占位符),**不进镜像层**。让步的是 AI 服务 key(可独立轮换、非代码权限),不是 git 凭证;靠网络白名单兜底。
+**为什么 deepseek key 必须进容器(唯一不得不的让步):** claude 必须容器内跑(隔离 AI,不能放后端直接操作),调模型就要 key——以**运行时 env 注入**(`MODEL_API_KEY`,entrypoint 替换占位符),**不进镜像层**。让步的是 AI 服务 key(可独立轮换、非代码权限),不是 git 凭证;靠凭证脱敏 + 可独立轮换兜底。
 
 **为什么弃用 JGit、选命令行 git:** JGit 对 submodule(递归/多认证/LFS)支持差、易踩坑;命令行 git `--recursive` 原生稳定,且命令与原方案几乎一致。
 
@@ -285,6 +285,8 @@ create table if not exists dev_issue
 
 ## 六、配置项清单(`application-*.yml` → `morningstar.app.dev`)
 
+> 数值为编写时快照，可能随后续调参漂移，以 `application-app.yml` 为准（8/22 已对齐一轮）。
+
 ```yaml
 morningstar.app.dev:
   sonarqube:
@@ -292,19 +294,19 @@ morningstar.app.dev:
     container-origin: http://host.docker.internal:7002  # 容器内 sonar-scanner 用
     token: squ_xxx
   in-scope-severities:      # 分通道 severity 过滤
-    sonar: [ BLOCKER, HIGH, MEDIUM ]
+    sonar: [ BLOCKER, HIGH ]       # 8/20 提高判定标准(原含 MEDIUM)
     ai: [ BLOCKER, HIGH, MEDIUM, LOW ]
   max-attempts:        # 各阶段重试上限(对齐现有 MaxAttemptsProperties)
-    sync: 10           # 8/14 与 yml 对齐:各阶段统一 10
-    scan: 10
-    fix: 10
-    verify: 10
-    submit: 10
+    sync: 2            # 8/22 与 yml 对齐:分阶段配置(原统一 10)
+    scan: 2
+    fix: 3
+    verify: 3
+    submit: 2
   git:
     fix-branch-prefix: "fix/"
   max-issues-per-run:
-    sonar: 8
-    ai: 2
+    sonar: 1           # 8/22 与 yml 对齐:双 1,等效 issue 级隔离(原 sonar:8/ai:2)
+    ai: 1
   sandbox:
     image: morningstar-dev-sandbox:latest
     container-name-prefix: morningstar_dev_sandbox_
@@ -314,9 +316,9 @@ morningstar.app.dev:
   gitea:
     backend-origin: http://<gitea>    # 后端视角:后端 API、PR 链接、浏览器访问(决策 19,后定名 backend-origin)
     container-origin: http://<gitea>  # 容器网络内地址:临时 git 容器 clone/fetch/push(dev: host.docker.internal,生产:公网同 backend-origin,决策 19)
-    bot-username: morningstar-bot
-    bot-token: xxx              # 仅 repo write,临时 alpine/git 容器使用(通过 http.extraHeader 注入,用完即毁)
-    admin-token: yyy            # admin,平台后端持有,仅用于加/删 collaborator
+    bot-username: HaibaraAi369
+    bot-token: xxx              # 账号级(写权限随 collaborator 收放),临时 alpine/git 容器使用(通过 http.extraHeader 注入,用完即毁)
+    admin-token: yyy            # admin,平台后端持有,仅项目接入/改配置时用(校验仓库与分支、加 collaborator)
   schedule:
     create-cron: "0 0 21 * * ?"          # 每晚 21:00 创建 PENDING run
     dispatch-cron: "*/30 * * * * ?"      # 每 30s 从 PENDING 队列分发
@@ -418,7 +420,7 @@ morningstar.app.dev:
 
 - [x] 10.1 梳理手头现有材料（demo 数据 / 架构报告 `dev-report` / 演示账号）
 - [x] 10.2 用 drawio 完善架构图（系统拓扑）(8/22 定稿 `docs/dev-项目架构图.drawio`：放射状布局——后端中枢直连外部服务与执行面；四色图例 自研组件/三方工具/外部服务/数据存储）
-- [ ] 10.3 优化前端 about 页面（`/dev/about` 平台介绍）
+- [x] 10.3 优化前端 about 页面（`/dev/about` 平台介绍）(8/22 完成：事实纠错（白名单降级/凭证脱敏/双 token 范围/代码卷保留）+ 文案打磨（slogan、身份三卡、凭证术语统一）+ 板块重排 机制→角色→信任→行动，详见 dev-report 1.4)
 - [ ] 10.4 编写汇报材料（利用整理好的资料：元叙事 / 安全模型 / KPI 叙事链 / 未来规划）
 - [ ] 10.5 编写 PPT
 - [ ] 10.6 视频录制和剪辑（分镜 9 镜头已定，8/20 方案；旁白逐字稿待写）
@@ -479,7 +481,7 @@ claude --dangerously-skip-permissions --print "使用 sonarqube mcp 查看 issue
 |---|---|
 | 容器内 claude+deepseek+MCP 可用 | ✅ **8/2 本地预研三步全通过**(连通 / MCP 查 issue / 真修复)。8/5 容器化降为低风险;**剩余坑**:容器内 `claude` 命令路径、`settings.json`/`mcp.json` 注入生效、**容器网络** |
 | 修复质量 / 切方案备案 | deepseek 已验证有效;若 8/5 容器内异常,切回 Anthropic API 直连(FixAction 换实现,状态机不变) |
-| **prompt injection / 凭证泄漏** | git 凭证**不进 AI 容器**(临时容器 `http.extraHeader` 注入,用完即毁,决策 12);容器网络出站白名单(只放行 gitea/sonar/deepseek)挡外传;bot-token 最小权限(单仓库 write)限爆炸半径 |
+| **prompt injection / 凭证泄漏** | git 凭证**不进 AI 容器**(临时容器 `http.extraHeader` 注入,用完即毁,决策 12);凭证日志/异常统一脱敏(`ProcessUtil` 打码)防外泄;bot-token 最小权限(写权限随 collaborator 收放,仅覆盖已接入仓库)限爆炸半径 |
 | AI 修复不确定/编译不过 | Verify 兜底 + RestoreAction 整轮回退;demo 仓库保下限 |
 | SonarQube 扫描慢 | demo 仓库保持小;演示用已分析结果 |
 | Gitea API 不熟 | 文档齐全,阶段 6 专项时间够 |

@@ -56,21 +56,36 @@ Sonar 规则引擎能稳定识别的，是**规则化问题**，落到真实修�
 
 但 Sonar 只能抓"规则化"的模式，语义层面的问题——竞态条件、死锁风险、N+1 查询、上帝类、语义重复、敏感数据泄露——它抓不到，这正是需要 **AI Discovery（Claude）** 作第二通道补齐的原因（见 4.2）。
 
+### 1.4 演示叙事：About 页的「机制 → 角色 → 信任 → 行动」
+
+`/dev/about` 平台介绍页是元叙事的对外表达面，五个板块按一条递进线组织：
+
+1. **Hero**：slogan「晚上 AI 修代码，早上你顺手审 PR」——口语版「程序员下班，AI 上班」，重活归 AI、轻活归人。
+2. **机制**：流水线怎么跑（七阶段主链）。
+3. **角色**：三种身份各司其职（项目管理员=所有者 / 流水线机器人=机器工人 / 平台管理员=熔断权）。
+4. **信任**：AI 拿得到仓库的钥匙吗（凭证隔离 / 最小权限 / 凭证脱敏）。
+5. **行动**：三步接入你的仓库 + CTA。
+
+顺序是设计过的，不是随便排的：安全卡依赖身份卡的概念——读者先认识「机器人」这个角色，才看得懂"机器人凭证只有接入仓库的写权限"在说什么，故**角色先于信任**；身份卡刚告诉读者"你是项目的所有者"，紧接着就是"三步接入你的仓库"，故**角色紧挨行动**；最强的定心丸（三道防线）压在 CTA 正前方，读者点"去接入项目"前最后读到的是安全，故**信任收在行动之前**。
+
+文案纪律两条：页面语域用大白话（「就算…也」「顺手」），报告语域用术语（爆炸半径、最小权限）——同一事实两种表达，不算不一致；所有安全表述必须与代码实现一一对应，未实现的机制（如网络出站白名单）只能进第十三节"后置"，绝不写进防线（8/22 纠错的教训）。
+
+
 ---
 
 ## 二、安全模型：「能改仓库代码的凭证，绝不进 AI 容器」
 
 这是整个系统最核心的安全设计。三条防线逐层收紧。
 
-**第一层：凭证隔离。** Git 凭证（bot token + admin token）只在后端内存，每次使用时由 `ProcessBuilder` 以 `-c http.extraHeader` 注入临时 alpine/git 容器——当次生效、用完即毁。URL 中不拼 token（不进 volume 里的 `.git/config`），容器销毁后物理上不可恢复。AI 容器内零 git 凭证 → prompt injection 偷不到仓库写权限。
+**第一层：凭证隔离。** Git 凭证（bot token + admin token）只留在后端，每次使用时由 `ProcessBuilder` 以 `-c http.extraHeader` 注入临时 alpine/git 容器——当次生效、用完即毁。URL 中不拼 token（不进 volume 里的 `.git/config`），容器销毁后物理上不可恢复。AI 容器内零 git 凭证 → prompt injection 偷不到仓库写权限。
 
-**第二层：最小权限。** 两个 token 各司其职：admin token 只在"加/删 collaborator"的瞬间使用；bot token 只有单仓库 write 权限。爆炸半径被压缩到单个仓库。
+**第二层：最小权限。** 两个 token 各司其职：admin token 只在项目接入/改配置时使用（校验仓库与分支、加 collaborator），流水线运行全程零 admin 凭证；bot token 是 Gitea 账号级凭证，写权限随 collaborator 身份按仓库收放——接入项目时授权、删除项目时回收，只覆盖已接入的仓库，碰不到其他仓库。
 
-**第三层：网络出站白名单。** 容器只放行 Gitea/SonarQube/DeepSeek 三个目标，其余挡死。即使容器内凭证（sonar token、model key）被偷，也外传不出。
+**第三层：凭证脱敏。** 命令日志与失败异常中的凭证值统一打码（详见下文实现细节），凭证不进日志、不落库。
 
-**实现细节：** 所有 git 操作由后端通过 `docker run --rm` 起临时 alpine/git 容器执行。clone URL 用无凭证形式（`<host>/<owner>/<repo>.git`），token 通过 `git -c http.extraHeader=Authorization: token <value>` 当次生效——**不拼进 remote URL**。如果拼进去，git 会把 token 原样写入 volume 里的 `.git/config`，持久化泄露。容器用完即毁（`--rm`），token 物理上不可恢复。所有 git 命令统一加 `-c safe.directory=/workspace/repo`——volume 属主是 bot 用户，但 git 容器以 root 运行，git 安全检查会报 "dubious ownership"。配套地，`ProcessUtil` 对命令日志与异常 message 统一脱敏——`MODEL_API_KEY`/`SONARQUBE_TOKEN`/`sonar.token`/`Authorization: token` 的值一律 `***`，凭证不进日志、也不随失败异常落 `action_attempt.result`。
+**实现细节：** 所有 git 操作由后端通过 `docker run --rm` 起临时 alpine/git 容器执行。clone URL 用无凭证形式（`<host>/<owner>/<repo>.git`），token 通过 `git -c http.extraHeader=Authorization: token <value>` 当次生效——**不拼进 remote URL**。如果拼进去，git 会把 token 原样写入 volume 里的 `.git/config`，持久化泄露。容器用完即毁（`--rm`），token 物理上不可恢复。除首次 clone 外，所有 git 命令统一加 `-c safe.directory=/workspace/repo`——volume 属主是 bot 用户，但 git 容器以 root 运行，git 安全检查会报 "dubious ownership"。配套地，`ProcessUtil` 对命令日志与异常 message 统一脱敏——`MODEL_API_KEY`/`SONARQUBE_TOKEN`/`sonar.token`/`Authorization: token` 的值一律 `***`，凭证不进日志、也不随失败异常落 `action_attempt.result`。
 
-**唯一不得不的让步：** DeepSeek API key 必须进容器（AI 要在容器内跑，调 API 就要 key）。但这是可独立轮换的非代码权限，非 git 凭证。
+**不得不的让步：** 进沙盒容器的只有 AI/扫描凭证——DeepSeek API key（AI 要在容器内跑，调 API 就要 key）和 SonarQube token（容器内扫描与 MCP 自查要用）。两者都是可独立轮换的非代码权限，非 git 凭证。
 
 ---
 
@@ -85,7 +100,7 @@ Sonar 规则引擎能稳定识别的，是**规则化问题**，落到真实修�
 ### 3.2 阶段二：加入重试与回退环
 
 基础链跑通后，立刻暴露一个问题：Fix 或 Verify 失败怎么办？直接 FAILED 太浪费，应该回滚到修复前现场再试。于是引入 `RESTORING → RESTORED` 回退环和 `RestoredTrigger`：
-- Fix 失败 → `RESTOREING` 回滚代码 → `RESTORED` → 重新 `FIXING`
+- Fix 失败 → `RESTORING` 回滚代码 → `RESTORED` → 重新 `FIXING`
 - Verify 失败 → 同样回滚 → 重新 `FIXING`
 - 每轮重试计数，耗尽后才会进入 `FAILED`
 
@@ -148,7 +163,7 @@ Run 到 `CLEANED` 后，PR 还在 Gitea 等人评审。于是新增 `Run.prStatu
 
 **结论：** SonarQube 被选中，不是因为它比 PMD/SpotBugs 扫得更多，而是因为只有它把"扫描 → 修复 → 验证"串成了一个可喂给 AI 的闭环——规则描述喂 Fix、重扫喂 Verify、MCP 喂自查。PMD/SpotBugs 三样都缺，即便告警更精确也用不上。
 
-### 4.2 ScanAction：双通道并行扫描
+### 4.2 ScanAction：双通道扫描
 
 ```
 ScanAction:
@@ -196,7 +211,7 @@ VerifyAction:
 
 ### 4.5 SonarQube 对用户透明
 
-issue 入库后不再区分来源。PR body 统一格式：title + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description。用户看不到 SonarQube 原始 API 数据，只看到结构化的中文诊断报告。
+issue 统一走同一张表、同一修复/验证路径。PR body 统一骨架：标题 + 三维 severity + 代码片段链接(跳转源码对应行) + 修改记录链接(跳转 commit)，AI 分支额外 type/description；每条 issue 标注来源(【来源：SONAR】/【来源：AI】)——来源透明，处理路径一致。用户不需要接触 SonarQube 原始 API 数据，拿到的就是结构化的诊断报告。
 
 ---
 
@@ -237,7 +252,7 @@ PENDING → [STARTING → STARTED] → [SYNCING → SYNCED] → [SCANNING → SC
                                        FAILED → CLEAN
 ```
 
-**RestoredTrigger** 是唯一的分支点：根据时间戳区分"fix 失败"还是"verify 失败"，各自检查重试上限，决定续修或放弃。总共 50 行代码，没有嵌套状态机，没有编译期不可见的隐式行为。
+**RestoredTrigger** 是唯一的分支点：根据时间戳区分"fix 失败"还是"verify 失败"，各自检查重试上限，决定续修或放弃。不到 50 行代码，没有嵌套状态机，没有编译期不可见的隐式行为。
 
 **曾考虑 issue 级独立状态机但否决。** 每个 issue 独立跑 `FIXING → VERIFYING → RESTORING → FIXING` 看似优雅，但引入两个根本问题：
 
@@ -356,6 +371,7 @@ MVP 没做的功能分两类：**后置**（时机未到，条件成熟再做，
 | 优先级排序 | 夜间窗口资源充足先到先修；生产多仓库 / 资源紧张时再上 |
 | GitLab 适配 | 演示用 Gitea 已就绪；生产内网部署时替换再实现 |
 | 管理员操作审计表 | `dev_admin_operation` 表结构已在 admin-operations design 决策 6 留档；出现争议时从 `log.info` 升级 |
+| 容器网络出站白名单 | 沙盒容器当前走默认 bridge 未限出站；出现真实外发风险诉求或合规要求时，用 internal network + 宿主机 iptables 只放行 Gitea/SonarQube/DeepSeek |
 
 ### 永久不做（有替代方案 / 确定无价值）
 
@@ -387,7 +403,7 @@ MVP 没做的功能分两类：**后置**（时机未到，条件成熟再做，
 | 两道防线验证 | sonar-rescan-verify design 决策 1 | SonarQube 客观门槛 + Claude 语义判定 |
 | VerifyAction 不喂 diff + 砍 reason | sonar-rescan-verify design 决策 3/4 | Claude 自己读代码 + commitMessage 判思路，输出最小 `{verified}` |
 | Source 区分器 + 三维 severity | pipeline-foundation design 决策 1 | JSON 多态 metadata，B/S/M 三维独立 |
-| SonarQube 对用户透明 | gitea-pr-submit design 决策 2 | PR body 诊断报告，不区分来源 |
+| SonarQube 对用户透明 | gitea-pr-submit design 决策 2 | PR body 诊断报告，统一骨架、标注来源 |
 | 整轮回退 vs 精准保留 | fix-runtime-container 决策 18 | 四组论据论证整轮回退是正确设计 |
 | `maxIssuesPerRun` 复杂度调杆 | dev-plan 决策 28 | Sonar/AI 分别配置，随机打乱截断，调参不动架构 |
 | ~~失败 issue 跨 run 记忆~~ | dev-plan 决策 14 → 28 | 永不做——先验证修复能力，不应回避困难 |
@@ -406,6 +422,7 @@ MVP 没做的功能分两类：**后置**（时机未到，条件成熟再做，
 | triggerRun 单飞 | dev-plan 决策 40/46 | 一项目一 run；手动触发改混合并发槽（有槽直启、满槽排队等 dispatch），并发上限故事闭环 |
 | 前端契约对齐 | dev-plan 决策 43 | 以后端 Jackson 序列化规则为准：`non_null` 下可空字段标 `?:`，UUID→string，枚举对齐 `name()` |
 | 平台管理员权限模型 | dev-plan 决策 44 | 复用既有权限框架不新建体系；熔断权 vs 所有权分离；三层身份（owner/bot/管理员）|
+| About 页演示叙事线 | 本报告 1.4 | 机制 → 角色 → 信任 → 行动；页面大白话 / 报告术语双语域；安全表述必须与代码实现一一对应 |
 | Stats 用 Integer 不用 Long | dev-plan 决策 45 | 全局 `Long→ToStringSerializer` 会把 Long 序列化成 string，与前端 `number` 冲突 |
 | deliveredIssueCount 口径 | dev-plan 决策 45 | 只算 SUCCEEDED run 的 VERIFIED/ACCEPTED/REJECTED；REJECTED 计入——修复数衡量 AI 能力，接受度归合并率 KPI |
 | Stats 只出原子计数 | dev-plan 决策 45 | 合并率/占槽比前端算；`maxConcurrency` 是面板唯一需要的配置项（占槽分母），runTimeout/cron 不进 Stats |
