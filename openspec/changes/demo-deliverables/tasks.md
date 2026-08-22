@@ -6,7 +6,7 @@
 ## 2. 交付素材（对应 dev-plan 阶段 10，8/20–8/30 冲刺，deadline 8/30）
 
 - [x] 2.1 梳理手头现有材料（demo 数据 / 架构报告 `dev-report` / 演示账号）。
-- [ ] 2.2 用 drawio 完善架构图（系统拓扑）。
+- [x] 2.2 用 drawio 完善架构图（系统拓扑）。(8/22 定稿 `docs/dev-项目架构图.drawio`：放射状布局 + 四色图例 自研组件/三方工具/外部服务/数据存储)
 - [ ] 2.3 优化前端 about 页面（`/dev/about` 平台介绍）。改动属 demo-deliverables 交付环节，不改已归档的 `pipeline-ui` 主 spec，在 demo-deliverables 内闭环记录。
 - [ ] 2.4 编写汇报材料（元叙事 / 安全模型 / KPI 叙事链 / 未来规划；未来规划页素材见 `docs/dev-report.md` 第十三节）。
 - [ ] 2.5 编写 PPT。
