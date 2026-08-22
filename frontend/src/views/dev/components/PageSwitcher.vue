@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { LeftOutlined, RightOutlined } from '@ant-design/icons-vue';
 
-/* 极简分页条:‹ 当前页 ›,悬浮显示总页数;放卡片标题行右侧,仅一页时自隐藏 */
+/* 极简分页条:‹ 当前页/总页数 ›;放卡片标题行右侧,仅一页时自隐藏 */
 defineProps<{
     pageNum: number;
     totalPageNum: number;
@@ -20,9 +20,7 @@ const emit = defineEmits<{
             @click="emit('change', pageNum - 1)">
             <left-outlined />
         </button>
-        <span class="font-mono text-xs text-slate-500" :title="`共 ${totalPageNum} 页`">
-            {{ pageNum }}
-        </span>
+        <span class="font-mono text-xs text-slate-500">{{ pageNum }}/{{ totalPageNum }}</span>
         <button
             class="page-btn"
             :disabled="pageNum >= totalPageNum"
