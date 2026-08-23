@@ -15,6 +15,8 @@ import java.util.List;
 public class RunDetail extends Run {
     private String projectName;
     private String prLink;
+    private Integer waitSeconds;
+    private Integer execSeconds;
     private Integer deliveredIssueCount;
     private Integer scannedIssueCount;
     private Integer selectedIssueCount;

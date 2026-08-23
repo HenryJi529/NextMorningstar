@@ -115,6 +115,8 @@ export interface ProjectDetail extends Project {
 export interface RunDetail extends Run {
     projectName?: string;
     prLink?: string;
+    waitSeconds?: number;
+    execSeconds?: number;
     deliveredIssueCount?: number;
     scannedIssueCount?: number;
     selectedIssueCount?: number;

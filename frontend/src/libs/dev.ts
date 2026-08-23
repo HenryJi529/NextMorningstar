@@ -176,10 +176,10 @@ export const repoShort = (link?: string): string => {
     return link ? link.replace(/\/+$/, '').split('/').slice(-2).join('/') : '';
 };
 
-/* 耗时：统一用分，1 位小数去尾零(45s → 0.8 分，75m → 75 分) */
-export const fmtDuration = (startIso: string, endIso: string): string => {
-    const totalSeconds = Math.max(0, dayjs(endIso).diff(dayjs(startIso), 'second'));
-    return `${+(totalSeconds / 60).toFixed(1)} 分`;
+/* 秒数时长统一用分，undefined(未开始)显示 — */
+export const fmtSeconds = (seconds?: number): string => {
+    if (seconds == null) return '—';
+    return `${+(Math.max(0, seconds) / 60).toFixed(1)} 分`;
 };
 
 /* 进行中任务的实时已耗时：H:MM:SS 秒表，由调用方 1s ticker 驱动 */

@@ -6,7 +6,7 @@ import { ResponseCode } from '@/constants/response';
 import { RunState, RunStatus, SortDir, type ProjectDetail, type RunDetail, type Stats } from '@/types/dev';
 import { hasAnyPermission } from '@/utils/permission';
 import { Permission } from '@/constants/auth';
-import { fmtDuration, fmtTime, repoShort, triggerLabel } from '@/libs/dev';
+import { fmtSeconds, fmtTime, repoShort, triggerLabel } from '@/libs/dev';
 import PipelineStateMachine from '@/views/dev/components/PipelineStateMachine.vue';
 import RunStatusBadge from '@/views/dev/components/RunStatusBadge.vue';
 import PrStatusBadge from '@/views/dev/components/PrStatusBadge.vue';
@@ -370,16 +370,17 @@ const onToggleSchedule = (project: ProjectDetail) => {
             </div>
             <table class="w-full text-sm table-fixed">
                 <colgroup>
-                    <col class="w-[15%]" />
-                    <col class="w-[12%]" />
+                    <col class="w-[14%]" />
+                    <col class="w-[9%]" />
+                    <col class="w-[6%]" />
+                    <col class="w-[7%]" />
+                    <col class="w-[7%]" />
                     <col class="w-[7%]" />
                     <col class="w-[8%]" />
-                    <col class="w-[9%]" />
-                    <col class="w-[9%]" />
-                    <col class="w-[9%]" />
-                    <col class="hidden xl:table-column w-[11%]" />
-                    <col class="hidden xl:table-column w-[11%]" />
-                    <col class="w-[9%]" />
+                    <col class="w-[8%]" />
+                    <col class="w-[8%]" />
+                    <col class="hidden xl:table-column w-[13%]" />
+                    <col class="hidden xl:table-column w-[13%]" />
                 </colgroup>
                 <thead>
                     <tr class="text-[11px] text-slate-400 border-b border-slate-100">
@@ -400,14 +401,19 @@ const onToggleSchedule = (project: ProjectDetail) => {
                             已交付修复数
                         </th>
                         <th class="text-center font-medium px-3 py-2.5">PR</th>
+                        <th
+                            class="text-center font-medium px-3 py-2.5"
+                            title="创建 → 执行开始(排队耗时)">
+                            等待时长
+                        </th>
+                        <th class="text-center font-medium px-3 py-2.5" title="执行开始 → 结束">
+                            执行时长
+                        </th>
                         <th class="hidden xl:table-cell text-center font-medium px-3 py-2.5">
                             开始时间
                         </th>
                         <th class="hidden xl:table-cell text-center font-medium px-3 py-2.5">
                             结束时间
-                        </th>
-                        <th class="text-right font-medium px-5 py-2.5" title="开始时间 → 结束时间">
-                            任务耗时
                         </th>
                     </tr>
                 </thead>
@@ -450,6 +456,12 @@ const onToggleSchedule = (project: ProjectDetail) => {
                                 :pr-status="r.prStatus" />
                             <span v-else class="text-slate-300">—</span>
                         </td>
+                        <td class="px-3 py-3 text-center font-mono text-xs text-slate-600">
+                            {{ fmtSeconds(r.waitSeconds) }}
+                        </td>
+                        <td class="px-3 py-3 text-center font-mono text-xs text-slate-600">
+                            {{ fmtSeconds(r.execSeconds) }}
+                        </td>
                         <td
                             class="hidden xl:table-cell px-3 py-3 text-center text-xs text-slate-400 whitespace-nowrap">
                             {{ fmtTime(r.createTime) }}
@@ -458,13 +470,9 @@ const onToggleSchedule = (project: ProjectDetail) => {
                             class="hidden xl:table-cell px-3 py-3 text-center text-xs text-slate-400 whitespace-nowrap">
                             {{ fmtTime(r.updateTime) }}
                         </td>
-                        <td
-                            class="px-5 py-3 text-right font-mono text-xs text-slate-400 whitespace-nowrap">
-                            {{ fmtDuration(r.createTime, r.updateTime) }}
-                        </td>
                     </tr>
                     <tr v-if="recentRuns.length === 0">
-                        <td colspan="10" class="px-5 py-10 text-center text-xs text-slate-300">
+                        <td colspan="11" class="px-5 py-10 text-center text-xs text-slate-300">
                             暂无已完成任务
                         </td>
                     </tr>

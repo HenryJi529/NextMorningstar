@@ -30,8 +30,8 @@ public class CronTask {
     @Value("${morningstar.app.dev.schedule.max-concurrency}")
     private int maxConcurrency;
 
-    @Value("${morningstar.app.dev.schedule.run-timeout-minutes}")
-    private int runTimeoutMinutes;
+    @Value("${morningstar.app.dev.schedule.stuck-threshold-minutes}")
+    private int stuckThresholdMinutes;
 
     /**
      * 夜间扫描：为每个已启用的项目创建一个任务
@@ -75,21 +75,20 @@ public class CronTask {
 
 
     /**
-     * 任务超时：取消长时间无响应的任务
+     * 清理卡死任务：超过阈值时长无任何状态流转的 run 视为卡死，绕过状态机强制清理
      */
-    @Scheduled(cron = "${morningstar.app.dev.schedule.timeout-cron}")
-    public void cancelTimeoutRuns() {
-        LocalDateTime deadline = LocalDateTime.now().minusMinutes(runTimeoutMinutes);
+    @Scheduled(cron = "${morningstar.app.dev.schedule.stuck-check-cron}")
+    public void forceCleanStuckRuns() {
+        LocalDateTime deadline = LocalDateTime.now().minusMinutes(stuckThresholdMinutes);
         List<Run> stuckRuns = runMapper.selectList(
                 new LambdaQueryWrapper<Run>()
                         .ge(Run::getCreateTime, LocalDateTime.now().minusHours(24))
                         .lt(Run::getUpdateTime, deadline)
-                        .notIn(Run::getState, State.PENDING, State.CLEANED, State.FAILED)
+                        .notIn(Run::getState, State.PENDING, State.CLEANING, State.CLEANED)
         );
 
         for (Run run : stuckRuns) {
-            log.warn("任务超时取消: runId={}, state={}", run.getId(), run.getState());
-            stateMachineService.requestCancel(run.getId());
+            runService.forceClean(run.getId());
         }
     }
 

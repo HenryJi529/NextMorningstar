@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { RunDetail } from '@/types/dev';
-import { fmtDuration, fmtTime, triggerLabel } from '@/libs/dev';
+import { fmtSeconds, fmtTime, triggerLabel } from '@/libs/dev';
 import RunStatusBadge from '@/views/dev/components/RunStatusBadge.vue';
 import PrStatusBadge from '@/views/dev/components/PrStatusBadge.vue';
 import CopyableId from '@/views/dev/components/CopyableId.vue';
@@ -13,15 +13,16 @@ defineProps<{
 <template>
     <table class="w-full text-sm table-fixed">
         <colgroup>
-            <col class="w-[11%]" />
             <col class="w-[9%]" />
-            <col class="w-[9%]" />
-            <col class="w-[11%]" />
-            <col class="w-[11%]" />
-            <col class="w-[13%]" />
-            <col class="hidden xl:table-column w-[13%]" />
-            <col class="hidden xl:table-column w-[13%]" />
+            <col class="w-[7%]" />
+            <col class="w-[7%]" />
             <col class="w-[10%]" />
+            <col class="w-[10%]" />
+            <col class="w-[11%]" />
+            <col class="w-[9%]" />
+            <col class="w-[9%]" />
+            <col class="hidden xl:table-column w-[14%]" />
+            <col class="hidden xl:table-column w-[14%]" />
         </colgroup>
         <thead class="sticky top-0 bg-white">
             <tr class="text-[11px] text-slate-400 border-b border-slate-100">
@@ -37,11 +38,14 @@ defineProps<{
                     已交付修复数
                 </th>
                 <th class="text-center font-medium px-3 py-2.5">PR</th>
+                <th class="text-center font-medium px-3 py-2.5" title="创建 → 执行开始(排队耗时)">
+                    等待时长
+                </th>
+                <th class="text-center font-medium px-3 py-2.5" title="执行开始 → 结束">
+                    执行时长
+                </th>
                 <th class="hidden xl:table-cell text-center font-medium px-3 py-2.5">开始时间</th>
                 <th class="hidden xl:table-cell text-center font-medium px-3 py-2.5">结束时间</th>
-                <th class="text-right font-medium px-5 py-2.5" title="开始时间 → 结束时间">
-                    任务耗时
-                </th>
             </tr>
         </thead>
         <tbody>
@@ -72,6 +76,12 @@ defineProps<{
                         :pr-status="run.prStatus" />
                     <span v-else class="text-slate-300">—</span>
                 </td>
+                <td class="px-3 py-3 text-center font-mono text-xs text-slate-600">
+                    {{ fmtSeconds(run.waitSeconds) }}
+                </td>
+                <td class="px-3 py-3 text-center font-mono text-xs text-slate-600">
+                    {{ fmtSeconds(run.execSeconds) }}
+                </td>
                 <td
                     class="hidden xl:table-cell px-3 py-3 text-center text-xs text-slate-400 whitespace-nowrap">
                     {{ fmtTime(run.createTime) }}
@@ -80,12 +90,9 @@ defineProps<{
                     class="hidden xl:table-cell px-3 py-3 text-center text-xs text-slate-400 whitespace-nowrap">
                     {{ fmtTime(run.updateTime) }}
                 </td>
-                <td class="px-5 py-3 text-right font-mono text-xs text-slate-400 whitespace-nowrap">
-                    {{ fmtDuration(run.createTime, run.updateTime) }}
-                </td>
             </tr>
             <tr v-if="runs.length === 0">
-                <td colspan="9" class="px-5 py-10 text-center text-xs text-slate-300">
+                <td colspan="10" class="px-5 py-10 text-center text-xs text-slate-300">
                     暂无历史任务
                 </td>
             </tr>

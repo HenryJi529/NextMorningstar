@@ -19,9 +19,11 @@ import com.morningstar.dev.statemachine.Action;
 import com.morningstar.dev.statemachine.Event;
 import com.morningstar.dev.statemachine.State;
 import com.morningstar.dev.statemachine.StateMachineService;
+import com.morningstar.dev.statemachine.action.CommonSteps;
 import com.morningstar.dev.statemachine.result.ActionResult;
 import com.morningstar.dev.statemachine.result.ScanResult;
 import com.morningstar.dev.util.GiteaUtil;
+import com.morningstar.dev.util.ProcessUtil;
 import com.morningstar.infra.exception.BaseException;
 import com.morningstar.infra.response.PageResult;
 import com.morningstar.infra.response.ResponseCode;
@@ -31,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -51,6 +54,8 @@ public class RunServiceImpl implements RunService {
     private final GiteaUtil giteaUtil;
     private final IssueMapper issueMapper;
     private final ActionAttemptMapper actionAttemptMapper;
+    private final ProcessUtil processUtil;
+    private final CommonSteps commonSteps;
 
     @Value("${morningstar.app.dev.schedule.max-concurrency}")
     private int maxConcurrency;
@@ -134,6 +139,32 @@ public class RunServiceImpl implements RunService {
     }
 
     @Override
+    public void forceClean(UUID runId) {
+        Run run = runMapper.selectById(runId);
+        log.warn("[{}] 清理卡死任务: 当前状态={}, 上次状态流转时间={}", runId, run.getState(), run.getUpdateTime());
+        // 先杀容器再删 volume(容器挂载期间 volume rm 会被拒)，"不存在"视为已清理，其余失败记 error 日志后继续
+        try {
+            processUtil.run("docker", "container", "rm", "-f", commonSteps.getContainerName(run));
+        } catch (ProcessUtil.ProcessExecutionException e) {
+            if (!e.getMessage().contains("No such container")) {
+                log.error("[{}] 清理卡死任务失败，容器可能残留，需人工排查", run.getId(), e);
+            }
+        }
+        try {
+            processUtil.run("docker", "volume", "rm", commonSteps.getVolumeName(run));
+        } catch (ProcessUtil.ProcessExecutionException e) {
+            if (!e.getMessage().contains("no such volume")) {
+                log.error("[{}] 清理卡死任务失败，Volume 可能残留，需人工排查", run.getId(), e);
+            }
+        }
+        // 无论清理成败都落终态
+        runMapper.updateById(Run.builder().id(runId).state(State.CLEANED).status(Run.Status.FAILED).build());
+        // 手动取消后又卡死的情况，清掉取消标记防泄漏
+        stateMachineService.clearCancelingFlag(runId);
+        log.warn("[{}] 清理卡死任务完成", runId);
+    }
+
+    @Override
     public void syncPrStatus(UUID runId) {
         Run run = runMapper.selectById(runId);
         // 无 PR 或已达终态 → 幂等跳过
@@ -157,14 +188,15 @@ public class RunServiceImpl implements RunService {
                     new LambdaUpdateWrapper<Issue>()
                             .eq(Issue::getRunId, runId)
                             .eq(Issue::getStatus, Issue.Status.VERIFIED));
-            runMapper.updateById(Run.builder().id(runId).prStatus(Run.PrStatus.MERGED).build());
+            // PR 状态回写不算 run 活动：带上原 updateTime(strict fill 不覆盖非空值)，防止结束时间/执行时长被刷新
+            runMapper.updateById(Run.builder().id(runId).prStatus(Run.PrStatus.MERGED).updateTime(run.getUpdateTime()).build());
         } else if (pr.getState() == GiteaUtil.PullRequest.State.CLOSED) {
             issueMapper.update(
                     Issue.builder().status(Issue.Status.REJECTED).build(),
                     new LambdaUpdateWrapper<Issue>()
                             .eq(Issue::getRunId, runId)
                             .eq(Issue::getStatus, Issue.Status.VERIFIED));
-            runMapper.updateById(Run.builder().id(runId).prStatus(Run.PrStatus.CLOSED).build());
+            runMapper.updateById(Run.builder().id(runId).prStatus(Run.PrStatus.CLOSED).updateTime(run.getUpdateTime()).build());
         }
         // open → 不变
     }
@@ -216,7 +248,16 @@ public class RunServiceImpl implements RunService {
                 detail.setDeliveredIssueCount(detail.getCurrentVerifiedIssueCount());
             }
         }
-        detail.setActionAttemptBriefs(listAttemptBriefs(run.getId()));
+        List<ActionAttemptBrief> briefs = listAttemptBriefs(run.getId());
+        detail.setActionAttemptBriefs(briefs);
+        // 等待/执行时长只在终态后计算，执行起点 = START 阶段的开始时刻
+        if (run.getState() == State.CLEANED) {
+            briefs.stream().filter(b -> b.getActionType() == Action.Type.START).findFirst()
+                    .ifPresent(start -> {
+                        detail.setWaitSeconds((int) Duration.between(run.getCreateTime(), start.getCreateTime()).getSeconds());
+                        detail.setExecSeconds((int) Duration.between(start.getCreateTime(), run.getUpdateTime()).getSeconds());
+                    });
+        }
         return detail;
     }
 

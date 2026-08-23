@@ -37,10 +37,10 @@
 - **WHEN** 到达分发间隔（每 30s）
 - **THEN** 查 PENDING run 按创建时间排队，取可用并发槽位数（默认 2）的 run 发送 START 事件
 
-#### 场景：超时取消
+#### 场景：卡死强制清理
 
-- **WHEN** 到达超时检测间隔（每 5min）
-- **THEN** 查 24h 内创建、超过 `run-timeout-minutes`（默认 120min）无状态流转的 run（排除 PENDING 排队态与 CLEANED 终态），触发取消
+- **WHEN** 到达卡死检测间隔（`stuck-check-cron`，每 5min）
+- **THEN** 查 24h 内创建、超过 `stuck-threshold-minutes`（默认 120min）无任何状态流转的 run（排除 PENDING 排队态与 CLEANING/CLEANED 清理态；SUBMITTED/FAILED 休息态纳入——正常会被 trigger 立刻驱动走，躺过阈值即驱动事件已丢），绕过状态机强制清理：杀容器 → 删项目 volume（卡死现场不可信，下次全量 clone）→ 落 CLEANED + FAILED（8/23 改；此前走 `requestCancel` 协作取消，但卡死的 run 永远到不了取消检查点，取消标记无人消费、并发槽与容器永久泄漏；docker 清理失败记 error 日志后仍落终态）
 
 #### 场景：清晨清理
 

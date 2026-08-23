@@ -28,10 +28,10 @@ morningstar:
       schedule:
         create-cron: "0 0 21 * * ?"
         dispatch-cron: "*/30 * * * * ?"
-        timeout-cron: "0 */5 * * * ?"
+        stuck-check-cron: "0 */5 * * * ?"
         cleanup-cron: "0 0 6 * * ?"
         sync-pr-status-cron: "15/30 * * * * ?"
-        run-timeout-minutes: 120
+        stuck-threshold-minutes: 120
         max-concurrency: 4
       sandbox:
         image: morningstar-dev-sandbox:latest

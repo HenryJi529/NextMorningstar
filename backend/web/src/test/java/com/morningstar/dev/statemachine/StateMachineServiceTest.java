@@ -13,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.UUID;
@@ -26,10 +25,8 @@ class StateMachineServiceTest {
     private final ProjectService projectService;
     private final RunService runService;
     private final ProjectMapper projectMapper;
+    private final Integer timeout = 300;
     private Run run;
-
-    @Value("${morningstar.app.dev.schedule.run-timeout-minutes}")
-    private Integer timeout;
 
 //    @BeforeEach
 //    void setUp() {
