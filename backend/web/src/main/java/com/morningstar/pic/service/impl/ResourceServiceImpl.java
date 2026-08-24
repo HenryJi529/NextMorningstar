@@ -244,7 +244,9 @@ public class ResourceServiceImpl implements ResourceService {
                 writer.setOutput(ios);
                 writer.write(null, new IIOImage(bufferedImage, null, null), writeParam);
                 content = baos.toByteArray();
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                log.error("压缩图片[{}]失败", oldFilename, e);
+                throw new BaseException(ResponseCode.PIC_IMAGE_UPLOAD_FAILED, oldFilename);
             } finally {
                 writer.dispose();
             }
@@ -252,7 +254,9 @@ public class ResourceServiceImpl implements ResourceService {
             newFilename = oldFilename;
             try {
                 content = file.getResource().getContentAsByteArray();
-            } catch (IOException ignored) {
+            } catch (IOException e) {
+                log.error("读取图片[{}]原始字节失败", oldFilename, e);
+                throw new BaseException(ResponseCode.PIC_IMAGE_UPLOAD_FAILED, oldFilename);
             }
         }
 
