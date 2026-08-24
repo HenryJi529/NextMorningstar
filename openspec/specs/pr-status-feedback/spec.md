@@ -26,14 +26,14 @@
 
 - **WHEN** PR `merged=true`
 - **THEN** 本 run 全部 `VERIFIED` 的 `dev_issue.status=ACCEPTED`（仅 VERIFIED，不动其他状态）
-- **AND** `run.prStatus=MERGED`
+- **AND** `run.prStatus=MERGED`（8/24 起回写显式带原 updateTime：strict fill 不覆盖非空值，PR 裁决回写不算 run 活动，防止结束时间/执行时长被刷新）
 - **AND** 停止轮询该 run
 
 #### 场景：PR 被关闭未合并
 
 - **WHEN** PR `state=closed` 且 `merged=false`
 - **THEN** 本 run 全部 `VERIFIED` 的 `dev_issue.status=REJECTED`
-- **AND** `run.prStatus=CLOSED`
+- **AND** `run.prStatus=CLOSED`（updateTime 保持同上）
 - **AND** 停止轮询该 run
 
 #### 场景：PR 仍开放

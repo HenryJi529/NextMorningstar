@@ -118,7 +118,7 @@ Sonar 规则引擎能稳定识别的，是**规则化问题**，落到真实修�
 | 4 | `FixAction` | 统一 prompt 调用 Claude 修复，MCP `analyze_code_snippet` 自查 |
 | 5 | `VerifyAction` | SonarQube 重扫客观判定 + Claude 语义评审 |
 | 6 | `SubmitAction` | 推修复分支、调 Gitea API 开 PR、写统一格式诊断报告 |
-| 7 | `CleanAction` | 清理容器和 volume |
+| 7 | `CleanAction` | 清理容器（不删 volume——项目级代码缓存，下轮增量复用） |
 
 每替换一个就跑端到端验证，确保状态机仍然能正确驱动新动作。这种“骨架先行、血肉后填”的方式，让真实 Action 的开发不会被状态机 bug 阻塞。
 
@@ -425,7 +425,7 @@ MVP 没做的功能分两类：**后置**（时机未到，条件成熟再做，
 | About 页演示叙事线 | 本报告 1.4 | 机制 → 角色 → 信任 → 行动；页面大白话 / 报告术语双语域；安全表述必须与代码实现一一对应 |
 | Stats 用 Integer 不用 Long | dev-plan 决策 45 | 全局 `Long→ToStringSerializer` 会把 Long 序列化成 string，与前端 `number` 冲突 |
 | deliveredIssueCount 口径 | dev-plan 决策 45 | 只算 SUCCEEDED run 的 VERIFIED/ACCEPTED/REJECTED；REJECTED 计入——修复数衡量 AI 能力，接受度归合并率 KPI |
-| Stats 只出原子计数 | dev-plan 决策 45 | 合并率/占槽比前端算；`maxConcurrency` 是面板唯一需要的配置项（占槽分母），runTimeout/cron 不进 Stats |
+| Stats 只出原子计数 | dev-plan 决策 45 | 合并率/占槽比前端算；`maxConcurrency` 是面板唯一需要的配置项（占槽分母），stuckThreshold/cron 不进 Stats |
 | FAILED 一律算活跃 | dev-plan 决策 46 | 躺平 FAILED 容器现场未知，必须占槽+挡触发，防同项目双 run 抢 volume |
 | Detail bo 展示扩充 | dev-plan 决策 47 | PO 不沾染展示字段；`@SuperBuilder` 继承 + 统一 `toDetail`，前端类型同构继承；RunDetail 含 actionAttemptBriefs 阶段流水（可视化数据源），CopyUtil 健壮化支持跨类同名拷贝 |
 | Run 触发方式入 PO | dev-plan 决策 48 | `triggerType`(MANUAL/SCHEDULED）是真实属性不进 Detail；写入点收敛 `createRun`,调用方用 enum 声明 |

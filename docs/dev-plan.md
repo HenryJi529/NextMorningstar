@@ -86,7 +86,7 @@
 | 12 | **仓库授权(双 token)** ⭐ | **bot token(Gitea 账号级,写权限随协作者身份收放)通过 git `http.extraHeader` 传入临时 alpine/git 容器**(日常 git 凭证,不落盘);**admin token 仅项目接入/改配置时用(校验仓库与分支、加 collaborator),流水线运行全程不用**。**bot 协作者随项目生命周期收放:接入时加 write、删除项目时移除;启停调度(`updateProject`/`toggleSchedule`)均不动 collaborator**(8/18 修复:启停曾误删协作者,导致停用后 bot 克隆报 `Repository not found`)。凭证仅存在临时容器内、用完即毁 → 爆炸半径最小 |
 | 13 | **git 归临时容器** ⭐ | git clone/commit/push/reset 由后端通过 `docker run --rm -v morningstar_dev_repo_<projectId>:/workspace/repo` 起临时 alpine/git 容器执行(**镜像名写死**,不进配置),用完即毁。clone/fetch URL 一律**无凭证形式**,token 走 `-c http.extraHeader` 当次生效,**不落 volume 里 `.git/config`**。代码互通靠 named volume(fix-runtime-container 决策 9)。**prompt injection 偷不到 git 凭证**。MVP 不处理子模块(clone 无 `--recursive`,决策 22) |
 | 14 | ~~失败 issue 跨 run 记忆~~ → 决策 28 | 不做跨 run 排除——当前阶段应先验证修复能力而非回避困难 issue |
-| 15 | **资源池 + 夜间窗口** ⭐ | 并发度可配(`schedule.max-concurrency`,**默认 2,8/16 演示环境调为 4**(12 核/36G 无压力,且 5 项目 4 槽必现排队态,演示"排队中")——Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;Scan/Verify 才 CPU 密集且短)。夜间 21:00 自动创建 PENDING run,次日 **6:00 清晨清理**:`cancelOvernightRuns` 取消所有非终态活跃 run(PENDING 直接 `deleteById`——从未启动不留记录,8/14 改;其余走 `requestCancel`)。另每 5min 超时检测(120min 无状态流转即判超时,8/10 调整;8/13 排除 CLEANED 终态;**8/14 再排除 PENDING 排队态**——排队等待不算超时,dispatch 起跑时状态流转刷新 `updateTime`,执行预算从起跑重计;查询为 `notIn(PENDING, CLEANED)`,24h 窗口给"取消不掉的僵尸"(如 CLEANING 卡死被 `requestCancel` 拒绝)设放弃期限);**8/23 超时取消改卡死强制清理**:`forceCleanStuckRuns`(配置随之改名 `stuck-check-cron`/`stuck-threshold-minutes`)——协作取消对卡死 run 是空转(永远到不了检查点,取消标记无人消费,并发槽与容器永久泄漏),改为绕过状态机强清:杀容器 → 删项目 volume(sync 的 `switch -C`+`clean -fdx` 只重置工作区内容,盖不住 git 中断留下的 index.lock/半截 packfile,留着会毒化之后每一轮;下次全量 clone)→ 落 CLEANED+FAILED;筛选改 `notIn(PENDING, CLEANING, CLEANED)`,纳入 SUBMITTED/FAILED 休息态(正常即被 trigger 驱动走,躺过阈值即驱动事件随 JVM 重启丢失))+ 每 30s 分发调度 |
+| 15 | **资源池 + 夜间窗口** ⭐ | 并发度可配(`schedule.max-concurrency`,**默认 2,8/16 演示环境调为 4**(12 核/36G 无压力,且 5 项目 4 槽必现排队态,演示"排队中")——Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;Scan/Verify 才 CPU 密集且短)。夜间 21:00 自动创建 PENDING run,次日 **6:00 清晨清理**:`cancelOvernightRuns` 取消所有非终态活跃 run(PENDING 直接 `deleteById`——从未启动不留记录,8/14 改;其余走 `requestCancel`)。另每 5min 超时检测(120min 无状态流转即判超时,8/10 调整;8/13 排除 CLEANED 终态;**8/14 再排除 PENDING 排队态**——排队等待不算超时,dispatch 起跑时状态流转刷新 `updateTime`,执行预算从起跑重计;查询为 `notIn(PENDING, CLEANED)`,24h 窗口给"取消不掉的僵尸"(如 CLEANING 卡死被 `requestCancel` 拒绝)设放弃期限);**8/23 超时取消改卡死强制清理**:`forceCleanStuckRuns`(配置随之改名 `stuck-check-cron`/`stuck-threshold-minutes`)——协作取消对卡死 run 是空转(永远到不了检查点,取消标记无人消费,并发槽与容器永久泄漏),改为绕过状态机强清:杀容器 → 删项目 volume(sync 的 `switch -C`+`clean -fdx` 只重置工作区内容,盖不住 git 中断留下的 index.lock/半截 packfile,留着会毒化之后每一轮;下次全量 clone)→ 落 CLEANED+FAILED;筛选改 `notIn(PENDING, CLEANING, CLEANED)`(排除 CLEANING:清理卡死=docker 层故障,留待人工介入,不做自动兜底),纳入 SUBMITTED/FAILED 休息态(正常即被 trigger 驱动走,躺过阈值即驱动事件随 JVM 重启丢失))+ 每 30s 分发调度 |
 | 16 | **AI 诊断报告(commit message)**(8/10 改,8/13 更新) | Claude 基于 **issue 字段**(title/metadata，不分 source)用**中文**生成 commit message，结构 `{subject, body}`——subject 一句话总结、body 修复思路与改动。AI 通过 `--json-schema` + `--output-format json` 输出结构化 JSON，后端从 `structured_output` 拆封 → `objectMapper` 反序列化 → 拼 `subject\n\nbody` 给 `git commit -m`、结构化对象回写 `dev_issue.commit_message`(供记录/诊断)。**弃用外部模板文件**(`ai-report-template.md`)，模板内嵌代码；去掉 verification/risk（验证归 VerifyAction、risk 不可靠且 preemptive） |
 | 17 | **容器操作走命令行 docker** ⭐ | `StartAction`/`CleanAction`/git 操作均用 `ProcessBuilder` 调 `docker` CLI(`docker run -d`/`docker rm -f`/`docker run --rm alpine/git`),不引 docker-java 库,共用 `util/ProcessUtil`(8/6 已实现:stderr 独立线程防死锁、stdout 仅剥末尾换行、静态嵌套异常带完整 stderr、6 单测)。后端纯编排,不碰文件系统 |
 | 18 | **命名确定性 + 失败语义**(8/6 定) | 容器名 `morningstar_dev_sandbox_<runId>`、volume 名 `morningstar_dev_repo_<projectId>` 均由 ID 确定性推导(前缀在 `sandbox.container-name-prefix`/`volume-name-prefix`)→ **不记 `dev_run.container_id`**(DB 冗余会漂移,docker 才是真源)。Action 失败统一 catch `ProcessExecutionException` → FAILED 结果(stderr 落 `action_attempt.result`);**不裸抛**(`AbstractAction` 原无兜底,裸抛 = attempt 停 RUNNING + run 卡中间态占并发槽等 120min 超时;**8/11 决策 37 已补 `execute()` 全局 `catch(Exception)` 兜底**,此处主动 catch 转为"第一层带语义 message"——兜底接意外异常,主动 catch 接已知失败带可读 message)。CleanAction 幂等:"No such container" 视为成功。`FailedTrigger` 破环:FAILED 来自 CLEANING 不再发 CLEAN(否则 CLEAN 失败 → FAILED → CLEAN 无限循环刷 attempt 表);START 无重试,START_FAILED → FAILED → CLEAN(幂等)→ CLEANED 干净终态 |
@@ -276,7 +276,7 @@ create table if not exists dev_issue
 - `dev_project`:11 字段 — `id`/`admin_id`/`name`/`link`/`branch_name`/`description`/`enabled`/`max_sonar_issues_per_run`/`max_ai_issues_per_run`/`create_time`/`update_time`。
 - `sonarProjectKey`：**不存表**——`CommonSteps.getSonarProjectKey(project)` 从 `link` 解析 `owner:repo`（固定 key，不拼 runId），不冗余存储。
 - `max_sonar_issues_per_run`/`max_ai_issues_per_run`：**创建时写入 DB**——前端未指定则取全局 `max-issues-per-run` 默认值写入，之后全局变更不影响已有项目。ScanAction 直接读 project 字段，不 fallback。
-- `dev_run`:8 字段 — `id`/`project_id`/`state`(State 枚举)/`status`(Run.Status 枚举)/`container_id`(已弃用,容器名由 runId 推导,决策 18)/`pr_id`/`create_time`/`update_time`。不加 `finished_at`(`update_time` 即可,pipeline-foundation 决策 6)。
+- `dev_run`:9 字段 — `id`/`project_id`/`trigger_type`(8/15 加,决策 48)/`state`(State 枚举)/`status`(Run.Status 枚举)/`pr_id`/`pr_status`(8/13 加,决策 34)/`create_time`/`update_time`。`container_id` 已删(容器名由 runId 推导,决策 18)。不加 `finished_at`(`update_time` 即可,pipeline-foundation 决策 6)。
 - `dev_action_attempt`:7 字段 — `id`/`run_id`/`action_type`/`attempt_no`/`status`/`result`(JSON)/`create_time`/`update_time`。不加 `start_time`/`end_time`(`create_time`/`update_time` 即可,pipeline-foundation 决策 6)。
 
 > `priority` 本版不加(决策 5)。`state` vs `status` 双字段分离:前者追踪流水线阶段(状态机驱动),后者追踪整体结果(观测用),查询仅用 `state`(pipeline-foundation 决策 10)。
@@ -342,7 +342,7 @@ morningstar.app.dev:
 - [x] `ProjectController`(CRUD + adminId 权限)/`RunController`(手动触发/查询/取消)
 - [x] `RunService.createRun`(无权限，调度器用)与 `triggerRun`(含权限，Controller 用)分离
 - [x] 定时调度:4 个独立 cron — `nightlyCreateRuns`(21:00 创建 PENDING)/`dispatchPendingRuns`(每 30s，按并发槽位分发)/`forceCleanStuckRuns`(每 5min，卡死强制清理;8/23 由 `cancelTimeoutRuns` 超时取消改)/`cancelOvernightRuns`(6:00 清晨清理)
-- [x] 取消安全:6 个"完成态" Trigger(Started/Synced/Scanned/Fixed/Verified/Cleaned)均检查 `isCancelingRun`;`requestCancel` 拒绝 PENDING/SUBMITTED/CLEANING/CLEANED
+- [x] 取消安全:6 个"完成态" Trigger(Started/Synced/Scanned/Fixed/Verified/Cleaned)均检查 `isCancelingRun`;`requestCancel` 拒绝 PENDING/SUBMITTED/CLEANING/CLEANED(8/15 起含 FAILED,决策 46)
 - [x] 配置 `application-app.yml`:`schedule.create-cron`/`dispatch-cron`/`stuck-check-cron`/`cleanup-cron`/`stuck-threshold-minutes`/`max-concurrency`
 - [x] 验收:mock 模式端到端跑通(PENDING→CLEANED)，接口查询/取消正常(8/3 通过)
 
@@ -445,7 +445,7 @@ morningstar.app.dev:
 | 8/13 | 四 | 5h ✅ | SubmitAction + PR 状态反馈 + 权限模型 | ✅ 推分支 + 开 PR + 诊断报告(PR body)，Gitea 正确 PR 落成；✅ PR 状态反馈实测通过；✅ 读公开写私有权限模型 + deleteProject 活跃 run 守卫；失败分支清理决定不做 |
 | 8/14 | 五 | 5h ✅ | review 加固 + 前端起步 | ✅ 后端多轮 review 修复闭环(决策 40-43:单飞/配置入口校验/超时时序/契约对齐)+ 5 真实 demo 仓库配置;余:Tab1/SSE/录屏 |
 | 8/15 | 六 | 10h ✅ | 前端打磨 + 交付 | ✅ run 列表/Stats/Detail 扩充/triggerType/原型定稿(决策 45-49);录屏与材料顺延 8/16 |
-| 8/16 | 日 | 10h | 前端三页 + 录屏(死线 24:00) | ✅ Stats 已采纳/节约人天 + RunDetail 漏斗四值(决策 51)+ Stats 调度时段(决策 52);✅ 演示数据造数(StateMachineServiceTest 全链路,5 项目/6 run/三用户);✅ 前端三页实现(决策 49 落地,vue-tsc/eslint 双零)+ openspec 主 specs 同步(pipeline-ui 新建);进行中:录屏 |
+| 8/16 | 日 | 10h | 前端三页 + 录屏(死线 24:00) | ✅ Stats 已采纳/节约人天 + RunDetail 漏斗四值(决策 51)+ Stats 调度时段(决策 52);✅ 演示数据造数(StateMachineServiceTest 全链路,5 项目/6 run/三用户);✅ 前端三页实现(决策 49 落地,vue-tsc/eslint 双零)+ openspec 主 specs 同步(pipeline-ui 新建);✅ 后端重启僵尸恢复 `ZombieRunRecovery`(启动时扫非 PENDING/CLEANED 遗留 run:进行中态补发 FAIL 事件、完成态重发 StateChangedEvent、CANCELING 重发 requestCancel);进行中:录屏 |
 | 8/17 | 一 | — | 收尾加固 | ✅ list 接口分页 + statuses 过滤(决策 53):run/project 列表必填 pageNum/pageSize 返回 PageResult,前端三表(历史任务/项目列表/最近完成)同款 PageSwitcher,馈给改大页快照;✅ `sync-pr-status-cron` 5min→30s(`15/30` 与 dispatch 错峰,决策 34);mvn compile + vue-tsc/eslint 双零 + openspec 同步 |
 | 8/18 | 二 | — | 真跑验证收官 | ✅ 活数据联调 + 云服务器部署验证通过;✅ 夜间定时真实触发实测(5 仓库,并发 4 先跑完、第 5 个排队补位);✅ NextMorningstar 自跑一轮通过(阶段 9 全清,压轴叙事闭环);✅ 单 run 超时/取消/并发调度边界实测通过;✅ 归档 pr-status-feedback(4.1 PrStatusBadge 已交付);AboutView 平台管理员口径改双向启停;✅ runId 复制排错(`CopyableId` 四处置入:历史表/当前任务头部/管理页运行卡/最近完成)+ 最近完成新增任务编号列(列宽 15/12/7/8/9/9/9/11/11/9)+ 两张表"扫描发现问题数"改"发现问题数";进行中:frontend-dashboard/nightly-unattended-run 归档;余:录屏 + 介绍材料(阶段 10);✅ run 列表加必传 `sortDir` 枚举(ASC/DESC),平台当前任务按创建时间升序贴合分发顺序(commit ada5041) |
 | 8/20–8/30 | — | — | 阶段 10 交付冲刺 | 按 10.1→10.6 推进：材料梳理→drawio 架构图→about 页优化→汇报材料→PPT→视频录制剪辑；deadline 8/30 |
@@ -485,7 +485,7 @@ claude --dangerously-skip-permissions --print "使用 sonarqube mcp 查看 issue
 | AI 修复不确定/编译不过 | Verify 兜底 + RestoreAction 整轮回退;demo 仓库保下限 |
 | SonarQube 扫描慢 | demo 仓库保持小;演示用已分析结果 |
 | Gitea API 不熟 | 文档齐全,阶段 6 专项时间够 |
-| **机器 2 核** | 并发度默认 **2**(Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;仅 Scan/Verify 的 mvn+sonar CPU 密集且短);一夜 10h 窗口并发 2 可跑 ~16–20 个仓库。16G 内存够 6–8 容器 |
+| **机器 2 核** | 并发度默认 **2**(8/16 演示环境调为 **4**,决策 15;Fix 占大头是模型对话 I/O、CPU 空闲,多 run 错开可并行;仅 Scan/Verify 的 mvn+sonar CPU 密集且短);一夜 10h 窗口并发 2 可跑 ~16–20 个仓库。16G 内存够 6–8 容器 |
 | 单人 52h 极紧 | 守 8/9 里程碑,不通立刻切割;每阶段有验收点防卡死 |
 
 ---
@@ -511,4 +511,4 @@ claude --dangerously-skip-permissions --print "使用 sonarqube mcp 查看 issue
 - [x] 提供 **Gitea bot 账号 + 双 token**(admin 授权 + bot write)（SubmitAction 推分支实测用 bot token 成功）
 - [x] ~~提供 demo 仓库(或由我生成脚手架 + 埋漏洞)~~ → 8/14 改用 5 个真实项目仓库(见阶段 9)
 - [x] AI 诊断报告通过 `commit_message` 生成(决策 16:{subject,body} 内嵌模板，弃 ai-report-template.md，中文)
-- [x] 资源池 + 夜间窗口(决策 15,并发默认 2、6:00 清晨清理)
+- [x] 资源池 + 夜间窗口(决策 15,并发默认 2、8/16 演示环境调为 4,6:00 清晨清理)

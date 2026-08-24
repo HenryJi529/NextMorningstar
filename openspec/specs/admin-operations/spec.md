@@ -17,7 +17,7 @@
 
 #### 场景：取消不可取消状态的 Run
 
-- **WHEN** 目标 Run 处于 PENDING/SUBMITTED/CLEANING/CLEANED 状态，管理员调用取消接口
+- **WHEN** 目标 Run 处于 PENDING/SUBMITTED/CLEANING/CLEANED/FAILED 状态，管理员调用取消接口
 - **THEN** 请求返回成功，状态机忽略取消请求（与 owner 取消路径行为一致）
 - **AND** 后端日志记录该次调用
 
@@ -42,7 +42,9 @@
 - **WHEN** 目标项目当前 `enabled=false`,管理员调用同一切换接口
 - **THEN** 目标项目 `enabled=true`,恢复参与夜间修复调度
 
-### 需求：管理员无配置编辑能力#### 场景：管理员尝试修改他人项目配置
+### 需求：管理员无配置编辑能力
+
+#### 场景：管理员尝试修改他人项目配置
 
 - **WHEN** `dev_admin` 角色用户对不属于自己的项目调用既有 update/delete 接口
 - **THEN** 既有 `adminId` 归属校验拒绝该请求（行为与现状一致，管理员角色不豁免）

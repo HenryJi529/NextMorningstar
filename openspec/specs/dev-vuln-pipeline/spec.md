@@ -16,7 +16,7 @@
 - **THEN** 创建一条 `dev_run`（初始 `PENDING`，`triggerType=MANUAL`）
 - **AND** 已有非终态 run（`state != CLEANED`）的项目拒绝再触发（`DEV_PROJECT_HAS_ACTIVE_RUN`，单飞守卫）
 - **AND** 混合并发槽：`countExecutingRun() < maxConcurrency` 立即发 START 直启，满槽留 PENDING 等 dispatch（≤30s）并打排队日志
-- **AND** 可通过 `GET /dev/run/{id}` / `GET /dev/run`（`projectId`/`adminId` 可选过滤、create_time 倒序）查询 run 状态，读接口登录即可（读公开写私有）
+- **AND** 可通过 `GET /dev/run/{id}` / `GET /dev/run`（`projectId`/`statuses` 可选过滤、`pageNum`/`pageSize`/`sortDir` 必填：ASC create_time 主序，DESC update_time 主序）查询 run 状态，读接口登录即可（读公开写私有）
 
 #### 场景：取消运行
 
@@ -35,12 +35,12 @@
 #### 场景：分发调度
 
 - **WHEN** 到达分发间隔（每 30s）
-- **THEN** 查 PENDING run 按创建时间排队，取可用并发槽位数（默认 2）的 run 发送 START 事件
+- **THEN** 查 PENDING run 按创建时间排队，取可用并发槽位数（`schedule.max-concurrency`，默认 2，8/16 演示环境调为 4）的 run 发送 START 事件
 
 #### 场景：卡死强制清理
 
 - **WHEN** 到达卡死检测间隔（`stuck-check-cron`，每 5min）
-- **THEN** 查 24h 内创建、超过 `stuck-threshold-minutes`（默认 120min）无任何状态流转的 run（排除 PENDING 排队态与 CLEANING/CLEANED 清理态；SUBMITTED/FAILED 休息态纳入——正常会被 trigger 立刻驱动走，躺过阈值即驱动事件已丢），绕过状态机强制清理：杀容器 → 删项目 volume（卡死现场不可信，下次全量 clone）→ 落 CLEANED + FAILED（8/23 改；此前走 `requestCancel` 协作取消，但卡死的 run 永远到不了取消检查点，取消标记无人消费、并发槽与容器永久泄漏；docker 清理失败记 error 日志后仍落终态）
+- **THEN** 查 24h 内创建、超过 `stuck-threshold-minutes`（默认 120min）无任何状态流转的 run（排除 PENDING 排队态与 CLEANING/CLEANED 清理态——CLEANING 卡死意味着 docker 层故障，留待人工介入，不做自动兜底；SUBMITTED/FAILED 休息态纳入——正常会被 trigger 立刻驱动走，躺过阈值即驱动事件已丢），绕过状态机强制清理：杀容器 → 删项目 volume（卡死现场不可信，下次全量 clone）→ 落 CLEANED + FAILED（8/23 改；此前走 `requestCancel` 协作取消，但卡死的 run 永远到不了取消检查点，取消标记无人消费、并发槽与容器永久泄漏；docker 清理失败记 error 日志后仍落终态）
 
 #### 场景：清晨清理
 
@@ -48,12 +48,22 @@
 - **THEN** 对在跑的非终态 run 走 `requestCancel` 取消流程
 - **AND** PENDING run 直接 `deleteById` 删除（从未启动，不留记录；8/14 改，原"标 CANCELED"），明夜重新触发
 
+### 需求：重启僵尸恢复
+
+#### 场景：后端启动恢复遗留 run
+
+- **WHEN** 后端启动完成（`ApplicationReadyEvent`，`ZombieRunRecovery`，8/16 引入）
+- **THEN** 查出所有非 PENDING 非 CLEANED 的遗留 run（动作随 JVM 死亡，定格在 DB）
+- **AND** `CANCELING` 的重发 `requestCancel`（重启丢失内存取消标记，让后续重试走 FAILED 分支而非续跑）
+- **AND** 定格在"进行中"状态（STARTING/SYNCING/SCANNING/FIXING/VERIFYING/SUBMITTING/RESTORING/CLEANING）的补发对应 FAIL 事件
+- **AND** 定格在"已完成"状态（STARTED/SYNCED/SCANNED/FIXED/VERIFIED/SUBMITTED/RESTORED/FAILED）的重发 StateChangedEvent 触发对应 Trigger
+
 ### 需求：资源池并发执行
 
 #### 场景：夜间并发跑多仓库
 
 - **WHEN** 夜间触发多个 enabled 项目
-- **THEN** 按 `schedule.max-concurrency`（默认 2）并发执行，单 run 失败不影响其他
+- **THEN** 按 `schedule.max-concurrency`（默认 2，8/16 演示环境调为 4）并发执行，单 run 失败不影响其他
 - **AND** 单 run 占一个容器，池满时其余以 PENDING 排队
 
 ### 需求：issue 级修复跟踪
