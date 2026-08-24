@@ -42,6 +42,10 @@ public class CommonSteps {
         return sandboxProperties.getVolumeNamePrefix() + run.getProjectId();
     }
 
+    public String getVolumeName(Project project) {
+        return sandboxProperties.getVolumeNamePrefix() + project.getId();
+    }
+
     public String getSonarProjectKey(Project project) {
         RepoIdentity repoIdentity = giteaUtil.parseRepoIdentity(project.getLink());
         return repoIdentity.getOwnerName() + ":" + repoIdentity.getRepoName();

@@ -12,6 +12,7 @@ import com.morningstar.dev.service.ProjectService;
 import com.morningstar.dev.service.RunService;
 import com.morningstar.dev.statemachine.action.CommonSteps;
 import com.morningstar.dev.util.GiteaUtil;
+import com.morningstar.dev.util.ProcessUtil;
 import com.morningstar.dev.util.SonarUtil;
 import com.morningstar.infra.exception.BaseException;
 import com.morningstar.infra.response.PageResult;
@@ -38,6 +39,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final MaxIssuesPerRunProperties maxIssuesPerRunProperties;
     private final SonarUtil sonarUtil;
     private final CommonSteps commonSteps;
+    private final ProcessUtil processUtil;
     private final RunService runService;
     private final UserMapper userMapper;
 
@@ -121,6 +123,16 @@ public class ProjectServiceImpl implements ProjectService {
 
         // 删除 Bot 的仓库权限
         giteaUtil.removeCollaborator(dbProject.getLink());
+
+        // 删除项目代码卷
+        try {
+            processUtil.run("docker", "volume", "rm", commonSteps.getVolumeName(dbProject));
+        } catch (ProcessUtil.ProcessExecutionException e) {
+            // 项目可能从未有 run 走到 START，卷未创建，"no such volume" 视为已清理
+            if (!e.getMessage().contains("no such volume")) {
+                throw new BaseException(e.getMessage());
+            }
+        }
 
         // 确保用户可以重试
         projectMapper.deleteById(projectId);
