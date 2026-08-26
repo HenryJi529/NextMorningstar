@@ -417,14 +417,13 @@ morningstar.app.dev:
 
 ### 阶段 10 · 交付素材 — *8/20–8/30*（deadline 8/30）
 
-> 8/20 重排：交付冲刺按「材料梳理 → 架构图 → about 页 → 汇报材料 → PPT → 视频」顺序推进，8/30 前全部完成。
+> 8/20 重排：交付冲刺按「材料梳理 → 架构图 → about 页 → 汇报材料 → 视频」顺序推进，8/30 前全部完成。
 
 - [x] 10.1 梳理手头现有材料（demo 数据 / 架构报告 `dev-report` / 演示账号）
 - [x] 10.2 用 drawio 完善架构图（系统拓扑）（8/22 定稿 `docs/dev-项目架构图.drawio`：放射状布局——后端中枢直连外部服务与执行面；四色图例 自研组件/三方工具/外部服务/数据存储）
 - [x] 10.3 优化前端 about 页面（`/dev/about` 平台介绍）(8/22 完成：事实纠错（白名单降级/凭证脱敏/双 token 范围/代码卷保留）+ 文案打磨（slogan、身份三卡、凭证术语统一）+ 板块重排 机制→角色→信任→行动，详见 dev-report 1.4)
 - [x] 10.4 编写汇报材料（利用整理好的资料：元叙事 / 安全模型 / KPI 叙事链 / 未来规划）（8/26 定稿 `docs/dev-report.md`：痛点→核心流程→可靠性→架构→安全→KPI→开发过程→价值规划 九节正文 + 答辩 Q&A 五题；成品直接接管 dev-report 文件名成为最终 report，原素材库版已删）
-- [ ] 10.5 编写 PPT
-- [x] 10.6 视频录制和剪辑（8/25 成片 2'30"，五节结构：平台总览/项目接入/手动触发/夜间调度/PR 合并，纯画面 + 字幕标题，不配旁白）
+- [x] 10.5 视频录制和剪辑（8/25 成片 2'30"，五节结构：平台总览/项目接入/手动触发/夜间调度/PR 合并，纯画面 + 字幕标题，不配旁白）
 
 ---
 
@@ -449,7 +448,7 @@ morningstar.app.dev:
 | 8/16 | 日 | 10h | 前端三页 + 录屏(死线 24:00) | ✅ Stats 已采纳/节约人天 + RunDetail 漏斗四值(决策 51)+ Stats 调度时段(决策 52);✅ 演示数据造数(StateMachineServiceTest 全链路,5 项目/6 run/三用户);✅ 前端三页实现(决策 49 落地,vue-tsc/eslint 双零)+ openspec 主 specs 同步(pipeline-ui 新建);✅ 后端重启僵尸恢复 `ZombieRunRecovery`(启动时扫非 PENDING/CLEANED 遗留 run:进行中态补发 FAIL 事件、完成态重发 StateChangedEvent、CANCELING 重发 requestCancel);进行中:录屏 |
 | 8/17 | 一 | — | 收尾加固 | ✅ list 接口分页 + statuses 过滤(决策 53):run/project 列表必填 pageNum/pageSize 返回 PageResult,前端三表(历史任务/项目列表/最近完成)同款 PageSwitcher,馈给改大页快照;✅ `sync-pr-status-cron` 5min→30s(`15/30` 与 dispatch 错峰,决策 34);mvn compile + vue-tsc/eslint 双零 + openspec 同步 |
 | 8/18 | 二 | — | 真跑验证收官 | ✅ 活数据联调 + 云服务器部署验证通过;✅ 夜间定时真实触发实测(5 仓库,并发 4 先跑完、第 5 个排队补位);✅ NextMorningstar 自跑一轮通过(阶段 9 全清,压轴叙事闭环);✅ 单 run 超时/取消/并发调度边界实测通过;✅ 归档 pr-status-feedback(4.1 PrStatusBadge 已交付);AboutView 平台管理员口径改双向启停;✅ runId 复制排错(`CopyableId` 四处置入:历史表/当前任务头部/管理页运行卡/最近完成)+ 最近完成新增任务编号列(列宽 15/12/7/8/9/9/9/11/11/9)+ 两张表"扫描发现问题数"改"发现问题数";进行中:frontend-dashboard/nightly-unattended-run 归档;余:录屏 + 介绍材料(阶段 10);✅ run 列表加必传 `sortDir` 枚举(ASC/DESC),平台当前任务按创建时间升序贴合分发顺序(commit ada5041) |
-| 8/20–8/30 | — | — | 阶段 10 交付冲刺 | 按 10.1→10.6 推进：材料梳理→drawio 架构图→about 页优化→汇报材料→PPT→视频录制剪辑；deadline 8/30 |
+| 8/20–8/30 | — | — | 阶段 10 交付冲刺 | 按 10.1→10.6 推进：材料梳理→drawio 架构图→about 页优化→汇报材料→视频录制剪辑；deadline 8/30 |
 
 ### 8/2 缓冲日建议(可选,不写平台代码,只做风险前置) — ✅ 8/2 已完成,三步全通过
 
