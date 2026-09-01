@@ -2,7 +2,7 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver-es';
 import { ref } from 'vue';
-import axios from '@/axios/index';
+import axios from 'axios';
 import BaseLayout from '@/views/lab/BaseLayout.vue';
 
 const isProcessing = ref(false);
