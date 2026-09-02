@@ -32,10 +32,7 @@ const copy = async () => {
 </script>
 
 <template>
-    <span
-        class="copyable-id"
-        :title="copied ? '已复制' : '点击复制 runId'"
-        @click.stop="copy">
+    <span class="copyable-id" :title="copied ? '已复制' : '点击复制 runId'" @click.stop="copy">
         {{ display ?? value }}
         <check-outlined v-if="copied" class="icon-copied" />
         <copy-outlined v-else class="icon-copy" />

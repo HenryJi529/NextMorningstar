@@ -3,7 +3,14 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Modal as AModal, message } from 'ant-design-vue';
 import { adminCancelRun, adminToggleSchedule, getAllRun, getStats, listProject } from '@/axios/dev';
 import { ResponseCode } from '@/constants/response';
-import { RunState, RunStatus, SortDir, type ProjectDetail, type RunDetail, type Stats } from '@/types/dev';
+import {
+    RunState,
+    RunStatus,
+    SortDir,
+    type ProjectDetail,
+    type RunDetail,
+    type Stats,
+} from '@/types/dev';
 import { hasAnyPermission } from '@/utils/permission';
 import { Permission } from '@/constants/auth';
 import { fmtSeconds, fmtTime, repoShort, triggerLabel } from '@/libs/dev';
@@ -385,7 +392,9 @@ const onToggleSchedule = (project: ProjectDetail) => {
                 <thead>
                     <tr class="text-[11px] text-slate-400 border-b border-slate-100">
                         <th class="text-center font-medium px-5 py-2.5">项目</th>
-                        <th class="text-center font-medium px-3 py-2.5" title="点击可复制完整 runId">
+                        <th
+                            class="text-center font-medium px-3 py-2.5"
+                            title="点击可复制完整 runId">
                             任务编号
                         </th>
                         <th class="text-center font-medium px-3 py-2.5">触发方式</th>

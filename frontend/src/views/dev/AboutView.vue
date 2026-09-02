@@ -54,7 +54,10 @@ const onboard = [
         desc: '工作台点"接入新项目"，配置相关信息，平台自动校验仓库与分支存在',
     },
     { title: '授权协作自动完成', desc: '平台自动把 bot 加为仓库协作者，无需手动配置任何凭证' },
-    { title: '到班来审 PR', desc: '每晚调度时段流水线自动开跑，早上到班在 Gitea 评审 PR，合并与否你说了算' },
+    {
+        title: '到班来审 PR',
+        desc: '每晚调度时段流水线自动开跑，早上到班在 Gitea 评审 PR，合并与否你说了算',
+    },
 ];
 </script>
 
@@ -70,9 +73,9 @@ const onboard = [
                 晚上 AI 修代码，<span class="text-orange-500">早上你顺手审 PR</span>
             </h1>
             <p class="mt-3 text-sm text-slate-500 max-w-2xl mx-auto leading-relaxed">
-                夜间由 AI 无人值守完成 扫描 → 修复 → 验证 → 提交，早上到班，趁着进入工作状态前的工夫在
-                Gitea 上评审一个 PR。 AI 拥有完整的执行权，但合并到主干的权力永远在人手里——AI 自主 +
-                人工门。
+                夜间由 AI 无人值守完成 扫描 → 修复 → 验证 →
+                提交，早上到班，趁着进入工作状态前的工夫在 Gitea 上评审一个 PR。 AI
+                拥有完整的执行权，但合并到主干的权力永远在人手里——AI 自主 + 人工门。
             </p>
         </div>
 
@@ -101,9 +104,7 @@ const onboard = [
         <!-- 三层身份 -->
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
             <h2 class="text-sm font-semibold text-slate-800 mb-1">三种身份各司其职</h2>
-            <p class="text-xs text-slate-400 mb-5">
-                任一身份被攻破，影响也仅限于各自的职责范围
-            </p>
+            <p class="text-xs text-slate-400 mb-5">任一身份被攻破，影响也仅限于各自的职责范围</p>
             <div class="grid grid-cols-3 gap-4">
                 <div
                     v-for="r in identities"

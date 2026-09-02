@@ -57,7 +57,12 @@ const loadActiveRun = async () => {
         activeRun.value = undefined;
         return;
     }
-    const response = await getAllRun({ projectId: selectedId.value, pageNum: 1, pageSize: 1, sortDir: SortDir.DESC });
+    const response = await getAllRun({
+        projectId: selectedId.value,
+        pageNum: 1,
+        pageSize: 1,
+        sortDir: SortDir.DESC,
+    });
     if (response.data.code !== ResponseCode.SUCCESS) {
         return;
     }
