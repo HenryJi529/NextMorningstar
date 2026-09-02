@@ -1,5 +1,11 @@
 import type { RouteRecordRaw } from 'vue-router';
 
+export interface LabRouteMeta {
+    verboseName?: string;
+    description?: string;
+    tags?: string[];
+}
+
 export default [
     {
         path: '',
@@ -15,6 +21,8 @@ export default [
         component: () => import('@/views/lab/HtmlTableToExcelWorkbookPractice.vue'),
         meta: {
             verboseName: '将Html表格导出为Excel工作簿',
+            description: '把 Html 表格导出为 Excel 工作簿，并对比两种实现方案。',
+            tags: ['ExcelJS', 'SheetJS'],
         },
     },
     {
@@ -23,6 +31,8 @@ export default [
         component: () => import('@/views/lab/HyperscriptPractice.vue'),
         meta: {
             verboseName: 'Hyperscript基础练习',
+            description: '抛开模板语法，用 h 函数手写渲染逻辑。',
+            tags: ['Vue', '渲染函数'],
         },
     },
     {
@@ -31,6 +41,8 @@ export default [
         component: () => import('@/views/lab/MockAPIPractice.vue'),
         meta: {
             verboseName: 'Mock接口练习',
+            description: '在前端生成以假乱真的模拟数据并请求展示。',
+            tags: ['Faker.js', 'Axios'],
         },
     },
     {
@@ -39,6 +51,8 @@ export default [
         component: () => import('@/views/lab/ParseExcelWorkbookPractice.vue'),
         meta: {
             verboseName: '解析Excel工作簿',
+            description: '上传 Excel 文件，对比前端解析与后端解析的耗时。',
+            tags: ['SheetJS', 'FileReader'],
         },
     },
     {
@@ -47,6 +61,8 @@ export default [
         component: () => import('@/views/lab/AbortableRequestPractice.vue'),
         meta: {
             verboseName: '可取消请求练习',
+            description: '用 AbortController 随时取消进行中的 HTTP 请求。',
+            tags: ['AbortController', 'Axios'],
         },
     },
     {
@@ -55,6 +71,8 @@ export default [
         component: () => import('@/views/lab/ZipPractice.vue'),
         meta: {
             verboseName: '多层次多类型的文件压缩练习',
+            description: '在浏览器里抓取图片并打包成 zip 下载。',
+            tags: ['JSZip', 'FileSaver'],
         },
     },
     {
@@ -63,6 +81,8 @@ export default [
         component: () => import('@/views/lab/DomSizePractice.vue'),
         meta: {
             verboseName: 'DOM尺寸相关练习',
+            description: '搞清 offset/client/scroll 等各种 DOM 尺寸的区别。',
+            tags: ['DOM API'],
         },
     },
     {
@@ -71,6 +91,8 @@ export default [
         component: () => import('@/views/lab/MarkdownConvertPractice.vue'),
         meta: {
             verboseName: 'Markdown格式转换练习',
+            description: '把 Markdown 转换为 docx、pdf 等格式并下载。',
+            tags: ['Marked', 'html2pdf', 'md-to-docx'],
         },
     },
     {
@@ -79,6 +101,8 @@ export default [
         component: () => import('@/views/lab/StreamingResponsePractice.vue'),
         meta: {
             verboseName: '流式响应发送与接收练习',
+            description: 'Fetch/EventSource 两种接收方式，搭配三种后端流式实现组合对比。',
+            tags: ['Fetch Stream', 'EventSource'],
         },
     },
     {
@@ -87,6 +111,8 @@ export default [
         component: () => import('@/views/lab/EditableTablePractice.vue'),
         meta: {
             verboseName: '可编辑表格练习',
+            description: '支持行内编辑、校验与提交的表格。',
+            tags: ['Ant Design Vue', 'Day.js'],
         },
     },
     {
@@ -99,6 +125,8 @@ export default [
                 component: () => import('@/views/lab/iframe/IndexView.vue'),
                 meta: {
                     verboseName: 'iframe通信练习',
+                    description: '跨窗口通信的三种姿势对比。',
+                    tags: ['postMessage', 'MessageChannel', 'BroadcastChannel'],
                 },
             },
             {
@@ -141,6 +169,8 @@ export default [
         component: () => import('@/views/lab/SmallWorldNetworkPractice.vue'),
         meta: {
             verboseName: '电影网络六度分隔理论验证',
+            description: '用图可视化验证电影合作网络的六度分隔理论。',
+            tags: ['AntV G6', 'SVG'],
         },
     },
     {
@@ -149,6 +179,8 @@ export default [
         component: () => import('@/views/lab/DataVisualizationPractice.vue'),
         meta: {
             verboseName: '数据可视化练习',
+            description: '柱状图、折线图、饼图、玫瑰图、漏斗图，混用多种实现方式。',
+            tags: ['ECharts', 'Three.js', '手写SVG'],
         },
     },
     {
@@ -157,6 +189,8 @@ export default [
         component: () => import('@/views/lab/UIComponentPractice.vue'),
         meta: {
             verboseName: '常见UI组件练习',
+            description: '手写下拉、轮播、日期选择器等常见 UI 组件。',
+            tags: ['Vue', '原生实现'],
         },
     },
     {
@@ -165,6 +199,8 @@ export default [
         component: () => import('@/views/lab/SVGPractice.vue'),
         meta: {
             verboseName: '常用SVG图标实现练习',
+            description: '手写常用 SVG 图标。',
+            tags: ['SVG'],
         },
     },
     {
@@ -173,6 +209,8 @@ export default [
         component: () => import('@/views/lab/ChatRoomPractice.vue'),
         meta: {
             verboseName: '聊天室实现练习',
+            description: '基于 WebSocket 的在线聊天室。',
+            tags: ['WebSocket', 'SockJS', 'STOMP'],
             requiresAuth: true,
         },
     },
@@ -182,6 +220,8 @@ export default [
         component: () => import('@/views/lab/ScreenWakePractice.vue'),
         meta: {
             verboseName: '屏幕常亮实现练习',
+            description: '调用 Wake Lock API 阻止屏幕休眠。',
+            tags: ['Wake Lock API'],
         },
     },
 ] as RouteRecordRaw[];

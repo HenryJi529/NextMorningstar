@@ -23,10 +23,12 @@ useHead({
     <div class="flex flex-col min-h-dvh">
         <div class="flex-1 flex flex-col">
             <div class="text-center text-3xl my-10">
-                <span class="cursor-pointer mr-4" @click="router.push({ name: 'lab-index' })">
-                    自由实验:
+                <span class="cursor-pointer" @click="router.push({ name: 'lab-index' })">
+                    自由实验
                 </span>
-                {{ route.meta.verboseName }}
+                <template v-if="route.name !== 'lab-index'">
+                    : {{ route.meta.verboseName }}
+                </template>
             </div>
             <div class="flex-1 mx-auto container flex flex-col justify-center items-center">
                 <slot></slot>
