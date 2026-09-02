@@ -8,6 +8,7 @@
         "type-check": "vue-tsc --build --force",
         "build-only": "vite build --mode production --outDir ../deploy/nginx/www/morningstar --emptyOutDir",
         "build": "run-s type-check lint \"build-only {@}\" --",
+        "preview": "vite build --mode development && vite preview --mode development",
         "test:unit": "vitest --ui",
         "test:coverage": "vitest run --coverage",
         "lint": "eslint . --fix",

@@ -46,7 +46,7 @@ morningstar:
     password: 1234asdw
   security:
     cors:
-      origins: "http://127.0.0.1:8090,http://localhost:8090"
+      origins: "http://127.0.0.1:*,http://localhost:*"
   account:
     user:
       - username: "henry"

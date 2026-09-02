@@ -153,7 +153,7 @@ public class SecurityConfig {
         //允许跨域
         http.cors(cors -> cors.configurationSource(request -> {
             CorsConfiguration configuration = new CorsConfiguration();
-            configuration.setAllowedOrigins(corsOrigins);
+            configuration.setAllowedOriginPatterns(corsOrigins);
             configuration.setAllowedMethods(List.of("*"));
             configuration.setAllowedHeaders(List.of("*"));
             return configuration;

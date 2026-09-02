@@ -29,6 +29,9 @@ export default defineConfig(({ command, mode }) => {
                     secure: false,
                     target: VITE_API_TARGET,
                     changeOrigin: true,
+                    headers: {
+                      Origin: new URL(VITE_API_TARGET).origin,
+                    },
                     rewrite: path => path.replace(new RegExp(`^${VITE_API_BASE_PATH}`), ''),
                     maxBodySize: '140MB',
                 },
@@ -95,5 +98,8 @@ export default defineConfig(({ command, mode }) => {
             },
             root: fileURLToPath(new URL('./', import.meta.url)),
         },
+        preview: {
+            open: false
+        }
     };
 });
