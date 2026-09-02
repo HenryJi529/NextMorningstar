@@ -147,8 +147,8 @@ const deleteImage = async (path: string) => {
             duration: 2,
         });
         images.value = images.value.filter(image => image.path !== path);
-        fetchImages(true).then(_ => {});
-        getUsage().then(_ => {});
+        void fetchImages(true);
+        void getUsage();
     }
     deletingImages.value = deletingImages.value.filter(item => item !== path);
 };
@@ -410,8 +410,8 @@ const setGithubPat = async () => {
             class: 'ant-message-notice-custom',
             duration: 2,
         });
-        getOwnerName().then(_ => {});
-        fetchImages().then(_ => {});
+        void getOwnerName();
+        void fetchImages();
     }
 };
 
@@ -582,10 +582,10 @@ const uploadImage = async () => {
             class: 'ant-message-notice-custom',
             duration: 2,
         });
-        getUsage().then(_ => {});
+        void getUsage();
         if (images.value !== undefined && pageNum.value === 1) {
             images.value.unshift(response.data); // OR: images.value = [response.data, ...images.value];
-            fetchImages(true).then(_ => {});
+            void fetchImages(true);
         }
     }
 };
@@ -613,7 +613,7 @@ watch([startDate, endDate], () => {
             duration: 2,
         });
     }
-    fetchImages().then(_ => {});
+    void fetchImages();
 });
 
 watch([pageSize, pageNum], () => {
@@ -625,7 +625,7 @@ watch([pageSize, pageNum], () => {
     ) {
         return;
     }
-    fetchImages().then(_ => {});
+    void fetchImages();
 });
 
 watch(rawInputImage, newValue => {
@@ -658,12 +658,12 @@ onMounted(async () => {
         configModalOpen.value = true;
     } else {
         hasValidPat.value = true;
-        getOwnerName().then(_ => {});
-        getSecretKey().then(_ => {});
-        getCompressionQuality().then(_ => {});
-        getUsage().then(_ => {});
-        fetchImages().then(_ => {});
-        checkForBestImageLinkGeneratorUpdate().then(_ => {});
+        void getOwnerName();
+        void getSecretKey();
+        void getCompressionQuality();
+        void getUsage();
+        void fetchImages();
+        void checkForBestImageLinkGeneratorUpdate();
     }
 });
 </script>

@@ -40,7 +40,7 @@ export const useWakeLock = () => {
     });
     onUnmounted(() => {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
-        release().then(() => {});
+        void release();
     });
 
     const enableScreenWake = async () => {
