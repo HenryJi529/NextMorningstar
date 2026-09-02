@@ -15,40 +15,47 @@ const removeLineBreakInBlockFormulas = (markdownText: string) => {
     return markdownText.replace(blockFormulaRegex, replacer);
 };
 
+let markedInstance: Marked | null = null;
 const getMarked = () => {
-    const hljs = getHljs();
+    if (!markedInstance) {
+        const hljs = getHljs();
+        markedInstance = new Marked()
+            .use({
+                gfm: true,
+            })
+            .use(
+                markedKatex({
+                    throwOnError: false,
+                    output: 'mathml',
+                    nonStandard: true, // 允许公式的 前/后 $ 前/后没有空格
+                })
+            )
+            .use({
+                renderer: {
+                    code({ text: code = '', lang }) {
+                        // 1. 提取语言名（防御 "js {1-3}" 等元信息导致高亮失效），并过滤非法特殊字符（防御 class 属性注入）
+                        const rawLang = (lang || '').trim().split(/\s+/)[0];
+                        const cleanLang = /^[a-zA-Z0-9_\-+.]+$/.test(rawLang) ? rawLang : '';
+                        const language =
+                            cleanLang && hljs.getLanguage(cleanLang) ? cleanLang : 'plaintext';
 
-    const marked = new Marked({
-        renderer: {
-            code({ text: code, lang }) {
-                // 1. 提取语言名（防御 "js {1-3}" 等元信息导致高亮失效）
-                const cleanLang = (lang || '').split(/\s/)[0];
-                const language = cleanLang && hljs.getLanguage(cleanLang) ? cleanLang : 'plaintext';
+                        // 2. 着色（内置已自动完成 HTML 转义）
+                        const highlighted = hljs.highlight(code, {
+                            language,
+                            ignoreIllegals: true,
+                        }).value;
 
-                // 2. 着色
-                const highlighted = hljs.highlight(code, { language }).value;
+                        // 3. 语言类名兜底
+                        const langClass = cleanLang ? `hljs language-${cleanLang}` : 'hljs';
 
-                // 3. 语言类名兜底
-                const langClass = cleanLang ? `hljs language-${cleanLang}` : 'hljs';
+                        // 4. 纯净源码放入 data-code，高亮代码放入 <code>
+                        return `<pre><code class="${langClass}" data-code="${encodeURIComponent(code)}">${highlighted}</code></pre>`;
+                    },
+                },
+            });
+    }
 
-                // 4. 纯净源码放入 data-code，高亮代码放入 <code>
-                return `<pre><code class="${langClass}" data-code="${encodeURIComponent(code)}">${highlighted}</code></pre>`;
-            },
-        },
-    });
-    marked.setOptions({
-        gfm: true,
-    });
-
-    marked.use(
-        markedKatex({
-            throwOnError: false,
-            output: 'mathml',
-            nonStandard: true, // 允许公式的 前/后 $ 前/后没有空格
-        })
-    );
-
-    return marked;
+    return markedInstance;
 };
 
 export const generateCodeBlockCopyButton = async (containerClassName: string) => {
