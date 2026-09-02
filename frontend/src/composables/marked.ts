@@ -20,7 +20,7 @@ const getMarked = () => {
     return new Marked()
         .use({
             breaks: true, // 开启单次回车转<br>
-            gfm: true     // 启用 GFM (GitHub Flavored Markdown)
+            gfm: true, // 启用 GFM (GitHub Flavored Markdown)
         })
         .use(
             markedKatex({
@@ -46,7 +46,7 @@ const getMarked = () => {
                 code({ text: code = '', lang }) {
                     // 1. 提取语言名（防御 "js {1-3}" 等元信息导致高亮失效），并过滤非法特殊字符（防御 class 属性注入）
                     const rawLang = (lang || '').trim().split(/\s+/)[0];
-                    const cleanLang = /^[a-zA-Z0-9_\-+.]+$/.test(rawLang) ? rawLang : '';
+                    const cleanLang = /^[a-zA-Z0-9_\-+.#]+$/.test(rawLang) ? rawLang : '';
                     const language =
                         cleanLang && hljs.getLanguage(cleanLang) ? cleanLang : 'plaintext';
 
