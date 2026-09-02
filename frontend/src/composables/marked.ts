@@ -1,8 +1,7 @@
 import { marked, Marked } from 'marked';
 import markedKatex from 'marked-katex-extension';
-import { markedHighlight } from 'marked-highlight';
 import { getHljs } from '@/utils/highlight';
-import { createApp } from 'vue';
+import { createApp, nextTick } from 'vue';
 import CopyButton from '@/views/blog/components/CopyButton.vue';
 
 const removeLineBreakInBlockFormulas = (markdownText: string) => {
@@ -19,25 +18,24 @@ const removeLineBreakInBlockFormulas = (markdownText: string) => {
 const getMarked = () => {
     const hljs = getHljs();
 
-    const marked = new Marked(
-        markedHighlight({
-            emptyLangClass: 'hljs',
-            langPrefix: 'hljs language-',
-            highlight: (code, lang) => {
-                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-                const codeString = hljs.highlight(code, { language }).value;
+    const marked = new Marked({
+        renderer: {
+            code({ text: code, lang }) {
+                // 1. 提取语言名（防御 "js {1-3}" 等元信息导致高亮失效）
+                const cleanLang = (lang || '').split(/\s/)[0];
+                const language = cleanLang && hljs.getLanguage(cleanLang) ? cleanLang : 'plaintext';
 
-                const docBody = new DOMParser().parseFromString(codeString, 'text/html').body;
-                const newElement = Object.assign(document.createElement('p'), {
-                    textContent: code,
-                    className: 'source hidden',
-                });
-                docBody.insertBefore(newElement, null);
+                // 2. 着色
+                const highlighted = hljs.highlight(code, { language }).value;
 
-                return new XMLSerializer().serializeToString(docBody);
+                // 3. 语言类名兜底
+                const langClass = cleanLang ? `hljs language-${cleanLang}` : 'hljs';
+
+                // 4. 纯净源码放入 data-code，高亮代码放入 <code>
+                return `<pre><code class="${langClass}" data-code="${encodeURIComponent(code)}">${highlighted}</code></pre>`;
             },
-        })
-    );
+        },
+    });
     marked.setOptions({
         gfm: true,
     });
@@ -53,24 +51,27 @@ const getMarked = () => {
     return marked;
 };
 
-export const generateCodeBlockCopyButton = (className: string) => {
-    setTimeout(() => {
-        const codeBlocks = document.querySelectorAll(`${className} pre`);
-        for (const codeBlock of codeBlocks) {
-            const sourceEle = codeBlock.querySelector('code .source');
-            if (sourceEle) {
-                // 动态创建CopyButton元素，挂载到pre内
-                const source = sourceEle.textContent;
-                const mountEle = Object.assign(document.createElement('div'), {
-                    className: 'hljs-copy-button',
-                });
-                codeBlock.appendChild(mountEle);
-
-                const copyButton = createApp(CopyButton, { source: source });
-                copyButton.mount(mountEle);
-            }
+export const generateCodeBlockCopyButton = async (containerClassName: string) => {
+    // 等待 Vue 完成 DOM 渲染
+    await nextTick();
+    const COPY_BUTTON_CLASS_NAME = 'hljs-copy-button';
+    const codeBlocks = document.querySelectorAll(`${containerClassName} pre`);
+    for (const codeBlock of codeBlocks) {
+        if (codeBlock.querySelector(`.${COPY_BUTTON_CLASS_NAME}`)) {
+            continue;
         }
-    }, 100);
+
+        const encodedCode = codeBlock.querySelector('code')?.getAttribute('data-code');
+        if (encodedCode) {
+            // 动态创建CopyButton元素，挂载到pre内
+            const mountEle = Object.assign(document.createElement('div'), {
+                className: COPY_BUTTON_CLASS_NAME,
+            });
+            codeBlock.appendChild(mountEle);
+            const copyButton = createApp(CopyButton, { source: decodeURIComponent(encodedCode) });
+            copyButton.mount(mountEle);
+        }
+    }
 };
 
 interface heading {
