@@ -100,7 +100,7 @@ const hideConfigModal = () => {
     if (hasValidPat.value) {
         configModalOpen.value = false;
     } else {
-        message.error({
+        void message.error({
             content: '你还没配置好Github PAT哦~',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -139,9 +139,9 @@ const deleteImage = async (path: string) => {
     deletingImages.value.push(path);
     const response = (await api.deleteImage(path)).data;
     if (response.code !== ResponseCode.SUCCESS) {
-        message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
+        void message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
     } else {
-        message.success({
+        void message.success({
             content: `${path}删除成功`,
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -162,7 +162,7 @@ const fetchImages = async (quiet: boolean = false) => {
     ).data;
 
     if (response.code !== ResponseCode.SUCCESS) {
-        message.error({
+        void message.error({
             content: response.msg,
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -195,14 +195,14 @@ const getUsage = async () => {
             usage.value.imageCount >= usageWarningThreshold.imageCount ||
             usage.value.dayCount >= usageWarningThreshold.dayCount
         ) {
-            message.warning({
+            void message.warning({
                 content: '你薅羊毛薅的有点多了呀~',
                 class: 'ant-message-notice-custom',
                 duration: 10,
             });
         }
     } else {
-        message.error({
+        void message.error({
             content: '获取使用情况失败...',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -230,7 +230,7 @@ const getCompressionQuality = async () => {
 };
 
 const showCompressionNotification = () => {
-    message.info({
+    void message.info({
         content: '压缩可以有效缩短图片上传和加载时间，强烈建议开启...',
         class: 'ant-message-notice-custom',
         duration: 2,
@@ -249,9 +249,9 @@ const setCompressionQuality = async () => {
     ).data;
     isCompressionQualitySetting.value = false;
     if (response.code !== ResponseCode.SUCCESS) {
-        message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
+        void message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
     } else {
-        message.success({
+        void message.success({
             content: '压缩配置更新成功...',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -353,7 +353,7 @@ const stopBestImageLinkWatch = watch([images, ownerName], () => {
 
 const copyImageLink = async (imageLink: string) => {
     await toClipboard(imageLink);
-    message.success({
+    void message.success({
         content: '链接复制成功...',
         class: 'ant-message-notice-custom',
         duration: 2,
@@ -375,7 +375,7 @@ const copyImageData = async (event: Event) => {
     if (img.complete && img.naturalHeight !== 0) {
         // 图片已加载，转换为base64并复制
         await toClipboard(convertImgToBase64(img));
-        message.success({
+        void message.success({
             content: '数据复制成功...',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -384,7 +384,7 @@ const copyImageData = async (event: Event) => {
         // 图片未加载，添加事件监听器
         img.addEventListener('load', async () => {
             await toClipboard(convertImgToBase64(img));
-            message.success({
+            void message.success({
                 content: '数据复制成功...',
                 class: 'ant-message-notice-custom',
                 duration: 2,
@@ -396,7 +396,7 @@ const copyImageData = async (event: Event) => {
 const getGithubPat = async () => {
     const response: R<string> = (await api.getGithubPat()).data;
     if (response.code !== ResponseCode.SUCCESS) {
-        message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
+        void message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
     } else {
         pat.value = response.data;
     }
@@ -410,14 +410,14 @@ const setGithubPat = async () => {
     const response = (await api.setGithubPat(pat.value as string)).data;
     isPatSetting.value = false;
     if (response.code !== ResponseCode.SUCCESS) {
-        message.error({
+        void message.error({
             content: 'Github PAT配置错误，请重试...',
             class: 'ant-message-notice-custom',
             duration: 2,
         });
     } else {
         hasValidPat.value = true;
-        message.success({
+        void message.success({
             content: 'Github PAT配置成功...',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -434,7 +434,7 @@ const clearGithubPat = async () => {
     isPatClearing.value = true;
     const response = (await api.clearGithubPat()).data;
     if (response.code !== ResponseCode.SUCCESS) {
-        message.error({
+        void message.error({
             content: 'Github PAT清除失败，请重试...',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -442,7 +442,7 @@ const clearGithubPat = async () => {
     } else {
         pat.value = '';
         hasValidPat.value = false;
-        message.success({
+        void message.success({
             content: 'Github PAT清除成功...',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -455,7 +455,7 @@ const clearGithubPat = async () => {
 };
 
 const jumpToRepo = () => {
-    message.success({
+    void message.success({
         content: '即将跳转到图床仓库...',
         class: 'ant-message-notice-custom',
         duration: 1,
@@ -466,7 +466,7 @@ const jumpToRepo = () => {
 };
 
 const jumpToBlankImageUrl = (url: string) => {
-    message.success({
+    void message.success({
         content: '即将跳转指定图片链接...',
         class: 'ant-message-notice-custom',
         duration: 1,
@@ -477,7 +477,7 @@ const jumpToBlankImageUrl = (url: string) => {
 };
 
 const jumpToGithubPatDoc = () => {
-    message.success({
+    void message.success({
         content: '即将跳转到GithubPat参考文档...',
         class: 'ant-message-notice-custom',
         duration: 1,
@@ -505,7 +505,7 @@ const readImage = async (event: Event) => {
     try {
         rawInputImage.value = (await createImageFromFile(file)) as HTMLImageElement;
     } catch {
-        message.error({
+        void message.error({
             content: '图片读取失败，请更换图片...',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -529,7 +529,7 @@ const onUploadProgress = (progressEvent: AxiosProgressEvent) => {
 
 const uploadImage = async () => {
     if (rawInputFile.value === undefined || rawInputImage.value === undefined) {
-        message.warn({
+        void message.warn({
             content: '你还没选图片呢...',
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -545,7 +545,7 @@ const uploadImage = async () => {
         }
         filename = rawInputImage.value.alt.replace(/\.\w+$/, isSupportWebp() ? '.webp' : '.jpg');
         if (compressedInputImageBlob.value.size > 100 * 1024 * 1024) {
-            message.error({
+            void message.error({
                 content: '图片过大，请重新选择图片...',
                 class: 'ant-message-notice-custom',
                 duration: 2,
@@ -567,7 +567,7 @@ const uploadImage = async () => {
     } else {
         filename = rawInputImage.value.alt;
         if (rawInputFile.value.size > 100 * 1024 * 1024) {
-            message.error({
+            void message.error({
                 content: '图片过大，建议压缩...',
                 class: 'ant-message-notice-custom',
                 duration: 2,
@@ -587,9 +587,9 @@ const uploadImage = async () => {
     }
     isImageUploading.value = false;
     if (response.code !== ResponseCode.SUCCESS) {
-        message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
+        void message.error({ content: response.msg, class: 'ant-message-notice-custom', duration: 2 });
     } else {
-        message.success({
+        void message.success({
             content: `${filename}上传成功`,
             class: 'ant-message-notice-custom',
             duration: 2,
@@ -619,7 +619,7 @@ watch([startDate, endDate], () => {
         return;
     }
     if (startDate.value > endDate.value) {
-        message.error({
+        void message.error({
             content: '结束时间不能早于开始时间',
             class: 'ant-message-notice-custom',
             duration: 2,

@@ -10,7 +10,7 @@ const send = () => {
 
 onMounted(() => {
     broadcastChannel.onmessage = event => {
-        message.info(event.data);
+        void message.info(event.data);
     };
 });
 </script>

@@ -12,7 +12,7 @@ onMounted(() => {
     window.addEventListener('message', event => {
         if (event.origin !== fullHost) return;
         if (typeof event.data === 'object') return;
-        message.info(event.data);
+        void message.info(event.data);
     });
 });
 </script>

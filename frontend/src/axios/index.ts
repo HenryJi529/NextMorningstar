@@ -42,14 +42,14 @@ _axios.interceptors.response.use(
     error => {
         if (error.code === 'ECONNABORTED') {
             // 网络超时（包括前端主动超时、断网导致的超时）
-            message.error({
+            void message.error({
                 content: '请求超时，请稍后重试',
                 class: 'ant-message-notice-custom',
                 duration: 2,
             });
         } else if (error.code === 'ERR_NETWORK') {
             // 纯网络异常（断网、DNS解析失败、网络链路中断等）
-            message.error({
+            void message.error({
                 content: '网络异常，请检查网络连接后重试',
                 class: 'ant-message-notice-custom',
                 duration: 2,
@@ -57,7 +57,7 @@ _axios.interceptors.response.use(
         } else if (error.code === 'ERR_BAD_RESPONSE') {
             // 服务器响应异常
             if (!document.querySelector('.ant-message-error')) {
-                message.error({
+                void message.error({
                     content: '系统繁忙，请稍后重试',
                     class: 'ant-message-notice-custom',
                     duration: 2,

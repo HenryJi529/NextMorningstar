@@ -290,7 +290,7 @@ const loadChart = (chartDom: HTMLElement) => {
 
     myChart.on('click', params => {
         if (params.componentType === 'xAxis') {
-            message.info(`点击了X轴元素${params.value}(索引${params.tickIndex})`);
+            void message.info(`点击了X轴元素${params.value}(索引${params.tickIndex})`);
         }
     });
 

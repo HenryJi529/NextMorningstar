@@ -58,7 +58,7 @@ const submit = async () => {
         !form.branchName.trim() ||
         (props.mode === 'create' && !form.link.trim())
     ) {
-        message.error('项目名称、仓库链接、分支为必填项');
+        void message.error('项目名称、仓库链接、分支为必填项');
         return;
     }
     if (
@@ -67,7 +67,7 @@ const submit = async () => {
         !Number.isInteger(form.maxAiIssuesPerRun) ||
         form.maxAiIssuesPerRun < 1
     ) {
-        message.error('Sonar/AI 单轮处理上限必须为正整数');
+        void message.error('Sonar/AI 单轮处理上限必须为正整数');
         return;
     }
     submitting.value = true;
@@ -90,10 +90,10 @@ const submit = async () => {
                       maxAiIssuesPerRun: form.maxAiIssuesPerRun,
                   });
         if (response.data.code !== ResponseCode.SUCCESS) {
-            message.error(response.data.msg);
+            void message.error(response.data.msg);
             return;
         }
-        message.success(props.mode === 'create' ? '项目接入成功' : '配置已保存');
+        void message.success(props.mode === 'create' ? '项目接入成功' : '配置已保存');
         emit('submitted', response.data.data);
         close();
     } finally {

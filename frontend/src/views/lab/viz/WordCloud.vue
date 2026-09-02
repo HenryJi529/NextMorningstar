@@ -213,7 +213,7 @@ const loadChart = (chartDom: HTMLDivElement) => {
         });
         chart.on('click', params => {
             if (params.seriesType === 'wordCloud' && params.data) {
-                message.info({
+                void message.info({
                     // @ts-expect-error 这里随意塞了fullName
                     content: `${params.data.fullName} X ${params.data.value}`,
                     class: 'ant-message-notice-custom',

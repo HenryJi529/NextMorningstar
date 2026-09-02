@@ -171,10 +171,10 @@ const onCancelRun = (run: RunDetail) => {
         onOk: async () => {
             const response = await adminCancelRun(run.id);
             if (response.data.code !== ResponseCode.SUCCESS) {
-                message.error(response.data.msg);
+                void message.error(response.data.msg);
                 return;
             }
-            message.success('已发出取消指令');
+            void message.success('已发出取消指令');
             await load();
         },
     });
@@ -192,10 +192,10 @@ const onToggleSchedule = (project: ProjectDetail) => {
         onOk: async () => {
             const response = await adminToggleSchedule(project.id);
             if (response.data.code !== ResponseCode.SUCCESS) {
-                message.error(response.data.msg);
+                void message.error(response.data.msg);
                 return;
             }
-            message.success(project.enabled ? '调度已停用' : '调度已启用');
+            void message.success(project.enabled ? '调度已停用' : '调度已启用');
             await load();
         },
     });

@@ -148,10 +148,10 @@ const onTrigger = async () => {
     }
     const response = await triggerRun(currentProject.value.id);
     if (response.data.code !== ResponseCode.SUCCESS) {
-        message.error(response.data.msg);
+        void message.error(response.data.msg);
         return;
     }
-    message.success('已触发，流水线开跑');
+    void message.success('已触发，流水线开跑');
     await loadActiveRun();
 };
 
@@ -162,11 +162,11 @@ const onToggleEnabled = async () => {
     }
     const response = await updateProject(project.id, { enabled: !project.enabled });
     if (response.data.code !== ResponseCode.SUCCESS) {
-        message.error(response.data.msg);
+        void message.error(response.data.msg);
         return;
     }
     projects.value = projects.value.map(p => (p.id === project.id ? response.data.data : p));
-    message.success(
+    void message.success(
         project.enabled ? '调度已停用，不再参与夜间修复' : '调度已启用，将参与夜间修复'
     );
 };
@@ -186,10 +186,10 @@ const onCancelRun = () => {
         onOk: async () => {
             const response = await cancelRun(run.id);
             if (response.data.code !== ResponseCode.SUCCESS) {
-                message.error(response.data.msg);
+                void message.error(response.data.msg);
                 return;
             }
-            message.success('已发出取消指令');
+            void message.success('已发出取消指令');
             await loadRuns();
         },
     });
@@ -209,10 +209,10 @@ const onDelete = () => {
         onOk: async () => {
             const response = await deleteProject(project.id);
             if (response.data.code !== ResponseCode.SUCCESS) {
-                message.error(response.data.msg);
+                void message.error(response.data.msg);
                 return;
             }
-            message.success('项目已删除');
+            void message.success('项目已删除');
             await loadProjects(false);
         },
     });

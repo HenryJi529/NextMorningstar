@@ -210,7 +210,7 @@ const loadChart = (chartDom: HTMLDivElement) => {
 
     myChart.on('click', function (params) {
         if (params.seriesType === 'map' && params.data) {
-            message.info(`点击了${params.name}分行`);
+            void message.info(`点击了${params.name}分行`);
         }
     });
 };

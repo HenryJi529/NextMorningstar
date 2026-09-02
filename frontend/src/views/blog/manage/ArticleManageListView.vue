@@ -60,7 +60,7 @@ const isLoaded = ref(false);
 
 const refreshArticleSummary = async () => {
     await axios.post(API_BLOG_ARTICLE_SUMMARY_REFRESH);
-    message.info({
+    void message.info({
         content: '摘要刷新中...',
         class: 'ant-message-notice-custom',
         duration: 2,
@@ -69,7 +69,7 @@ const refreshArticleSummary = async () => {
 
 const refreshArticleSearch = async () => {
     await axios.post(API_BLOG_ARTICLE_SEARCH_REFRESH);
-    message.success({
+    void message.success({
         content: '检索刷新成功...',
         class: 'ant-message-notice-custom',
         duration: 2,

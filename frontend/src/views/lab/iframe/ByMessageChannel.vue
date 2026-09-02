@@ -10,9 +10,9 @@ onBeforeMount(() => {
         if (event.data === 'INIT_CHANNEL' && event.ports[0]) {
             // ports参数并不一定是port的列表，只是转移的对象的列表
             parentPort.value = event.ports[0];
-            message.info('已与父页面建立通信通道...');
+            void message.info('已与父页面建立通信通道...');
             parentPort.value.onmessage = e => {
-                message.info(e.data);
+                void message.info(e.data);
             };
         }
     });

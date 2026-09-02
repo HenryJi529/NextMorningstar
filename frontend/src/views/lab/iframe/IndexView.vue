@@ -55,17 +55,17 @@ onMounted(() => {
     window.addEventListener('message', function (event) {
         if (event.origin !== fullHost) return;
         if (typeof event.data === 'object') return;
-        message.info(event.data);
+        void message.info(event.data);
     });
 
     // Broadcast Channel接收子页面消息
     broadcastChannel.onmessage = event => {
-        message.info(event.data);
+        void message.info(event.data);
     };
 
     // Message Channel接收子页面消息
     messageChannel.port1.onmessage = event => {
-        message.info(event.data);
+        void message.info(event.data);
     };
 });
 </script>
