@@ -21,7 +21,8 @@ const getMarked = () => {
         const hljs = getHljs();
         markedInstance = new Marked()
             .use({
-                gfm: true,
+                breaks: true, // 开启单次回车转<br>
+                gfm: true     // 启用 GFM (GitHub Flavored Markdown)
             })
             .use(
                 markedKatex({
@@ -32,6 +33,18 @@ const getMarked = () => {
             )
             .use({
                 renderer: {
+                    link({ href, title, tokens }) {
+                        // 1. 解析链接内部的可见文本 (支持 **加粗**、*斜体* 等)
+                        const text = this.parser.parseInline(tokens);
+
+                        // 2. 仅对 http/https 外链补充新标签页属性
+                        const targetAttr = /^https?:\/\//i.test(href) ? ' target="_blank"' : '';
+
+                        // 3. title 存在才拼属性
+                        const titleAttr = title ? ` title="${title}"` : '';
+
+                        return `<a href="${href || ''}"${titleAttr}${targetAttr}>${text}</a>`;
+                    },
                     code({ text: code = '', lang }) {
                         // 1. 提取语言名（防御 "js {1-3}" 等元信息导致高亮失效），并过滤非法特殊字符（防御 class 属性注入）
                         const rawLang = (lang || '').trim().split(/\s+/)[0];
