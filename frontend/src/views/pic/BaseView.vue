@@ -287,20 +287,24 @@ const measureResponseTime = async (url: string) => {
 };
 
 const updateBestImageLinkGenerator = async () => {
-    if (!images.value || !(images.value.length > 0) || !ownerName.value) {
+    if (!images.value || images.value.length === 0 || !ownerName.value) {
         return false;
     }
     let githubBestCount = 0;
     let jsDelivrBestCount = 0;
     let jSDMirrorBestCount = 0;
-    for (const image of images.value) {
+    for (const image of images.value.slice(0, 3)) {
         const githubImageUrl = githubImageLinkGenerator.generate(ownerName.value, image.path);
         const jsDelivrImageUrl = jsDelivrImageLinkGenerator.generate(ownerName.value, image.path);
         const jSDMirrorImageUrl = jSDMirrorImageLinkGenerator.generate(ownerName.value, image.path);
 
-        const githubResponseTime = await measureResponseTime(githubImageUrl);
-        const jsDelivrResponseTime = await measureResponseTime(jsDelivrImageUrl);
-        const jSDMirrorResponseTime = await measureResponseTime(jSDMirrorImageUrl);
+        // 三源并行测速，响应均为空头部，带宽竞争可忽略，且同刻起跑对比更公平
+        const [githubResponseTime, jsDelivrResponseTime, jSDMirrorResponseTime] =
+            await Promise.all([
+                measureResponseTime(githubImageUrl),
+                measureResponseTime(jsDelivrImageUrl),
+                measureResponseTime(jSDMirrorImageUrl),
+            ]);
         if (
             githubResponseTime < jsDelivrResponseTime &&
             githubResponseTime < jSDMirrorResponseTime
