@@ -274,6 +274,7 @@ const measureResponseTime = async (url: string) => {
         await fetch(url, {
             method: 'HEAD',
             mode: 'no-cors', // 避免 CORS 问题
+            cache: 'no-store',
             signal: controller.signal,
         });
         const endTime = performance.now();
@@ -317,6 +318,10 @@ const updateBestImageLinkGenerator = async () => {
             jSDMirrorBestCount++;
         }
     }
+    if (githubBestCount + jsDelivrBestCount + jSDMirrorBestCount === 0) {
+        // 三个源全部超时/不可达，本次测速无有效结果
+        return false;
+    }
     if (githubBestCount >= jsDelivrBestCount && githubBestCount >= jSDMirrorBestCount) {
         bestImageLinkGenerator.setImageLinkGenerator(githubImageLinkGenerator);
     }
@@ -332,12 +337,19 @@ const updateBestImageLinkGenerator = async () => {
     return true;
 };
 
-const checkForBestImageLinkGeneratorUpdate = async () => {
-    const isUpdated = await updateBestImageLinkGenerator();
-    if (!isUpdated) {
-        setTimeout(checkForBestImageLinkGeneratorUpdate, 3000);
+let isMeasuring = false;
+const stopBestImageLinkWatch = watch([images, ownerName], () => {
+    if (!images.value?.length || !ownerName.value || isMeasuring) {
+        return;
     }
-};
+    isMeasuring = true;
+    updateBestImageLinkGenerator().then(success => {
+        isMeasuring = false;
+        if (success) {
+            stopBestImageLinkWatch();
+        }
+    });
+});
 
 const copyImageLink = async (imageLink: string) => {
     await toClipboard(imageLink);
@@ -663,7 +675,6 @@ onMounted(async () => {
         void getCompressionQuality();
         void getUsage();
         void fetchImages();
-        void checkForBestImageLinkGeneratorUpdate();
     }
 });
 </script>
