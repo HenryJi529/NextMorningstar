@@ -34,9 +34,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -197,67 +194,6 @@ public class LabController {
         }
         log.info("程序执行完成...");
         return R.ok("Good Job");
-    }
-
-    @Operation(summary = "使用StreamingResponseBody实现流式响应")
-    @GetMapping("/streaming-response/streaming-response-body")
-    public StreamingResponseBody streamingResponseByStreamingResponseBody() {
-        return outputStream -> {
-            for (int i = 0; i < 10; i++) {
-                outputStream.write(("chunk-" + i + "\n").getBytes());
-                outputStream.flush();
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
-    }
-
-    @Operation(summary = "使用ResponseBodyEmitter实现流式响应")
-    @GetMapping("/streaming-response/response-body-emitter")
-    public ResponseBodyEmitter streamingResponseByResponseBodyEmitter() {
-        ResponseBodyEmitter emitter = new ResponseBodyEmitter(); // 默认超时时间30秒
-
-        new Thread(() -> {
-            try {
-                for (int i = 0; i < 10; i++) {
-                    emitter.send("Log line " + i + "\n");
-                    Thread.sleep(1000);
-                }
-                emitter.complete();
-            } catch (Exception e) {
-                emitter.completeWithError(e);
-            }
-        }).start();
-
-        return emitter;
-    }
-
-    @Operation(summary = "使用SseEmitter实现流式响应")
-    @GetMapping("/streaming-response/sse-emitter")
-    public SseEmitter streamingResponseBySseEmitter() {
-        SseEmitter emitter = new SseEmitter(60000L);
-
-        new Thread(() -> {
-            try {
-                for (int i = 0; i < 10; i++) {
-                    emitter.send(SseEmitter.event()
-                            .data("Data " + i));
-                    Thread.sleep(1000);
-                }
-                emitter.complete();
-            } catch (Exception e) {
-                emitter.completeWithError(e);
-            }
-        }).start();
-
-        emitter.onCompletion(() -> System.out.println("完成"));
-        emitter.onTimeout(() -> System.out.println("超时"));
-        emitter.onError((err) -> System.out.println("异常：" + err.getMessage()));
-
-        return emitter;
     }
 
     @Operation(summary = "根据姓名片段查询演员列表")

@@ -96,16 +96,6 @@ export default [
         },
     },
     {
-        path: 'streaming-response',
-        name: 'lab-streaming-response',
-        component: () => import('@/views/lab/StreamingResponsePractice.vue'),
-        meta: {
-            verboseName: '流式响应发送与接收练习',
-            description: 'Fetch/EventSource 两种接收方式，搭配三种后端流式实现组合对比。',
-            tags: ['Fetch Stream', 'EventSource'],
-        },
-    },
-    {
         path: 'editable-table',
         name: 'lab-editable-table',
         component: () => import('@/views/lab/EditableTablePractice.vue'),
