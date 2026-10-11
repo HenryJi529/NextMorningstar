@@ -355,15 +355,6 @@
         <mxCell id="l5TTh06cMZChZ8xFia9y-42" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="调用验证流程" vertex="1">
           <mxGeometry height="30" width="80" x="360" y="835" as="geometry" />
         </mxCell>
-        <mxCell id="l5TTh06cMZChZ8xFia9y-43" edge="1" parent="1" source="l5TTh06cMZChZ8xFia9y-38" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;dashed=1;dashPattern=8 8;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;fillColor=#f8cecc;strokeColor=#b85450;" target="8-Uh6dSzeOT_1q7pIPCD-17" value="">
-          <mxGeometry height="50" relative="1" width="50" as="geometry">
-            <Array as="points">
-              <mxPoint x="620" y="900" />
-            </Array>
-            <mxPoint x="630" y="1300" as="sourcePoint" />
-            <mxPoint x="790" y="900" as="targetPoint" />
-          </mxGeometry>
-        </mxCell>
         <mxCell id="l5TTh06cMZChZ8xFia9y-44" edge="1" parent="1" source="l5TTh06cMZChZ8xFia9y-31" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;strokeWidth=2;fillColor=#a0522d;strokeColor=#6D1F00;" target="l5TTh06cMZChZ8xFia9y-38" value="">
           <mxGeometry height="50" relative="1" width="50" as="geometry">
             <mxPoint x="450" y="940" as="sourcePoint" />
