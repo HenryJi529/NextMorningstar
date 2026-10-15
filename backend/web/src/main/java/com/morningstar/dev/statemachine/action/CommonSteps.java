@@ -155,7 +155,7 @@ public class CommonSteps {
         private Intent intent;
 
         public enum Intent {
-            SCAN,
+            AI_SCAN,
             FIX,
             VERIFY
         }

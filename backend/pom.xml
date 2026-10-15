@@ -34,7 +34,7 @@
         <jjwt.version>0.11.5</jjwt.version>
         <xxl-job-core.version>2.4.1</xxl-job-core.version>
         <sharding-jdbc.version>4.1.1</sharding-jdbc.version>
-        <javafaker.version>1.0.2</javafaker.version>
+        <datafaker.version>2.7.0</datafaker.version>
         <jansi.version>2.4.1</jansi.version>
         <qiniu.version>7.15.1</qiniu.version>
         <mybatis.version>3.0.4</mybatis.version>
@@ -132,11 +132,6 @@
                 <groupId>org.apache.shardingsphere</groupId>
                 <artifactId>sharding-jdbc-spring-boot-starter</artifactId>
                 <version>${sharding-jdbc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.javafaker</groupId>
-                <artifactId>javafaker</artifactId>
-                <version>${javafaker.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.fusesource.jansi</groupId>
@@ -240,6 +235,11 @@
                 <version>${springai.verson}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>net.datafaker</groupId>
+                <artifactId>datafaker</artifactId>
+                <version>${datafaker.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

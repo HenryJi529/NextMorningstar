@@ -1,7 +1,6 @@
 package com.morningstar.blog.util;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.github.javafaker.Faker;
 import com.morningstar.blog.dao.mapper.ArticleMapper;
 import com.morningstar.blog.dao.mapper.CategoryMapper;
 import com.morningstar.blog.dao.mapper.CommentMapper;
@@ -17,6 +16,7 @@ import com.morningstar.infra.util.TimeUtil;
 import com.morningstar.system.dao.mapper.UserMapper;
 import com.morningstar.system.pojo.po.User;
 import lombok.RequiredArgsConstructor;
+import net.datafaker.Faker;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -58,7 +58,7 @@ public class BlogFakeUtil {
         Category category = categoryMapper.selectRandomN(1).get(0);
         List<Tag> tags = tagMapper.selectRandomN(random.nextInt(5));
 
-        Date dateCreated = zhFaker.date().past(SimulationConstant.DAY_AFTER_RELEASE, TimeUnit.DAYS);
+        Date dateCreated = Date.from(zhFaker.timeAndDate().past(SimulationConstant.DAY_AFTER_RELEASE, TimeUnit.DAYS));
         long timeDiff = new Date().getTime() - dateCreated.getTime();
         Date dateUpdated = new Date(dateCreated.getTime() + random.nextLong(timeDiff));
         Article article = Article.builder()

@@ -1,11 +1,11 @@
 package com.morningstar.system.util;
 
-import com.github.javafaker.Faker;
 import com.morningstar.infra.constant.SimulationConstant;
 import com.morningstar.infra.util.TimeUtil;
 import com.morningstar.system.pojo.bo.Place;
 import com.morningstar.system.pojo.po.User;
 import lombok.RequiredArgsConstructor;
+import net.datafaker.Faker;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -37,15 +37,15 @@ public class SystemFakeUtil {
     }
 
     public User fakeUser(int atMost, TimeUnit timeUnit) {
-        Date dateCreated = enFaker.date().past(atMost, timeUnit);
+        Date dateCreated = Date.from(enFaker.timeAndDate().past(atMost, timeUnit));
         long timeDiff = new Date().getTime() - dateCreated.getTime();
         Date dateUpdated = new Date(dateCreated.getTime() + random.nextLong(timeDiff));
 
         return User
                 .builder()
                 .id(UUID.randomUUID())
-                .username(enFaker.name().username().replace(".", ""))
-                .password(passwordEncoder.encode(enFaker.internet().password()))
+                .username(enFaker.credentials().username().replace(".", ""))
+                .password(passwordEncoder.encode(enFaker.credentials().password()))
                 .email(enFaker.internet().emailAddress())
                 .nickname(getRandomNickname())
                 .avatar(random.nextFloat() > 0.2 ? UUID.randomUUID() + ".jpg" : null)

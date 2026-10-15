@@ -70,7 +70,7 @@ const onboard = [
                 代码工坊 | AI 自动值守的代码质量优化流水线
             </div>
             <h1 class="text-2xl font-bold text-slate-800 leading-relaxed">
-                晚上 AI 修代码，<span class="text-orange-500">早上你顺手审 PR</span>
+                晚上 AI 修代码，<span class="text-orange-500">早上人工审 PR</span>
             </h1>
             <p class="mt-3 text-sm text-slate-500 max-w-2xl mx-auto leading-relaxed">
                 夜间由 AI 无人值守完成 扫描 → 修复 → 验证 →

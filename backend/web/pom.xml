@@ -201,8 +201,8 @@
 
         <!-- 合成数据 -->
         <dependency>
-            <groupId>com.github.javafaker</groupId>
-            <artifactId>javafaker</artifactId>
+            <groupId>net.datafaker</groupId>
+            <artifactId>datafaker</artifactId>
         </dependency>
 
         <!-- PDF操作 -->

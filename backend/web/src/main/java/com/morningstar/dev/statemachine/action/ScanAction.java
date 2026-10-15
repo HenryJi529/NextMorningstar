@@ -79,7 +79,7 @@ public class ScanAction extends AbstractAction {
             List<AiIssue> aiIssues = commonSteps.runClaude(
                     CommonSteps.ClaudeInput
                             .builder()
-                            .intent(CommonSteps.ClaudeInput.Intent.SCAN)
+                            .intent(CommonSteps.ClaudeInput.Intent.AI_SCAN)
                             .prompt(buildAiScanPrompt())
                             .build(),
                     run,
@@ -148,7 +148,7 @@ public class ScanAction extends AbstractAction {
                 .reliabilitySeverity(aiIssue.getReliabilitySeverity())
                 .securitySeverity(aiIssue.getSecuritySeverity())
                 .maintainabilitySeverity(aiIssue.getMaintainabilitySeverity())
-                .effortInMinutes(aiIssue.getEffortInMinutes())
+                .effortInMinutes(aiIssue.getEffortInMinutes() == null ? null : aiIssue.getEffortInMinutes().getMinutes())
                 .status(Issue.Status.SELECTED)
                 .build();
     }
@@ -235,6 +235,9 @@ public class ScanAction extends AbstractAction {
         String severityRange = Arrays.stream(Issue.Severity.values())
                 .map(Enum::name)
                 .collect(Collectors.joining(", "));
+        String effortRange = Arrays.stream(AiIssue.EffortLevel.values())
+                .map(e -> "\t\t- %d: %s".formatted(e.getMinutes(), e.getDescription()))
+                .collect(Collectors.joining("\n"));
         return """
                 你是一个代码审查专家。请探索 /workspace/repo 下的代码，识别静态分析工具难以发现的代码质量问题。
                 
@@ -277,7 +280,10 @@ public class ScanAction extends AbstractAction {
                         - 取值范围:
                 %s
                     - effortInMinutes:
-                        - 字段含义: 人工修复这个问题需要花费的分钟数
+                        - 字段含义: 一名熟悉项目的开发人员手工修复该问题所需工时的量级估算（分钟）
+                        - 取值范围:
+                %s
+                        - 估算原则: 以改动范围定基线档位，涉及并发、安全、状态一致性等需深入语义理解的问题上调一档；只估量级不估精确值，拿不准时选较小的一档
                     - description:
                         - 字段含义: 问题描述，说明问题什么时候会产生影响，以及问题的根本原因
                     - suggestion:
@@ -292,6 +298,6 @@ public class ScanAction extends AbstractAction {
                         - 字段含义: 代码异味严重程度
                         - 取值范围: %s, null
                 - JSON 字符串值内部的所有双引号必须转义，否则 JSON 解析失败。
-                """.formatted(typeRange, severityRange, severityRange, severityRange);
+                """.formatted(typeRange, effortRange, severityRange, severityRange, severityRange);
     }
 }

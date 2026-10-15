@@ -18,6 +18,10 @@ Desktop.ini
 .env
 /deploy/backup/*
 
+docs/dev-slides.pptx
+docs/dev-demo.mp4
+
 /logs/
 /TEMP/
 .$*
+~$*
