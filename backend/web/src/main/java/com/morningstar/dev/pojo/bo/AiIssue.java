@@ -47,7 +47,7 @@ public class AiIssue {
             this.description = description;
         }
 
-        @JsonCreator
+        @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
         public static EffortLevel fromMinutes(int minutes) {
             for (EffortLevel level : values()) {
                 if (level.minutes == minutes) {
