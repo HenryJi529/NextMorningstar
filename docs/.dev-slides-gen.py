@@ -290,7 +290,9 @@ fill_tf(bar, [
     ("每个问题按三个质量维度打标：Security 安全漏洞 / Reliability 逻辑缺陷 / Maintainability 代码异味",
      dict(size=13.5, bold=True, color=NAVY, space_after=6)),
     ("两通道互补而非替代；问题合并为统一模型落库，走同一套修复与验证流程，PR 报告逐条标注来源（SONAR / AI）",
-     dict(size=13.5, color=DARK, space_after=0)),
+     dict(size=13.5, color=DARK, space_after=6)),
+    ("扫描不设目录边界：上帝类、语义重复等问题天然跨目录，预设边界等于先行排除；边界由沙盒容器承担",
+     dict(size=13, color=GRAY, space_after=0)),
 ], anchor=MSO_ANCHOR.MIDDLE, margin=0.28)
 
 # ============ S6 AI 修复 ============
