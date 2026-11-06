@@ -124,10 +124,10 @@ public class CommonSteps {
         String envelope = processUtil.run(
                 "docker", "exec", "-w", "/workspace/repo", containerName,
                 "bash", "-c",
-                "claude --dangerously-skip-permissions --print \"$(cat " +
-                        promptFilePath + ")\" "
-                        + "--output-format json --json-schema \"$(cat " +
-                        schemaPath + ")\"");
+                "claude --dangerously-skip-permissions --print"
+                        + " --output-format json"
+                        + " --json-schema \"$(cat " + schemaPath + ")\""
+                        + " < " + promptFilePath);
         log.info("[{}] 模型原始输出: {}", claudeInput.getIntent(), envelope);
         // 拆封
         JsonNode so = objectMapper.readTree(envelope).get("structured_output");
