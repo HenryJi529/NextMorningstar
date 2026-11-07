@@ -105,6 +105,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/snippets:/etc/nginx/snippets
       - ./nginx/htpasswd:/etc/nginx/htpasswd
       - ./nginx/www:/etc/nginx/www
       - certbot_etc:/etc/letsencrypt
