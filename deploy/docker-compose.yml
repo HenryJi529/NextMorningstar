@@ -94,7 +94,7 @@ services:
       - redis_data:/data
     ports:
       - 6379:6379
-    command: valkey-server --bind 0.0.0.0 --protected-mode no --requirepass ${REDIS_PASSWORD} --loglevel warning
+    command: valkey-server --bind 0.0.0.0 --requirepass ${REDIS_PASSWORD} --loglevel warning
     environment:
       - VALKEY_EXTRA_FLAGS=--maxmemory 256mb --maxmemory-policy volatile-lfu
     networks:
@@ -338,20 +338,20 @@ services:
       - SONARQUBE_URL=http://sonarqube-server:9000
     restart: unless-stopped
   njcb-redis:
-    container_name: server_redis
+    container_name: njcb_redis
     image: redis:7
     restart: unless-stopped
     volumes:
       - njcb_redis_data:/data
     ports:
       - 6380:6379
-    command: redis-server --requirepass "" --loglevel warning --maxmemory 256mb --maxmemory-policy volatile-lfu
+    command: redis-server --requirepass "${NJCB_REDIS_PASSWORD}" --loglevel warning --maxmemory 256mb --maxmemory-policy volatile-lfu
   njcb-mysql:
     image: mysql:8
-    container_name: server_mysql
+    container_name: njcb_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: 1234asdw
+      MYSQL_ROOT_PASSWORD: ${NJCB_MYSQL_PASSWORD}
       TZ: Asia/Shanghai
     command: 
       - --max-allowed-packet=32M
