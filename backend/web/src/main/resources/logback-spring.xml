@@ -74,6 +74,7 @@
     </root>
 
     <logger name="com.morningstar.lab" additivity="false">
+        <appender-ref ref="CONSOLE"/>
         <appender-ref ref="LAB_PACKAGE_FILE"/>
     </logger>
 </configuration>

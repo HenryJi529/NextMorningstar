@@ -3,13 +3,14 @@ package com.morningstar.lab.dao;
 import com.morningstar.lab.pojo.po.Movie;
 import com.morningstar.lab.repository.MovieRepository;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Arrays;
 import java.util.List;
 
 @SpringBootTest
+@Slf4j
 public class MovieRepositoryTest {
     @Resource
     private MovieRepository movieRepository;
@@ -17,7 +18,7 @@ public class MovieRepositoryTest {
     @Test
     public void testFindByTitleContaining() {
         List<Movie> movies = movieRepository.findByTitleContaining("The Matrix");
-        System.out.println(Arrays.toString(movies.toArray()));
+        log.warn("movies: {}", movies);
     }
 
     @Test
