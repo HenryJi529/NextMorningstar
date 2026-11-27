@@ -204,7 +204,7 @@ public class LabController {
 
     @Operation(summary = "查询两个演员之间的最短路径")
     @GetMapping("/small-world-network/find-shortest-path-between-two-persons")
-    public R<GraphData> findShortestPathBetweenTwoPersons(@RequestParam("person1Id") Long person1Id, @RequestParam("person2Id") Long person2Id) {
+    public R<GraphData> findShortestPathBetweenTwoPersons(@RequestParam("person1Id") String person1Id, @RequestParam("person2Id") String person2Id) {
         return R.ok(smallWorldNetworkService.getShortestPath(person1Id, person2Id));
     }
 

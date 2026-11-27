@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @Builder
 public class PersonMoviePair {
-    private Long personId;
-    private Long movieId;
+    private String personId;
+    private String movieId;
     private String type;
 }

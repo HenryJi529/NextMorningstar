@@ -5,6 +5,6 @@ import org.springframework.data.neo4j.repository.Neo4jRepository;
 
 import java.util.List;
 
-public interface MovieRepository extends Neo4jRepository<Movie, Long> {
+public interface MovieRepository extends Neo4jRepository<Movie, String> {
     List<Movie> findByTitleContaining(String title);
 }
